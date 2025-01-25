@@ -1,0 +1,4056 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+  ARCHIVED
+  DELETED
+}
+
+enum NotificationPreference {
+  EMAIL
+  SMS
+  PUSH
+  WHATSAPP
+  ALL
+  NONE
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  WHATSAPP
+  ALL
+  NONE
+}
+
+enum NotificationType {
+  ALERT          // Urgent notifications (e.g., security alerts)
+  REMINDER       // Reminders (e.g., upcoming property viewings)
+  MESSAGE        // Messages (e.g., direct messages from clients)
+  UPDATE         // Updates (e.g., new property listings)
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Language {
+  ENGLISH
+  ARABIC
+  FRENCH
+  GERMAN
+  CHINESE
+  HINDI
+  SPANISH
+  RUSSIAN
+  ITALIAN
+  TURKISH
+  PORTUGUESE
+  JAPANESE
+  KOREAN
+  SWAHILI
+  PERSIAN
+}
+
+// Supporting Enums
+enum CompanyType {
+  REAL_ESTATE
+  DEVELOPER
+  AGENCY
+  PROPERTY_MANAGEMENT
+  INVESTMENT_FIRM
+}
+
+enum CompanySize {
+  SMALL      // 1-50 employees
+  MEDIUM     // 51-200 employees
+  LARGE      // 201-1000 employees
+  ENTERPRISE // 1000+ employees
+}
+
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED 
+  PENDING_VERIFICATION
+}
+
+enum TeamType {
+  SALES
+  LEASING
+  PROPERTY_MANAGEMENT
+  MARKETING
+  OPERATIONS
+  ADMIN
+  DEVELOPMENT
+}
+
+enum TeamRole {
+  LEADER
+  MANAGER
+  SENIOR_AGENT
+  AGENT
+  ASSISTANT
+  TRAINEE
+  MEMBER
+}
+
+enum TeamStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  SUSPENDED
+  PENDING
+}
+
+// Supporting Enums
+enum PropertyStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  UNDER_CONTRACT
+  SOLD
+  RENTED
+  INACTIVE
+  ARCHIVED
+}
+
+enum PropertyType {
+  APARTMENT
+  VILLA
+  PENTHOUSE
+  TOWNHOUSE
+  MANSION
+  LAND
+  COMMERCIAL
+  RETAIL
+}
+
+enum TourType {
+  MATTERPORT
+  VIRTUAL_3D
+  GUIDED
+  INTERACTIVE
+  SELF_GUIDED
+}
+
+enum FloorPlanType {
+  TRADITIONAL_2D
+  DETAILED_2D
+  BASIC_3D
+  INTERACTIVE_3D
+  VR_READY
+}
+
+enum PropertyEventType {
+  LISTED
+  PRICE_CHANGE
+  STATUS_CHANGE
+  RENOVATION
+  INSPECTION
+  OWNERSHIP_CHANGE
+  MAINTENANCE
+  DOCUMENT_ADDED
+  VIEWING
+}
+
+// Supporting Enums
+enum PlanType {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+  CUSTOM
+}
+
+enum PlanCategory {
+  BASIC
+  STANDARD
+  PREMIUM
+  ENTERPRISE
+}
+
+enum FeatureCategory {
+  CORE
+  ANALYTICS
+  MARKETING
+  COLLABORATION
+  INTEGRATION
+  ADVANCED
+}
+
+enum FeatureType {
+  BOOLEAN          // Feature is either on or off
+  QUOTA            // Feature has usage limits
+  TIERED           // Feature has different tiers
+  METERED          // Feature is billed by usage
+}
+
+enum BillingCycle {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  VOID
+  OVERDUE
+}
+
+enum BoostType {
+  FEATURED
+  PREMIUM
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  EXPIRED
+  SUSPENDED
+}
+
+enum ListingVisibility {
+  PUBLIC
+  PRIVATE
+  FEATURED
+  PREMIUM
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum InquiryStatus {
+  NEW
+  VIEWED
+  CONTACTED
+  SCHEDULED
+  CLOSED
+  SPAM
+}
+
+enum FurnishType {
+  UNFURNISHED         // No furnishings included
+  SEMI_FURNISHED      // Basic furnishings only
+  FULLY_FURNISHED     // Complete furnishing
+  LUXURY_FURNISHED    // High-end designer furnishing
+  CUSTOM_FURNISHED    // Custom/Bespoke furnishing
+  FURNISHED_FLEXIBLE  // Furnishing negotiable
+}
+
+enum Direction {
+  NORTH
+  NORTH_EAST
+  EAST
+  SOUTH_EAST
+  SOUTH
+  SOUTH_WEST
+  WEST
+  NORTH_WEST
+  
+  // More specific orientations
+  NORTH_NORTH_EAST
+  EAST_NORTH_EAST
+  EAST_SOUTH_EAST
+  SOUTH_SOUTH_EAST
+  SOUTH_SOUTH_WEST
+  WEST_SOUTH_WEST
+  WEST_NORTH_WEST
+  NORTH_NORTH_WEST
+  
+  // For properties with multiple orientations
+  MULTIPLE_NORTH
+  MULTIPLE_SOUTH
+  MULTIPLE_EAST
+  MULTIPLE_WEST
+  
+  // For special cases
+  PANORAMIC     // 360-degree views
+  UNSPECIFIED   // When orientation is unknown or not applicable
+}
+
+// Additional Property Related Enums
+enum PropertyCategory {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  LAND
+  MIXED_USE
+}
+
+enum ListingType {
+  SALE
+  RENT
+  BOTH
+  OFF_MARKET
+}
+
+enum RentalPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum ContactPreference {
+  ANY_TIME
+  MORNING
+  AFTERNOON
+  EVENING
+  WEEKENDS_ONLY
+  BY_APPOINTMENT
+}
+
+// Transaction Related Enums
+enum TransactionType {
+  SALE
+  RENT
+  LEASE
+  MORTGAGE
+  REFINANCE
+}
+
+enum TransactionStatus {
+  DRAFT
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// Lead & Deal Related Enums
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  NEGOTIATING
+  WON
+  LOST
+  DORMANT
+}
+
+enum DealStage {
+  PROSPECTING
+  QUALIFICATION
+  ANALYSIS
+  PROPOSAL
+  NEGOTIATION
+  AGREEMENT
+  CLOSING
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+// Contact Related Enums
+enum ContactType {
+  BUYER
+  SELLER
+  AGENT
+  LANDLORD
+  TENANT
+  INVESTOR
+  DEVELOPER
+  SERVICE_PROVIDER
+}
+
+enum ContactStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  ARCHIVED
+}
+
+enum ContactSource {
+  WEBSITE
+  REFERRAL
+  SOCIAL_MEDIA
+  PROPERTY_PORTAL
+  DIRECT
+  EVENT
+  COLD_CALL
+  OTHER
+}
+
+// Transaction Related Enums
+enum TransactionStage {
+  INQUIRY             // Initial inquiry
+  NEGOTIATION         // Price/terms negotiation
+  DOCUMENT_COLLECTION // Collecting required documents
+  VERIFICATION        // KYC/Document verification
+  PAYMENT_PENDING     // Waiting for payment
+  PAYMENT_COMPLETED   // Payment received
+  CONTRACT_DRAFTING   // Preparing contracts
+  CONTRACT_REVIEW     // Legal review
+  CONTRACT_SIGNING    // Signing process
+  REGISTRATION        // Property registration
+  HANDOVER            // Property handover
+  COMPLETED           // Transaction completed
+  CANCELLED           // Transaction cancelled
+}
+
+enum TransactionPaymentType {
+  FULL_PAYMENT
+  INSTALLMENT
+  MORTGAGE
+  RENT
+  BOOKING_FEE
+  DEPOSIT
+  COMMISSION
+  OTHER
+}
+
+enum TransactionPaymentStatus {
+  PENDING
+  PARTIAL
+  COMPLETED
+  FAILED
+  REFUNDED
+  DISPUTED
+}
+
+model User {
+  id                String              @id @default(cuid())
+  email             String              @unique
+  phone             String?             @unique
+  password          String              // Hashed password
+  emailVerified     DateTime?
+  phoneVerified     DateTime?
+  status            UserStatus          @default(PENDING_VERIFICATION)
+  roles             UserRole[]          // Multiple roles possible
+  twoFactorEnabled  Boolean             @default(false)
+  twoFactorSecret   String?
+  profile           UserProfile?        @relation("UserToUserProfile")
+
+  // Business & Team Relations
+  company              Company?            @relation("CompanyAgent",fields: [companyId], references: [id])
+  companyId            String?
+  createdCompanies     Company[]           @relation("CompanyCreator")
+  createdTeams         Team[]              @relation("TeamCreator")
+  managedTeams         Team[]              @relation("TeamManager")
+  teamMemberships      TeamMember[]
+  companyAdmins CompanyAdmin[]
+  managedDepartments   Department[]        @relation("DepartmentHead")
+  //
+  refreshTokens RefreshToken[]
+  loginHistory LoginHistory[]
+  securityLogs SecurityLog[]
+  createdLeads Lead[] @relation("LeadCreator")
+  listedProperties Property[]
+  createdDocument Document[] @relation("DocumentCreator")
+  userDocuments UserDocument[] @relation("UserDocuments")
+  documentApprovals DocumentApproval[]
+  documentActivities DocumentActivity[]
+  documentViews DocumentView[]
+  mediaItems MediaItem[]
+  verifiedLocations Location[] @relation("LocationVerifier")
+  publicInquiries PublicInquiry[] @relation("AssignedInquiries")
+  notificationSettings NotificationSetting[] @relation("UserNotificationSettings")
+  notifications Notification[]
+  verifiedAddress BaseAddress[] @relation("AddressVerifier")
+  createdTasks Task[] @relation("TaskCreator")
+  
+  
+  // System Fields
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?
+  
+  @@map("users")
+  FollowUp FollowUp[] @relation("AssignedFollowUps")
+  Comment Comment[]
+  Mention Mention[]
+  Attachment Attachment[]
+  Message Message[]
+  MessageRead MessageRead[] @relation("ReadMessages")
+  MessageDelivery MessageDelivery[] @relation("DeliveredMessages")
+  TaskComment TaskComment[]
+  NoteActivity NoteActivity[]
+  DocumentComment DocumentComment[]
+  Refund Refund[]
+  Dispute Dispute[]
+  PropertyHistory PropertyHistory[]
+  LeadCollaborator LeadCollaborator[] @relation("UserLeadCollaborator")
+  Note Note[] @relation("AuthoredNotes")
+  Activity Activity[]
+  transaction Transaction[]
+  auditLogs AuditLog[]
+  assignedTasks Task[] @relation("AssignedTasks")
+}
+
+model Role {
+  id                String             @id @default(cuid())
+  name              String             @unique
+  description       String?            // Optional description for clarity
+  users             UserRole[]         // Many-to-many relationship
+
+  // System Fields
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?          // Soft delete
+
+  @@map("roles") // Custom table name
+}
+
+model UserRole {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId      String
+  assignedBy  String?   // Who assigned this role? (e.g., admin ID)
+  assignedAt  DateTime  @default(now()) // When the role was assigned
+  
+  @@unique([userId, roleId]) // Prevent duplicate roles for the same user
+}
+
+model UserProfile {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation("UserToUserProfile", fields: [userId], references: [id])
+
+  // Personal Information
+  firstName       String
+  lastName        String
+  displayName     String?
+  avatar          String?
+  bio             String?
+  coverImage      String?
+  dateOfBirth     DateTime?
+  gender          String?
+  nationality     String?
+  
+  // Contact Information
+  secondaryEmail  String?
+  secondaryPhone  String?
+  whatsapp        String?
+
+  // One-to-one relation with address
+  address       UserAddress?
+  
+  // Professional Information
+  title           String?
+  specializations String[]
+  licenses        UserLicense[]
+  certifications  UserCertification[]
+  experience      Int?      // Years of experience
+  activeListings  Int            @default(0)
+  rating          Float?
+  reviewCount     Int            @default(0)
+  
+  // Preferences
+  languages       Language[]
+  timeZone        String    @default("UTC")
+  currency        String    @default("USD")
+  
+   // Social Media Links
+  socialLinks     Json?
+  
+  // System Fields
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("user_profiles")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  hashedToken   String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  device    String?
+  ip        String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model LoginHistory {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  device    String?
+  ip        String?
+  location  String?
+  success   Boolean
+  reason    String?
+  createdAt DateTime  @default(now())
+
+  @@map("login_history")
+}
+
+model SecurityLog {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  action      String
+  description String?
+  ip          String?
+  device      String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+
+  @@map("security_logs")
+}
+
+enum AdminType {
+  SUPER_ADMIN
+  BRANCH_ADMIN
+  DEPARTMENT_ADMIN
+}
+
+enum AdminScope {
+  FULL_ACCESS
+  PARTIAL_ACCESS
+  LIMITED_ACCESS
+}
+
+// Improved junction model for Company-Admin relationship
+model CompanyAdmin {
+  id              String         @id @default(cuid())
+  company         Company        @relation(fields: [companyId], references: [id])
+  companyId       String
+  admin           User          @relation(fields: [adminId], references: [id])
+  adminId         String
+  adminType       AdminType     // Different types of admins (SUPER_ADMIN, BRANCH_ADMIN, etc.)
+  
+  // Administrative scope (useful for branch management)
+  scope           AdminScope    @default(FULL_ACCESS)
+  
+  // Audit trail
+  assignedBy      String        // Who assigned this admin role
+  assignedAt      DateTime      @default(now())
+  lastModified    DateTime      @updatedAt
+  
+  @@unique([companyId, adminId]) // Prevent duplicate admin assignments
+  @@map("company_admins")
+}
+
+
+model Company {
+  id                String          @id @default(cuid())
+  name              String
+  legalName         String         // Official registered name
+  registrationNumber String?        // Business registration number
+  vatId             String?        // Tax/VAT identification
+  type              CompanyType    @default(REAL_ESTATE)
+  status            CompanyStatus  @default(ACTIVE)
+  size              CompanySize    @default(SMALL)
+  
+  // Branding
+  logo              String?
+  brandColors       Json[]          // Primary, secondary colors
+  website           String?
+
+  // Public Platform Settings
+  publicProfile   CompanyPublicProfile?
+  //listingSettings CompanyListingSettings?
+  listingCredits  Int
+
+   // Public Stats
+  totalListings   Int                   @default(0)
+  activeListings  Int                   @default(0)
+  totalInquiries  Int                   @default(0)      
+  
+  // Contact & Location
+  emails             String[]
+  phones             String[]
+
+  // Organizational Structure
+  parent            Company?       @relation("Subsidiaries", fields: [parentId], references: [id])
+  parentId          String?
+  subsidiaries      Company[]      @relation("Subsidiaries")
+  departments       Department[]
+  
+  // Teams & Members
+  teams             Team[]
+  admins            CompanyAdmin[]  // Company administrators
+  
+  // Business Settings
+  // settings          CompanySettings?
+  // subscription      Subscription?   @relation("CompanySubscription", fields: [subscriptionId], references: [id])
+  // subscriptionId    String?
+
+  
+
+  // Leads & Deals
+  leads             Lead[]         // Leads belonging to the company
+  // leadActivities    LeadActivity[] // Track company-level actions on leads
+  deals             Deal[]         // Deals executed by the company
+  // dealActivities    DealActivity[] // Track company-level actions on deals
+
+  // Operations
+  properties        Property[]     // Properties owned/managed
+  listings          PublicListing[]      // Active listings
+  transactions      Transaction[]  // Transactions
+  
+  // Compliance & Security
+  licenses          CompanyLicense[]      // Real estate licenses
+  // complianceRecords ComplianceRecord[]
+  auditLogs         AuditLog[]
+  
+  // System Fields
+  createdBy        User           @relation("CompanyCreator", fields: [createdById], references: [id])
+  createdById      String
+  agents           User[]         @relation("CompanyAgent")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?      // Soft delete
+
+  // relations
+  companyAddresses CompanyAddress[]
+  companyCertifications CompanyCertification[]
+  invoices Invoice[]
+  documents Document[]
+  documentTemplate DocumentTemplate[] @relation("CompanyTemplates")
+  billingInfos BillingInfo[]
+  subscriptions Subscription[]
+
+  @@map("companies")
+  TagCategory TagCategory[]
+  TransactionParty TransactionParty[]
+  Note Note[]
+  activity Activity[]
+  Building Building[]
+  LandArea LandArea[]
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  action      String   // Action performed (e.g., "Updated company details")
+  details     Json     // Store specific details about the action, such as old/new values
+  timestamp   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String      // Who performed the action (user ID or system ID)
+  companyId   String      // Foreign key to Company
+  company     Company  @relation(fields: [companyId], references: [id])
+}
+
+model CompanyPublicProfile {
+  id              String    @id @default(cuid())
+  company         Company   @relation(fields: [companyId], references: [id])
+  companyId       String    @unique
+  
+  // Public Profile
+  displayName     String
+  description     String?
+  logo            String?
+  coverImage      String?
+  
+  // Contact Info
+  publicEmail     String?
+  publicPhone     String?
+  website         String?
+  
+  // Social Media
+  socialLinks     Json[]     // Facebook, Twitter, etc.
+  
+  // Verification
+  verified        Boolean   @default(false)
+  verifiedAt      DateTime?
+  
+  // Stats & Ratings
+  rating          Float?
+  reviewCount     Int       @default(0)
+  responseRate    Float?    // Response rate to inquiries
+  responseTime    Int?      // Average response time in minutes
+}
+
+model Department {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  company     Company   @relation(fields: [companyId], references: [id])
+  companyId   String
+  teams       Team[]
+  head        User?     @relation("DepartmentHead", fields: [headId], references: [id])
+  headId      String?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@unique([companyId, name])
+  @@map("departments")
+}
+
+model Team {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  type        TeamType     @default(SALES)
+  status      TeamStatus   @default(ACTIVE)
+  
+  // Organization
+  company     Company      @relation(fields: [companyId], references: [id])
+  companyId   String
+  department  Department?  @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  
+  // Members & Roles
+  members     TeamMember[]
+  createdBy   User         @relation("TeamCreator", fields: [createdById], references: [id])
+  createdById String
+  leader      User         @relation("TeamManager", fields: [leaderId], references: [id])
+  leaderId    String
+  
+  // Operational Areas
+  // territory   Territory?   // Geographical coverage
+  specialties String[]     // Property types, market segments
+  
+  // Goals & Performance
+  // targets     TeamTarget[]
+  // kpis        TeamKPI[]
+  
+  // Collaboration
+  // projects    Project[]
+  tasks       TeamTask[] 
+  teamDocumentAccesses DocumentAccess[]
+  // meetings    Meeting[]
+  
+  // Communication
+  // channels    Channel[]    // Team communication channels
+  
+  // Access Control
+  // permissions TeamPermission[]
+  
+  // Leads & Deals
+  // assignedLeads        Lead[]              @relation("TeamLeads")
+  // assignedDeals        Deal[]              @relation("TeamDeals")
+  // leadActivities       LeadActivity[]      // Log actions on leads
+  // dealActivities       DealActivity[]      // Log actions on deals
+  
+  // System Fields
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  @@unique([companyId, name])
+  @@map("teams")
+  Property Property[]
+  Deal Deal[]
+  Note Note[]
+}
+
+model TeamMember {
+  id          String       @id @default(cuid())
+  team        Team         @relation(fields: [teamId], references: [id])
+  teamId      String
+  user        User         @relation(fields: [userId], references: [id])
+  userId      String
+  role        TeamRole     @default(MEMBER)
+  status      MemberStatus @default(ACTIVE)
+  
+  // Permissions & Access
+  // permissions Json?        // Specific member permissions
+  
+  // Team-specific Settings
+  notifications Boolean    @default(true)
+  availability  Json?      // Working hours, availability
+  
+  // Performance
+  // targets      Target[]
+  // achievements Achievement[]
+  
+  // Dates
+  joinedAt     DateTime    @default(now())
+  leftAt       DateTime?
+  
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+model PublicListing {
+  id              String           @id @default(cuid())
+  property        Property         @relation("PropertyPublicListing", fields: [propertyId], references: [id])
+  propertyId      String
+  company         Company          @relation(fields: [companyId], references: [id])
+  companyId       String
+  
+  // Publishing Status
+  status          ListingStatus    @default(DRAFT)
+  visibility      ListingVisibility @default(PUBLIC)
+  featured        Boolean          @default(false)
+  boostType       BoostType?
+  boostExpiry     DateTime?        // Premium listing expiry
+  
+  // SEO & Discovery
+  slug            String           @unique
+  metaTitle       String?
+  metaDescription String?
+  metaImage       String?
+  searchTags      String[]
+  categories      String[]
+  
+  // Contact & Inquiry Management
+  contactPreference ContactPreference[]
+  inquiries        PublicInquiry[]
+  
+  // Analytics
+  views           Int              @default(0)
+  favorites       Int              @default(0)
+  shares          Int              @default(0)
+  impressions     Int              @default(0)
+  analytics       Json?            // Detailed viewing analytics
+  
+  // Moderation
+  moderationStatus ModerationStatus @default(PENDING)
+  moderationNotes  String?
+  lastModeratedAt DateTime?
+  
+  // System Fields
+  publishedAt     DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("public_listings")
+}
+
+model PublicAccess {
+  id                String    @id @default(cuid())
+  property          Property  @relation(fields: [propertyId], references: [id])
+  propertyId        String
+  
+  // Visibility Control
+  showPrice         Boolean   @default(true)
+  showAddress       Boolean   @default(false)
+  showContact       Boolean   @default(true)
+  showViews         Boolean   @default(true)
+  
+  // Regional Restrictions
+  geographicalRestrictions String? // Example: "US Only" or country codes
+  
+  // Additional Customizations
+  customMessage     String?
+  requireLogin      Boolean   @default(false)
+  allowInquiry      Boolean   @default(true)
+}
+
+model PublicInquiry {
+  id              String    @id @default(cuid())
+  listing         PublicListing @relation(fields: [listingId], references: [id])
+  listingId       String
+  property        Property  @relation(fields: [propertyId], references: [id])
+  propertyId      String
+  
+  // Inquirer Details
+  name            String
+  email           String
+  phone           String?
+  message         String
+  
+  // Tracking
+  source          String?   // Where the inquiry came from
+  status          InquiryStatus @default(NEW)
+  assignedTo      User?     @relation("AssignedInquiries", fields: [assignedToId], references: [id])
+  assignedToId    String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Building {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  address     String?
+  floors      Int?
+  company     Company   @relation(fields: [companyId], references: [id])
+  companyId   String
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  properties Property[]
+}
+
+model LandArea {
+  id          String    @id @default(cuid())
+  company     Company   @relation(fields: [companyId], references: [id])
+  companyId   String
+  area        Float
+  unit        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  properties Property[]
+}
+
+model Property {
+  id                String          @id @default(cuid())
+  referenceNumber   String          @unique // Internal reference number
+  title             String
+  slug              String          @unique
+  status            PropertyStatus  @default(DRAFT)
+  type              PropertyType
+  category          PropertyCategory
+  listingType       ListingType     // SALE, RENT, BOTH
+
+  // Visibility & Access
+  isListed        Boolean        @default(false)
+  publicAccess    PublicAccess[]
+
+  buildingId  String?
+  building    Building?  @relation(fields: [buildingId], references: [id])
+  landAreaId  String?
+  landArea    LandArea?  @relation(fields: [landAreaId], references: [id])
+
+// Add public interaction tracking
+  publicViews     Int             @default(0)
+  publicInquiries PublicInquiry[]
+  // publicLeads     Lead[]
+  
+  // Basic Details
+  description       PropertyDescription? // Separate model for multi-language support
+  yearBuilt         Int?
+  totalArea         Float            // in square meters
+  buildUpArea       Float?           // in square meters
+  plotArea          Float?           // for lands/villas
+  floors            Int?
+  currentFloor      Int?             // for apartments
+  bedrooms          Int?
+  bathrooms         Int?
+  parkingSpaces     Int?
+  furnished         FurnishType?
+  orientation       Direction?       // N, S, E, W, etc.
+  
+  // Location Information
+  location  Location? @relation("PropertyLocation")
+  
+  // Financial Details
+  pricing           PropertyPricing?
+  // valuations        PropertyValuation[]
+  transactions      Transaction[]
+  
+  // Features & Amenities
+  // features          PropertyFeature[]
+  // amenities         PropertyAmenity[]
+  // utilities         PropertyUtility[]
+  
+  // Media & Virtual Experience
+  mediaGallery      MediaGallery?   @relation("PropertyMedia")
+  virtualTours      VirtualTour[]
+  floorPlans        FloorPlan[]
+  // arExperiences     ARExperience[]   // AR experiences
+  // vrTours           VRTour[]         // VR tours
+  // floorPlans        FloorPlan[]      // 2D and 3D floor plans
+
+  // Environmental & Sustainability
+  sustainability    Sustainability?
+  // energyDetails     EnergyDetails?
+  certifications    PropertyCertification[]
+  
+  // Property History & Maintenance
+  // history           PropertyHistory[]
+  // maintenance       MaintenanceRecord[]
+  // inspections       PropertyInspection[]
+  // renovations       RenovationRecord[]
+  
+  // External Listings
+  // externalListings  ExternalListing[] // Bayut, etc.
+  
+  // Management & Access
+  company           Company          @relation(fields: [companyId], references: [id])
+  companyId         String
+  listedBy          User             @relation(fields: [listedById], references: [id])
+  listedById        String
+  team              Team?            @relation(fields: [teamId], references: [id])
+  teamId            String?
+  
+  // Client Interaction
+  // viewings          PropertyViewing[]
+  favoredByContacts Contact[]         @relation("ContactFavorites")
+  owner             Contact[]         @relation("PropertyOwner")
+  interestedContacts Contact[]       @relation("InterestedContacts")
+  publicListings PublicListing[] @relation("PropertyPublicListing")
+  
+  // Analytics & Insights
+  viewCount         Int              @default(0)
+  favoriteCount     Int              @default(0)
+  inquiryCount      Int              @default(0)
+  lastViewedAt      DateTime?
+  
+  // System Fields
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+
+  propertyAddress PropertyAddress?
+  
+  @@map("properties")
+  PropertyTask PropertyTask[]
+  PropertyTag PropertyTag[]
+  PropertyHistory PropertyHistory[]
+}
+
+model PropertyDescription {
+  id               String    @id @default(cuid())
+  property         Property  @relation(fields: [propertyId], references: [id])
+  propertyId       String    @unique
+  title            Json      // Multi-language titles
+  description      Json      // Multi-language descriptions
+  features         Json      // Multi-language feature lists
+  searchKeywords   String[]  // SEO keywords
+  metaDescription  String?   // SEO meta description
+}
+
+model MediaGallery {
+  id              String     @id @default(cuid())
+  property        Property   @relation("PropertyMedia", fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId      String     @unique
+  
+  // Media Relations
+  galleryMedia    MediaItem[]
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model MediaItem {
+  id              String        @id @default(cuid())
+  mediaGallery    MediaGallery? @relation(fields: [galleryId], references: [id])
+  galleryId       String?
+  
+  // Core Media Info
+  type            MediaType     // IMAGE, VIDEO, DRONE
+  url             String        // Main media URL
+  thumbnailUrl    String?       // Thumbnail for videos
+  
+  // Media Details
+  title           String?
+  description     String?
+  size            Int?          // File size in bytes
+  duration        Int?          // For videos (in seconds)
+  dimension       Json?         // {width: number, height: number}
+  format          String?       // File format (jpg, png, mp4, etc.)
+  
+  // Media Usage
+  purpose         MediaPurpose  // GALLERY, WALKTHROUGH, AERIAL, DRONE
+  sorting         Int          @default(0) // For ordering
+  featured        Boolean      @default(false)
+  
+  
+  // Metadata
+  metadata        Json?         // EXIF, technical details
+  tags            String[]      // Searchable tags
+  
+  // Analytics
+  views           Int          @default(0)
+  lastAccessed    DateTime?
+  
+  // System Fields
+  uploadedBy      User         @relation(fields: [uploadedById], references: [id])
+  uploadedById    String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+
+  @@index([galleryId, type])
+  @@index([purpose, sorting])
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DRONE
+}
+
+enum MediaPurpose {
+  MAIN
+  GALLERY
+  WALKTHROUGH
+  AERIAL
+  DRONE
+  FLOOR_PLAN
+  DOCUMENT
+}
+
+model VirtualTour {
+  id              String    @id @default(cuid())
+  property        Property  @relation(fields: [propertyId], references: [id])
+  propertyId      String
+  type            TourType  // MATTERPORT, etc.
+  url             String
+  embedCode       String?
+  thumbnail       String?
+  accessControl   Json?     // Viewing restrictions
+  analytics       Json?     // View statistics
+  createdAt       DateTime  @default(now())
+}
+
+model FloorPlan {
+  id              String        @id @default(cuid())
+  property        Property      @relation(fields: [propertyId], references: [id])
+  propertyId      String
+  level           Int
+  name            String
+  type            FloorPlanType // 2D, 3D
+  area            Float
+  rooms           Json          // Room details
+  image2D         String?       // URL to 2D plan
+  model3D         String?       // URL to 3D model
+  interactiveData Json?         // Interactive elements
+  createdAt       DateTime      @default(now())
+}
+
+model Sustainability {
+  id                   String    @id @default(cuid())
+  property             Property  @relation(fields: [propertyId], references: [id])
+  propertyId           String    @unique
+  
+  // Energy Efficiency
+  energyRating         String?
+  solarPanels          Boolean   @default(false)
+  solarCapacity        Float?    // in kW
+  
+  // Water Management
+  waterRecycling       Boolean   @default(false)
+  rainwaterHarvesting  Boolean   @default(false)
+  
+  // Green Features
+  greenBuildingRating  String?
+  carbonFootprint      Float?    // CO2 emissions
+  greenSpaceArea      Float?    // in square meters
+  
+  // Smart Systems
+  smartMetering        Boolean   @default(false)
+  smartIrrigation      Boolean   @default(false)
+  
+  // Certifications
+  certifications       String[]  // LEED, BREEAM, etc.
+}
+
+model Location {
+  id              String    @id @default(cuid())
+  
+  // Basic Address Fields
+  streetNumber    String?
+  streetName      String
+  unit            String?   // Apartment/Suite number
+  floor           String?   // Floor number
+  building        String?   // Building name
+  district        String?   // District/neighborhood
+  city            String
+  state           String?
+  postalCode      String?
+  country         String
+
+  // Property-Specific Fields
+  zoningType      String?   // Residential, Commercial, Mixed-Use
+  landArea        Float?    // In square meters
+  floorArea       Float?    // For buildings/apartments
+  propertyType    PropertyType // Enum: House, Apartment, Office, etc.
+  nearbyLandmarks String[]  // Array of nearby landmarks
+  transitAccess   String?   // Proximity to public transit
+  
+  // Geospatial Coordinates
+  latitude        Float
+  longitude       Float
+
+  // Mapping Integrations
+  formattedAddress String?  // Full formatted address
+  googlePlaceId    String?  // Google Maps integration
+  whatThreeWords   String?  // What3Words location reference
+
+  // Verification
+  isVerified      Boolean   @default(false)
+  verifiedAt      DateTime?
+  verifiedBy      User?     @relation("LocationVerifier", fields: [verifiedById], references: [id])
+  verifiedById    String?
+  property        Property @relation( "PropertyLocation", fields: [propertyId], references: [id])
+  propertyId      String   @unique
+
+
+  // System Fields
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  @@index([city, country])
+  @@index([latitude, longitude])
+  @@map("locations")
+}
+
+
+model PropertyPricing {
+  id                String    @id @default(cuid())
+  property          Property  @relation(fields: [propertyId], references: [id])
+  propertyId        String    @unique
+  
+  // Base Pricing
+  listPrice         Decimal
+  currency          String
+  pricePerSqM       Decimal
+  
+  // Dynamic Pricing
+  dynamicPricing    Boolean   @default(false)
+  priceHistory      Json[]    // Historical price points
+  pricingFactors    Json?     // Factors affecting price
+  
+  // Rental Details
+  rentalPrice       Decimal?
+  rentalPeriod      RentalPeriod?
+  minimumRental     Int?      // Minimum rental period
+  
+  // Additional Costs
+  maintenanceFee    Decimal?
+  serviceCharge     Decimal?
+  depositRequired   Decimal?
+  
+  // Payment Terms
+  // paymentPlans      PaymentPlan[]
+  // acceptedPayments  PaymentMethod[]
+}
+
+model PropertyHistory {
+  id              String           @id @default(cuid())
+  property        Property         @relation(fields: [propertyId], references: [id])
+  propertyId      String           @unique  
+  date            DateTime
+  eventType       PropertyEventType
+  description     String
+  changedBy       User             @relation(fields: [changedById], references: [id])
+  changedById     String
+  previousValues  Json[]            // Store changed values
+  // documents       Document[]
+}
+
+enum PlanStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+model Plan {
+  id                String          @id @default(cuid())
+  name              String          @unique
+  displayName       String
+  description       String
+  type              PlanType
+  category          PlanCategory    @default(STANDARD)
+  status            PlanStatus      @default(ACTIVE)
+  
+  // Pricing Structure
+  basePrice         Decimal
+  billingCycle      BillingCycle    @default(MONTHLY)
+  currency          String          @default("USD")
+  trialDays         Int             @default(0)
+  setupFee          Decimal?        // One-time setup fee
+  
+  // Usage & Limits
+  features          PlanFeature[]
+  limits            PlanLimit[]
+  addons            PlanAddon[]
+  
+  // Customization
+  isCustomizable    Boolean         @default(false)
+  customFields      Json?           // Custom plan attributes
+  
+  // Valid Periods
+  validFrom         DateTime        @default(now())
+  validUntil        DateTime?
+  
+  // Relationships
+  subscriptions     Subscription[]
+  // migrations        PlanMigration[] @relation("FromPlan")
+  // migrationsTo      PlanMigration[] @relation("ToPlan")
+  
+  // System Fields
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+
+  @@map("plans")
+}
+
+model PlanFeature {
+  id               String         @id @default(cuid())
+  plan             Plan           @relation(fields: [planId], references: [id])
+  planId           String
+  feature          Feature        @relation(fields: [featureId], references: [id])
+  featureId        String
+  
+  // Feature Settings
+  isEnabled        Boolean        @default(true)
+  customLimits     Json?          // Feature-specific limits
+  settings         Json?          // Feature-specific settings
+  
+  @@unique([planId, featureId])
+  @@map("plan_features")
+}
+
+model Feature {
+  id               String         @id @default(cuid())
+  key              String         @unique // Technical key
+  name             String         // Display name
+  description      String
+  category         FeatureCategory
+  type             FeatureType
+  defaultLimit     Int?
+  unit            String?        // Unit of measurement
+  planFeatures     PlanFeature[]
+  
+  @@map("features")
+}
+
+model PlanLimit {
+  id              String         @id @default(cuid())
+  plan            Plan           @relation(fields: [planId], references: [id])
+  planId          String
+  resource        String         // What's being limited
+  limit           Int           // Maximum allowed
+  unit            String        // Unit of measurement
+  // period          LimitPeriod?  // Time period if applicable
+  
+  @@unique([planId, resource])
+  @@map("plan_limits")
+}
+
+model Subscription {
+  id                String            @id @default(cuid())
+  plan              Plan              @relation(fields: [planId], references: [id])
+  planId            String
+  company           Company           @relation(fields: [companyId], references: [id])
+  companyId         String
+  status            SubscriptionStatus @default(ACTIVE)
+  cancellationReason String?          // Reason for cancellation, if any
+  
+  // Billing Details
+  billingCycle      BillingCycle
+  basePrice         Decimal          // Actual price for this subscription
+  currency          String
+  discounts         Discount[]
+  addons            SubscriptionAddon[]
+  
+  // Usage Tracking
+  currentUsage      Json             // Current resource usage
+  usageHistory      UsageRecord[]
+  
+  // Important Dates
+  startDate         DateTime
+  endDate           DateTime?
+  trialEndDate      DateTime?
+  nextBillingDate   DateTime
+  canceledAt        DateTime?
+  
+  // Billing Contact
+  billingContact    Contact?         @relation(fields: [billingContactId], references: [id])
+  billingContactId  String?
+  
+  // Payment Details
+  paymentMethod     PaymentMethod?   @relation(fields: [paymentMethodId], references: [id])
+  paymentMethodId   String?
+  
+  // Related Records
+  invoices          SubscriptionInvoice[]
+  // transactions      Transaction[]
+  
+  // System Fields
+  metadata          Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@map("subscriptions")
+}
+
+model BillingInfo {
+  id                String          @id @default(cuid())
+  company           Company         @relation(fields: [companyId], references: [id])
+  companyId         String          @unique
+
+  // Address
+  billingAddress    String
+  city              String
+  state             String
+  postalCode        String
+  country           String
+  
+  // Payment Method
+  paymentMethods        PaymentMethod[] @relation(name: "BillingPaymentMethods")
+
+  // Tax Configuration
+  taxId             String?         // GST, VAT, etc.
+  taxRate           Decimal?
+
+  // System Fields
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+
+enum DiscountAppliesTo {
+  PLAN
+  ADDON
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model Discount {
+  id                String          @id @default(cuid())
+  name              String          // A descriptive name for the discount
+  description       String?         // Optional detailed description
+  type              DiscountType    // Enum to specify the type of discount (percentage, fixed)
+  value             Decimal         // The actual value of the discount (e.g., 15% or $10)
+  appliesTo         DiscountAppliesTo // Enum to specify what the discount applies to (e.g., plan, addon)
+  startDate         DateTime        // When the discount becomes active
+  endDate           DateTime?       // Optional end date for the discount
+  isActive          Boolean         @default(true) // Status of the discount
+  maxRedemptions    Int?            // Optional max number of times the discount can be used
+  currentRedemptions Int            @default(0)    // Track the number of times it has been redeemed
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  subscription Subscription[]
+
+  @@map("discounts")
+  
+}
+
+model SubscriptionAddon {
+  id              String       @id @default(cuid())
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id])
+  subscriptionId  String
+  addon           PlanAddon    @relation(fields: [addonId], references: [id])
+  addonId         String
+  quantity        Int          @default(1)
+  price           Decimal
+  startDate       DateTime     @default(now())
+  endDate         DateTime?
+  
+  @@map("subscription_addons")
+}
+
+enum AddonType {
+  PERMANENT
+  TEMPORARY
+}
+
+model PlanAddon {
+  id              String              @id @default(cuid())
+  plan            Plan                @relation(fields: [planId], references: [id])
+  planId          String
+  name            String
+  description     String
+  price           Decimal
+  type            AddonType
+  limits          Json?               // Addon-specific limits
+  features        Json?               // Addon-specific features
+  subscriptions   SubscriptionAddon[]
+  
+  @@map("plan_addons")
+}
+
+model Invoice {
+  id                String          @id @default(cuid())
+  number            String          @unique
+  company           Company         @relation(fields: [companyId], references: [id])
+  companyId         String
+  transaction      Transaction     @relation(fields: [transactionId], references: [id])
+  transactionId    String          @unique
+  
+  // Amounts
+  subtotal          Decimal
+  tax              Decimal
+  discount         Decimal         @default(0)
+  total            Decimal
+  currency         String
+  
+  // Status
+  status           InvoiceStatus   @default(DRAFT)
+  dueDate          DateTime
+  paidAt           DateTime?
+  
+  // Line Items
+  items            InvoiceItem[]
+  
+  // System Fields
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@map("invoices")
+  SubscriptionInvoice SubscriptionInvoice[]
+  TransactionInvoice TransactionInvoice[]
+}
+
+model InvoiceItem {
+  id              String       @id @default(cuid())
+  invoice         Invoice      @relation(fields: [invoiceId], references: [id])
+  invoiceId       String
+  name            String
+  description     String
+  quantity        Int
+  unitPrice       Decimal
+  total           Decimal
+  currency        String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("invoice_items")
+}
+
+model SubscriptionInvoice {
+  id              String       @id @default(cuid())
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id])
+  subscriptionId  String
+  invoice         Invoice      @relation(fields: [invoiceId], references: [id])
+  invoiceId       String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("subscription_invoices")
+}
+
+model TransactionInvoice {
+  id              String       @id @default(cuid())
+  transaction     Transaction  @relation(fields: [transactionId], references: [id])
+  transactionId   String
+  invoice         Invoice      @relation(fields: [invoiceId], references: [id])
+  invoiceId       String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("transaction_invoices")
+}
+
+model UsageRecord {
+  id              String       @id @default(cuid())
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id])
+  subscriptionId  String
+  resource        String       // Resource used
+  quantity        Int          // Quantity used
+  timestamp       DateTime     @default(now())
+  metadata        Json?
+  
+  @@map("usage_records")
+}
+
+model PaymentMethod {
+  id          String       @id @default(cuid())
+  type        PaymentType
+  details     Json         // Payment method-specific details
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // relationships
+  Subscription Subscription[]
+
+  @@map("payment_methods")
+  BillingInfo BillingInfo[] @relation(name: "BillingPaymentMethods")
+}
+
+enum PaymentType {
+  CREDIT_CARD
+  BANK_TRANSFER
+  CRYPTO
+  CASH
+  DEBIT_CARD
+  CHECK
+  FINANCING
+}
+
+model NotificationSetting {
+  id          String                @id @default(cuid())
+  user        User                  @relation("UserNotificationSettings", fields: [userId], references: [id], onDelete: Cascade)
+  userId      String                @unique
+  type        NotificationType
+  channel     NotificationPreference
+  enabled     Boolean               @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@unique([userId, type])
+  @@map("notification_settings")
+}
+
+model Notification {
+  id            String           @id @default(cuid())       // Unique ID for the notification
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String                                   // Reference to the recipient
+  title         String                                   // Notification title
+  message       String                                   // Body of the notification
+  type          NotificationType                        // Enum for notification type (e.g., ALERT, REMINDER)
+  channel       NotificationChannel                     // Enum for delivery channel (e.g., EMAIL, SMS, IN_APP)
+  priority      Priority                                // Enum for notification priority (e.g., HIGH, MEDIUM, LOW)
+  isRead        Boolean          @default(false)        // Whether the notification has been read
+  metadata      Json? 
+  scheduledFor  DateTime?                                 // Additional metadata (e.g., links, related entities)
+  sentAt        DateTime         @default(now())        // Timestamp when the notification was sent
+  readAt        DateTime?                                 // Timestamp when the notification was read
+
+  @@map("notifications")
+}
+
+enum LicenseStatus {
+  ACTIVE          // License is valid and in use
+  PENDING         // Waiting for approval/verification
+  EXPIRED         // Past expiry date
+  SUSPENDED       // Temporarily invalid
+  REVOKED         // Permanently invalidated
+  RENEWAL_PENDING // In process of renewal
+}
+
+model License {
+  id          String      @id @default(cuid())
+  type        String
+  number      String
+  issuedBy    String
+  issuedDate  DateTime
+  expiryDate  DateTime
+  status      LicenseStatus
+  document    Document?   @relation(fields: [documentId], references: [id])
+  documentId  String?
+
+  // relationships
+  userLicenses UserLicense[]
+  companyLicenses CompanyLicense[]
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("licenses")
+}
+
+model UserLicense {
+  id          String      @id @default(cuid())
+  profileId   String      @unique
+  userProfile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  licenseId   String
+  license     License     @relation(fields: [licenseId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("user_licenses")
+}
+
+model CompanyLicense {
+  id          String      @id @default(cuid())
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  license     License     @relation(fields: [licenseId], references: [id])
+  licenseId   String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("company_licenses")
+}
+
+enum CertificateType {
+  PASSPORT
+  DRIVER_LICENSE
+  ID_CARD
+  TAX_CERTIFICATE
+  OTHER
+}
+
+model Certification {
+  id          String      @id @default(cuid())
+  type        CertificateType
+  description String
+  number      String
+  issuedBy    String
+  issuedDate  DateTime
+  expiryDate  DateTime
+  document    Document?   @relation(fields: [documentId], references: [id])
+  documentId  String?
+
+  // relationships
+  userCertifications UserCertification[]
+  companyCertifications CompanyCertification[]
+  propertyCertifications PropertyCertification[]
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("certifications")
+}
+
+model UserCertification {
+  id          String      @id @default(cuid())
+  profileId   String      @unique
+  userProfile UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  certification Certification @relation(fields: [certificationId], references: [id])
+  certificationId String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("user_certifications")
+}
+
+model CompanyCertification {
+  id          String      @id @default(cuid())
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  certification Certification @relation(fields: [certificationId], references: [id])
+  certificationId String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("company_certifications")
+}
+
+model PropertyCertification {
+  id          String      @id @default(cuid())
+  property    Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+  certification Certification @relation(fields: [certificationId], references: [id])
+  certificationId String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("property_certifications")
+}
+
+enum AddressType {
+  HEAD_OFFICE
+  BRANCH_OFFICE
+  SALES_OFFICE
+  WAREHOUSE
+  SATELLITE_OFFICE
+  DEVELOPMENT_SITE
+}
+
+model BaseAddress {
+  id              String    @id @default(cuid())
+  type            AddressType
+  isPrimary       Boolean   @default(false)
+  isVerified      Boolean   @default(false)
+
+  // Basic Address Fields
+  streetNumber    String?
+  streetName      String
+  unit           String?   // Apartment/Suite number
+  floor          String?   // Floor number (important for luxury apartments)
+  building       String?   // Building name
+  district       String?   // District/neighborhood
+  city           String
+  state          String?
+  postalCode     String?
+  country        String
+  
+  // Additional Details
+  landmark       String?   // Nearby landmark
+  directions     String?   // Additional directions
+  
+  // Coordinates (for mapping)
+  latitude       Float?
+  longitude      Float?
+  
+  // Additional Metadata
+  formattedAddress String?  // Full formatted address
+  googlePlaceId    String?  // For Google Maps integration
+  whatThreeWords   String?  // What3Words location reference
+  
+  // Verification
+  verifiedAt     DateTime?
+  verifiedBy     User?     @relation("AddressVerifier", fields: [verifiedById], references: [id])
+  verifiedById   String?
+
+  // For billing/shipping addresses
+  // transactionParties TransactionParty[]
+  
+  // System fields
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  userAddress UserAddress[]
+  companyAddresses CompanyAddress[]
+  propertyAddress PropertyAddress[]
+
+  @@index([city, country])
+  @@index([latitude, longitude])
+  @@map("addresses")
+  
+}
+
+model UserAddress {
+  id              String    @id @default(cuid())
+  // Relation to base address
+  addressId     String      @unique
+  address       BaseAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  
+  // Relation to user
+  profileId  String      @unique
+  userProfile   UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  // User-specific address fields
+  isPrimary       Boolean   @default(false)
+
+  // System fields
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  @@map("user_addresses")
+}
+
+model CompanyAddress {
+  id            String      @id @default(cuid())
+  
+  // Relation to base address
+  addressId     String      @unique
+  address       BaseAddress @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  
+  // Relation to company
+  companyId     String
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // Company-specific address fields
+  type          AddressType @default(HEAD_OFFICE)
+  isPrimary     Boolean     @default(false)
+  officeHours   Json?       // Store opening hours for each day
+  contactPerson String?
+  contactPhone  String?
+  
+  // System fields
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("company_addresses")
+}
+
+model PropertyAddress {
+  id              String    @id @default(cuid())
+  property        Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId      String    @unique
+  address         BaseAddress   @relation(fields: [addressId], references: [id])
+  addressId       String   
+
+  // System fields
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("property_addresses")
+}
+
+enum LeadType {
+  BUYER
+  SELLER
+  RENTER
+  LANDLORD
+  TENANT
+  OTHER
+}
+
+enum LeadSource {
+  LISTING
+  WEBSITE
+  FACEBOOK
+  LINKEDIN
+  INSTAGRAM
+  YOUTUBE
+  TWITTER
+  GOOGLE
+  YAHOO
+  MANUAL
+  OTHER
+}
+
+enum LeadPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model Lead {
+  id                String          @id @default(cuid())
+  referenceNumber   String          @unique // Internal reference
+  status            LeadStatus      @default(NEW)
+  priority          LeadPriority    @default(MEDIUM)
+  source            LeadSource
+  campaign          String?         // Marketing campaign source
+
+  // Lead Details
+  type              LeadType        // BUYER, SELLER, RENTER, etc.
+  requirements      LeadRequirement?
+  // timeframe         TimeFrame?      // Buying/Selling timeframe
+
+  // Contact Information
+  contact           Contact         @relation(fields: [contactId], references: [id])
+  contactId         String          @unique
+  
+  // Assignment & Ownership
+  company           Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId         String
+  collaborators     LeadCollaborator[]
+
+  // Related Records
+  // properties        LeadProperty[]  // Interested/Viewed properties
+  deals             Deal[]          // Associated deals
+  activities        LeadActivity[]  // All lead-related activities
+  notes             Note[]          // Internal notes
+
+  // Communication
+  // interactions      Interaction[]   // All communications
+  // followUps         FollowUp[]      // Scheduled follow-ups
+  // reminders         Reminder[]      // Team reminders
+
+  // Tracking & Analytics
+  score             Int             @default(0)    // Lead score
+  probability       Float           @default(0)    // Conversion probability
+  conversionValue   Decimal?        // Potential value
+  analytics         Json?           // Engagement metrics
+
+  // System Fields
+  createdBy        User            @relation("LeadCreator", fields: [createdById], references: [id])
+  createdById      String
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  convertedAt      DateTime?       // When converted to deal
+  lastContactedAt  DateTime?       // Last interaction
+  nextFollowUp     DateTime?       // Next scheduled contact
+  closedAt         DateTime?       // When closed/lost
+  closureReason    String?         // Why won/lost
+  @@map("leads")
+  LeadTag LeadTag[]
+  Budget Budget[]
+  Task Task[] @relation("LeadTasks")
+}
+
+model Budget {
+  id              String    @id @default(cuid())
+
+  // Budget Range
+  minAmount       Float     // Minimum budget amount
+  maxAmount       Float?    // Optional maximum budget amount (null if no upper limit)
+
+  // Currency
+  currency        String    // ISO 4217 currency code (e.g., "USD", "AED", "EUR")
+
+  // Additional Metadata
+  isFlexible      Boolean   @default(false) // Whether the budget is negotiable/flexible
+  note            String?   // Notes about the budget (e.g., specific conditions)
+
+  // Relations
+  lead            Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId          String?
+
+  // System Fields
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model LeadRequirement {
+  id              String    @id @default(cuid())
+  lead            Lead      @relation(fields: [leadId], references: [id])
+  leadId          String    @unique
+
+  // Property Requirements
+  propertyTypes   PropertyType[]
+  minBedrooms     Int?
+  maxBedrooms     Int?
+  minBathrooms    Int?
+  maxBathrooms    Int?
+  minArea         Float?    // in square meters
+  maxArea         Float?
+
+  // Location Preferences
+ // preferredLocations Address[]
+  preferredAreas    String[]
+
+  // Amenities & Features
+  mustHaveFeatures  String[]
+  preferredFeatures String[]
+
+  // Additional Requirements
+  furnishingType   FurnishType?
+  readyToMove      Boolean?
+  parkingSpaces    Int?
+  specificRequirements String?
+
+  @@index([minBedrooms, maxBedrooms, preferredAreas])
+}
+
+enum CollaboratorRole {
+  LEAD_OWNER        // Primary owner of the lead
+  LEAD_MANAGER      // Can manage all aspects of the lead
+  SALES_AGENT       // Primary sales responsibilities
+  ASSISTANT         // Supporting role with limited permissions
+  SPECIALIST        // Subject matter expert (legal, finance, etc.)
+  VIEWER           // Read-only access
+  TEMPORARY_ACCESS  // Time-limited access
+}
+
+model LeadCollaborator {
+  id              String         @id @default(cuid())
+  lead            Lead           @relation(fields: [leadId], references: [id])
+  leadId          String
+  user            User           @relation("UserLeadCollaborator", fields: [userId], references: [id])
+  userId          String
+  role            CollaboratorRole
+  permissions     Permission[]
+  assignedAt      DateTime       @default(now())
+
+  @@unique([leadId, userId])
+}
+
+model Permission {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  code        String    @unique  // Machine-readable code
+  description String?
+  category    PermissionCategory
+  
+  // Relations
+  collaborators LeadCollaborator[]
+  
+  // Audit fields
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("permissions")
+}
+
+enum PermissionCategory {
+  VIEW        // Reading permissions
+  EDIT        // Modification permissions
+  DELETE      // Deletion permissions
+  MANAGE      // Administrative permissions
+  SHARE       // Sharing permissions
+  COMMUNICATE // Communication permissions
+}
+
+enum DealStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum DealType {
+  SELL
+  BUY
+  RENT
+  LEASE
+}
+
+model Deal {
+  id              String        @id @default(cuid())
+  referenceNumber String        @unique
+  type            DealType
+  status          DealStatus    @default(DRAFT)
+  stage           DealStage     @default(AGREEMENT)
+
+  // Deal Details
+  leadSource      Lead?         @relation(fields: [leadId], references: [id])
+  leadId          String?
+  dealPricing  DealPricing? 
+
+  // commission      Commission?
+
+  // Parties Involved
+  company         Company       @relation(fields: [companyId], references: [id])
+  companyId       String
+  team            Team?         @relation(fields: [teamId], references: [id])
+  teamId          String?
+  parties         DealParty[]   // Buyers, sellers, agents, etc.
+
+  // Process Management
+  // timeline        DealTimeline?
+  // milestones      Milestone[]
+  activities      Activity[]
+  // documents       DealDocument[]
+
+  // Compliance & Legal
+  // compliance      Compliance?
+  // legalChecks     LegalCheck[]
+
+  // Communications
+  // communications  Communication[]
+  notes           Note[]
+  dealTag DealTag[]
+  installmentPlan InstallmentPlan[]
+
+  // System Fields
+  createdBy      String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  closedAt       DateTime?
+  canceledAt     DateTime?
+  cancelReason   String?
+  dealTasks Task[] @relation("DealTasks")
+
+  @@index([companyId, teamId])
+  @@map("deals")
+  
+  DealActivity DealActivity[] 
+}
+
+model DealPricing {
+  id              String    @id @default(cuid())
+  deal            Deal      @relation(fields: [dealId], references: [id])
+  dealId          String    @unique
+
+  // Price Details
+  listPrice       Decimal
+  offeredPrice    Decimal?
+  finalPrice      Decimal?
+  currency        String
+
+  // Payment Structure
+  paymentType     PaymentType
+  // paymentPlan     PaymentPlan?
+  // deposits        Deposit[]
+  // installments    Installment[]
+
+  // Additional Costs
+  taxes           Decimal?
+  // fees            Fee[]
+  totalCost       Decimal?
+
+  // Financing
+  //  mortgageDetails MortgageDetail?
+  // financing       FinancingDetail?
+}
+
+enum PartyType {
+  BUYER
+  SELLER
+  AGENT
+  TENANT
+  LANDLORD
+  OTHER
+}
+
+enum VerificationStatus {
+  VERIFIED
+  UNVERIFIED
+  PENDING
+}
+
+enum PartyRole {
+  BUYER
+  SELLER
+  AGENT
+  TENANT
+  LANDLORD
+  OTHER
+}
+
+model DealParty {
+  id              String     @id @default(cuid())
+  deal            Deal       @relation(fields: [dealId], references: [id])
+  dealId          String
+  type            PartyType  // BUYER, SELLER, AGENT, etc.
+
+  // Party Details
+  contact         Contact    @relation(fields: [contactId], references: [id])
+  contactId       String
+  role            PartyRole
+
+  // Requirements
+  documents       Document[]
+  // tasks           Task[]
+
+  // Legal & Compliance
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedAt      DateTime?
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+enum PaymentProvider {
+  STRIPE      // For Stripe payments
+  PAYPAL      // For PayPal payments
+  RAZORPAY    // For Razorpay payments
+  SQUARE      // For Square payments
+  APPLE_PAY   // For Apple Pay
+  GOOGLE_PAY  // For Google Pay
+}
+
+model Transaction {
+  id                String            @id @default(cuid())
+  referenceNumber   String            @unique // Unique transaction reference
+  type              TransactionType
+  status            TransactionStatus @default(PENDING)
+  stage             TransactionStage  @default(INQUIRY)
+  amount            Decimal
+  currency          String
+  description       String?
+  
+  // Related Entities
+  company           Company           @relation(fields: [companyId], references: [id])
+  companyId         String
+  property          Property?         @relation(fields: [propertyId], references: [id])
+  propertyId        String?
+
+  // Payment Details
+  paymentProvider   PaymentProvider?
+  providerReference String?           // Reference from payment provider
+  paymentDetails    PaymentDetail?
+
+  // Transaction Parties
+  // payer             TransactionParty? @relation("Payer")
+  // payee             TransactionParty? @relation("Payee")
+  
+  // Related Records
+  receipts          Receipt[]         // Payment receipts
+  refunds           Refund[]          // Any refunds
+  disputes          Dispute[]         // Payment disputes
+  
+  // Installment Information
+  installmentPlan   InstallmentPlan?  @relation(fields: [planId], references: [id])
+  planId            String?
+  installmentNumber Int?              // If part of installment plan
+
+  // Documents
+  documents         TransactionDocument[]
+  invoice           Invoice?          // Generated invoice
+  //contracts         Contract[]
+  
+  // Compliance & Verification
+  verified          Boolean           @default(false)
+  verifiedBy        User?             @relation(fields: [verifiedById], references: [id])
+  verifiedById      String?
+  verifiedAt        DateTime?
+  
+  // Important Dates
+  initiatedAt       DateTime          @default(now())
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  
+  // Additional Details
+  terms             Json?             // Specific terms and conditions
+  notes             TransactionNote[]
+  metadata          Json?             // Additional transaction metadata
+
+  transactionTags TransactionTag[]
+  transactionInvoice TransactionInvoice[]
+  payeeTransactionParty TransactionParty[] @relation("Payee")
+  payerTransactionParty TransactionParty[] @relation("Payer")
+  
+  // System Fields
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  deletedAt         DateTime?
+
+  @@map("transactions")
+}
+
+model TransactionDocument {
+  id              String       @id @default(cuid())
+  transaction     Transaction  @relation(fields: [transactionId], references: [id])
+  transactionId   String
+  document        Document     @relation(fields: [documentId], references: [id])
+  documentId      String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("transaction_documents")
+}
+
+model TransactionNote {
+  id              String       @id @default(cuid())
+  transaction     Transaction  @relation(fields: [transactionId], references: [id])
+  transactionId   String
+  note           Note         @relation(fields: [noteId], references: [id])
+  noteId         String
+
+  @@map("transaction_notes")
+}
+
+// model Contract {
+//   id              String       @id @default(cuid())
+//   transaction     Transaction  @relation(fields: [transactionId], references: [id])
+//   transactionId   String
+//   type            String       // e.g., "SALE", "LEASE", "MORTGAGE"
+//   status          String       // e.g., "DRAFT", "ACTIVE", "TERMINATED"
+//   content         Json         // Contract terms and conditions
+//   startDate       DateTime
+//   endDate         DateTime?
+//   document        Document?    @relation(fields: [documentId], references: [id])
+//   documentId      String?
+//   createdAt       DateTime     @default(now())
+//   updatedAt       DateTime     @updatedAt
+
+//   @@map("contracts")
+// }
+
+model PaymentDetail {
+  id                String      @id @default(cuid())
+  transaction       Transaction @relation(fields: [transactionId], references: [id])
+  transactionId     String      @unique
+  
+  // Payment Method Details
+  accountName       String?
+  accountNumber     String?     // Masked account number
+  bankName          String?
+  bankCode          String?     // SWIFT/BIC code
+  chequeNumber      String?
+  cardLast4         String?     // Last 4 digits of card
+  
+  // Provider Details
+  providerData      Json?       // Provider-specific data
+  providerFees      Decimal?    // Fees charged by provider
+  
+  // Additional Details
+  exchangeRate      Float?      // If currency conversion involved
+  originalAmount    Decimal?    // Amount in original currency
+  originalCurrency  String?     // Original currency code
+
+  @@map("payment_details")
+}
+
+model TransactionParty {
+  id              String        @id @default(cuid())
+  type            String        // INDIVIDUAL, COMPANY, TRUST
+  name            String
+  reference       String?       // External reference
+  
+  // Contact Information
+  email           String?
+  phone           String?
+  // address         Address?      @relation(fields: [addressId], references: [id])
+  addressId       String?
+  
+  // Company Details (if applicable)
+  company         Company?      @relation(fields: [companyId], references: [id])
+  companyId       String?
+  
+  // Bank Details
+  bankAccounts    BankAccount[]
+  
+  // Transaction Relations
+  payerIn         Transaction[] @relation("Payer")
+  payeeIn         Transaction[] @relation("Payee")
+  
+  // Verification Status
+  isVerified      Boolean       @default(false)
+  verifiedAt      DateTime?
+  
+  @@map("transaction_parties")
+}
+
+model BankAccount {
+  id                String           @id @default(cuid())
+  transactionParty  TransactionParty @relation(fields: [partyId], references: [id])
+  partyId           String
+  
+  accountName       String
+  accountNumber     String
+  bankName          String
+  bankCode          String?          // SWIFT/BIC code
+  iban              String?
+  routingNumber     String?
+  
+  isDefault         Boolean          @default(false)
+  isVerified        Boolean          @default(false)
+  verifiedAt        DateTime?
+  
+  // Audit
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@map("bank_accounts")
+}
+
+model InstallmentPlan {
+  id              String        @id @default(cuid())
+  deal            Deal          @relation(fields: [dealId], references: [id])
+  dealId          String
+  
+  totalAmount     Decimal
+  currency        String
+  numberOfInstallments Int
+  frequency       String        // MONTHLY, QUARTERLY, etc.
+  startDate       DateTime
+  endDate         DateTime
+  
+  // Installment Schedule
+  installments    Transaction[]
+  
+  // Status
+  status          String        @default("ACTIVE")
+  
+  // Metadata
+  description     String?
+  terms          String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("installment_plans")
+}
+
+model Refund {
+  id              String        @id @default(cuid())
+  transaction     Transaction   @relation(fields: [transactionId], references: [id])
+  transactionId   String
+  
+  amount          Decimal
+  reason          String
+  status          String
+  refundedBy      User          @relation(fields: [refundedById], references: [id])
+  refundedById    String
+  
+  // Refund Details
+  // refundMethod    TransactionMethod
+  refundReference String?
+  
+  createdAt       DateTime      @default(now())
+  completedAt     DateTime?
+
+  @@map("refunds")
+}
+
+model Dispute {
+  id              String        @id @default(cuid())
+  transaction     Transaction   @relation(fields: [transactionId], references: [id])
+  transactionId   String
+  
+  // Dispute Details
+  reason          String
+  description     String
+  status          String
+  resolution      String?
+  
+  // Resolution Details
+  resolvedBy      User?         @relation(fields: [resolvedById], references: [id])
+  resolvedById    String?
+  resolvedAt      DateTime?
+  
+  // Documents
+  // evidence        Document[]
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("disputes")
+}
+
+model Receipt {
+  id              String      @id @default(cuid())
+  transaction     Transaction @relation(fields: [transactionId], references: [id])
+  transactionId   String
+  
+  receiptNumber   String      @unique
+  amount          Decimal
+  currency        String
+  
+  // Digital Receipt
+  digitalCopy     String?     // URL to digital receipt
+  
+  // Metadata
+  metadata        Json?
+  
+  createdAt       DateTime    @default(now())
+
+  @@map("receipts")
+}
+
+enum DocumentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  DELETED
+}
+
+enum DocumentSecurity {
+  INTERNAL
+  EXTERNAL
+  PUBLIC
+}
+
+enum DocumentFormat {
+  PDF
+  WORD
+  EXCEL
+  PPT 
+  PNG
+  JPEG
+  GIF
+  JPG
+  CSV
+}
+
+enum DocumentType {
+  CONTRACT
+  PROPOSAL
+  MEMO
+  LETTER
+  MEMORANDUM
+  REPORT
+  FORM
+  OTHER
+}
+
+model Document {
+  id                String          @id @default(cuid())
+  referenceNumber   String          @unique // Unique document reference
+  type              DocumentType
+  status            DocumentStatus  @default(DRAFT)
+  security          DocumentSecurity @default(INTERNAL)
+  
+  // Document Details
+  title             String
+  description       String?
+  language          Language        @default(ENGLISH)
+  version           String          @default("1.0")
+  
+  // File Details
+  fileName          String
+  fileSize          Int             // Size in bytes
+  fileType          DocumentFormat
+  mimeType          String
+  url               String          // Storage URL
+  checksum          String?         // For file integrity
+  
+  // Classification & Organization
+  tags              DocumentTag[]
+  categories        String[]
+  customAttributes  Json?           // Additional attributes
+
+  
+  // Access Control
+  accessList        DocumentAccess[]
+  shareLinks        DocumentShare[]
+  
+  // Workflow
+  workflow          DocumentWorkflow?
+  approvals         DocumentApproval[]
+  // rejections        DocumentRejection[]
+  
+  // Version Control
+  parent            Document?       @relation("DocumentVersions", fields: [parentId], references: [id])
+  parentId          String?
+  versions          Document[]      @relation("DocumentVersions")
+  
+  // Template Information
+  isTemplate        Boolean         @default(false)
+  templateFields    Json?           // Field mappings for template
+  
+  // Tracking & History
+  views             DocumentView[]
+  activities        DocumentActivity[]
+  comments          DocumentComment[]
+  
+  // Expiry & Retention
+  validFrom         DateTime?
+  expiresAt         DateTime?
+  retentionPeriod   Int?            // Retention period in months
+
+  // relations
+  licenses License[]
+  userDocuments UserDocument[]
+  certification Certification[]
+  transactionDocuments TransactionDocument[]
+  
+  // System Fields
+  createdBy         User            @relation("DocumentCreator", fields: [createdById], references: [id])
+  createdById       String
+  company           Company         @relation(fields: [companyId], references: [id])
+  companyId         String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?       // Soft delete
+  
+  @@map("documents")
+  DealParty DealParty[]
+}
+
+model UserDocument {
+  id              String    @id @default(cuid())
+  user            User      @relation("UserDocuments", fields: [userId], references: [id])
+  userId          String   
+  
+  document        Document  @relation(fields: [documentId], references: [id])
+  documentId      String
+  documentAccess  DocumentAccess? @relation(fields: [documentAccessId], references: [id])
+  documentAccessId String?
+  
+  @@map("user_documents")
+}
+
+model DocumentAccess {
+  id              String    @id @default(cuid())
+  document        Document  @relation(fields: [documentId], references: [id])
+  documentId      String
+  
+  team            Team?     @relation(fields: [teamId], references: [id])
+  teamId          String?
+  
+  // Permissions
+  canView         Boolean   @default(true)
+  canEdit         Boolean   @default(false)
+  canDelete       Boolean   @default(false)
+  canShare        Boolean   @default(false)
+  
+  // Time-bound Access
+  validFrom       DateTime  @default(now())
+  validUntil      DateTime?
+  
+  // Audit
+  userDocument UserDocument[]
+  grantedBy       String    // User who granted access
+  grantedAt       DateTime  @default(now())
+  revokedAt       DateTime?
+  
+  @@unique([documentId, teamId])
+  @@map("document_access")
+  
+}
+
+model DocumentWorkflow {
+  id              String    @id @default(cuid())
+  document        Document  @relation(fields: [documentId], references: [id])
+  documentId      String    @unique
+  
+  // Workflow Details
+  status          String
+  currentStep     Int       @default(1)
+  totalSteps      Int
+  
+  // Steps Configuration
+  steps           Json      // Workflow steps and requirements
+  
+  // Approvers
+  requiredApprovers Int
+  currentApprovers  Int     @default(0)
+  
+  // Deadlines
+  deadline        DateTime?
+  reminderSent    Boolean   @default(false)
+  
+  // Completion
+  completedAt     DateTime?
+  completedBy     String?   // User who completed
+  
+  @@map("document_workflows")
+}
+
+model DocumentApproval {
+  id              String    @id @default(cuid())
+  document        Document  @relation(fields: [documentId], references: [id])
+  documentId      String
+  
+  // Approval Details
+  approver        User      @relation(fields: [approverId], references: [id])
+  approverId      String
+  status          String    // PENDING, APPROVED, REJECTED
+  comments        String?
+  
+  // Approval Metadata
+  step            Int?      // Workflow step number
+  sequence        Int?      // Approval sequence
+  
+  approvedAt      DateTime?
+  
+  @@map("document_approvals")
+}
+
+model DocumentShare {
+  id              String    @id @default(cuid())
+  document        Document  @relation(fields: [documentId], references: [id])
+  documentId      String
+  
+  // Share Details
+  shareType       String    // EMAIL, LINK, etc.
+  shareWith       String?   // Email or identifier
+  accessCode      String?   // Optional access code
+  
+  // Security
+  isPasswordProtected Boolean @default(false)
+  password        String?   // Hashed password if protected
+  
+  // Restrictions
+  viewLimit       Int?      // Maximum number of views
+  viewCount       Int       @default(0)
+  expiresAt       DateTime?
+  
+  // Tracking
+  createdBy       String    // User who created share
+  createdAt       DateTime  @default(now())
+  lastAccessedAt  DateTime?
+  
+  @@map("document_shares")
+}
+
+model DocumentActivity {
+  id              String    @id @default(cuid())
+  document        Document  @relation(fields: [documentId], references: [id])
+  documentId      String
+  
+  // Activity Details
+  activityType    String    // VIEW, EDIT, SHARE, etc.
+  description     String
+  
+  // Actor
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  
+  // Additional Details
+  metadata        Json?     // Additional activity data
+  ipAddress       String?
+  userAgent       String?
+  
+  createdAt       DateTime  @default(now())
+  
+  @@map("document_activities")
+}
+
+model DocumentView {
+  id              String    @id @default(cuid())
+  document        Document  @relation(fields: [documentId], references: [id])
+  documentId      String
+  
+  // Viewer Details
+  user            User?     @relation(fields: [userId], references: [id])
+  userId          String?   // Nullable for anonymous views
+  
+  // View Details
+  viewDuration    Int?      // Duration in seconds
+  completed       Boolean   @default(false)
+  
+  // Access Details
+  ipAddress       String?
+  userAgent       String?
+  deviceType      String?
+  
+  createdAt       DateTime  @default(now())
+  
+  @@map("document_views")
+}
+
+model DocumentComment {
+  id              String    @id @default(cuid())
+  document        Document  @relation(fields: [documentId], references: [id])
+  documentId      String
+  
+  // Comment Details
+  content         String
+  type            String    // TEXT, ANNOTATION, REVIEW, etc.
+  
+  // Location in Document
+  page            Int?
+  position        Json?     // Coordinates for annotations
+  
+  // Author
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  
+  // Threading
+  parent          DocumentComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId        String?
+  replies         DocumentComment[] @relation("CommentReplies")
+  
+  // Status
+  resolved        Boolean   @default(false)
+  resolvedBy      String?
+  resolvedAt      DateTime?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("document_comments")
+}
+
+model DocumentTemplate {
+  id              String    @id @default(cuid())
+  
+  // Template Details
+  name            String
+  description     String?
+  type            DocumentType
+  category        String
+  language        Language
+  
+  // Template Content
+  content         String    // Template content/URL
+  variables       Json      // Template variables/placeholders
+  
+  // Usage
+  company         Company   @relation("CompanyTemplates", fields: [companyId], references: [id])
+  companyId       String
+  isGlobal        Boolean   @default(false)
+  
+  // Versioning
+  version         String    @default("1.0")
+  isLatest        Boolean   @default(true)
+  
+  // System Fields
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("document_templates")
+}
+
+model TagCategory {
+  id          String          @id @default(cuid())
+  name        String          // Display name
+  // type        TagCategoryType
+  description String?
+  color       String?         // UI color code
+  icon        String?         // UI icon identifier
+  
+  // Ownership & Access Control
+  company     Company         @relation(fields: [companyId], references: [id])
+  companyId   String
+  isGlobal    Boolean        @default(false)  // If true, available to all companies
+  isSystem    Boolean        @default(false)  // If true, cannot be modified by users
+  
+  // Relations
+  tags        Tag[]
+  
+  // Audit
+  createdBy   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  @@unique([companyId, name])
+  @@map("tag_categories")
+}
+
+model Tag {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        // URL-friendly version of name
+  description String?
+  
+  // Categorization
+  category    TagCategory   @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  
+  // Styling
+  color       String?      // Optional color override
+  icon        String?      // Optional icon override
+  
+  // Metadata
+  metadata    Json?        // Additional tag-specific data
+  
+  // Relations
+  // properties  PropertyTag[]
+  // leads      LeadTag[]
+  // deals      DealTag[]
+  // clients    ClientTag[]
+  // documents  DocumentTag[]
+  // transactions TransactionTag[]
+  
+  // Usage Statistics
+  usageCount Int          @default(0)
+  lastUsed   DateTime?
+
+  propertyTags PropertyTag[]
+  leadTags LeadTag[]
+  dealTags DealTag[]
+  clientTags ClientTag[]
+  documentTags DocumentTag[]
+  transactionTags TransactionTag[]
+  noteTags NoteTag[]
+  
+  // Audit
+  createdBy  String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  
+  @@unique([categoryId, name])
+  @@map("tags")
+}
+
+model PropertyTag {
+  id          String    @id @default(cuid())
+  property    Property  @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  tag         Tag       @relation(fields: [tagId], references: [id])
+  tagId       String
+  addedBy     String    // User ID
+  addedAt     DateTime  @default(now())
+  
+  @@unique([propertyId, tagId])
+  @@map("property_tags")
+}
+
+model LeadTag {
+  id          String    @id @default(cuid())
+  lead        Lead      @relation(fields: [leadId], references: [id])
+  leadId      String
+  tag         Tag       @relation(fields: [tagId], references: [id])
+  tagId       String
+  addedBy     String
+  addedAt     DateTime  @default(now())
+  
+  @@unique([leadId, tagId])
+  @@map("lead_tags")
+}
+
+model DealTag {
+  id          String    @id @default(cuid())
+  deal        Deal      @relation(fields: [dealId], references: [id])
+  dealId      String
+  tag         Tag       @relation(fields: [tagId], references: [id])
+  tagId       String
+  addedBy     String
+  addedAt     DateTime  @default(now())
+  
+  @@unique([dealId, tagId])
+  @@map("deal_tags")
+}
+
+model ClientTag {
+  id          String    @id @default(cuid())
+  client      Client    @relation(fields: [clientId], references: [id])
+  clientId    String
+  tag         Tag       @relation(fields: [tagId], references: [id])
+  tagId       String
+  addedBy     String
+  addedAt     DateTime  @default(now())
+  
+  @@unique([clientId, tagId])
+  @@map("client_tags")
+}
+
+model DocumentTag {
+  id          String    @id @default(cuid())
+  document    Document  @relation(fields: [documentId], references: [id])
+  documentId  String
+  tag         Tag       @relation(fields: [tagId], references: [id])
+  tagId       String
+  addedBy     String
+  addedAt     DateTime  @default(now())
+  
+  @@unique([documentId, tagId])
+  @@map("document_tags")
+}
+
+model TransactionTag {
+  id            String      @id @default(cuid())
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  transactionId String
+  tag           Tag         @relation(fields: [tagId], references: [id])
+  tagId         String
+  addedBy       String
+  addedAt       DateTime    @default(now())
+  
+  @@unique([transactionId, tagId])
+  @@map("transaction_tags")
+}
+
+model NoteTag {
+  id          String    @id @default(cuid())
+  note        Note      @relation(fields: [noteId], references: [id])
+  noteId      String
+  tag         Tag       @relation(fields: [tagId], references: [id])
+  tagId       String
+  addedBy     String
+  addedAt     DateTime  @default(now())
+  
+  @@unique([noteId, tagId])
+  @@map("note_tags")
+}
+
+enum ClientStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+}
+
+enum ClientCategory {
+  STANDARD
+  PREMIUM
+  VIP
+}
+
+enum ClientType {
+  INDIVIDUAL
+  ENTITY
+}
+
+model Contact {
+  id                String          @id @default(cuid())
+  type              ContactType
+  status            ContactStatus   @default(ACTIVE)
+  source            ContactSource   @default(WEBSITE)
+  
+  // Basic Information
+  title             String?         // Mr., Mrs., etc.
+  firstName         String
+  lastName          String
+  displayName       String?
+  dateOfBirth       DateTime?
+  nationality       String?
+  languages         Language[]
+  
+  // Contact Information
+  email             String?         @unique
+  phone             String?         
+  whatsapp          String?
+  preferredContact  ContactPreference[]
+  
+  // Professional Information
+  position          String?
+  industry          String?
+  annualIncome      Decimal?
+  
+  // Verification & KYC
+  isVerified        Boolean         @default(false)
+  verifiedAt        DateTime?
+  // identityDocuments Document[]      @relation("ContactIdentity")
+  
+  // Preferences & Requirements
+  investmentBudget  Decimal?
+  propertyTypes     PropertyType[]
+  preferredLocations Json?          // Array of preferred locations/areas
+  requirements      Json?           // Specific property requirements
+  
+  // Property Interactions
+  // viewedProperties  PropertyViewing[]
+  favoriteProperties Property[]     @relation("ContactFavorites")
+  ownedProperties   Property[]      @relation("PropertyOwner")
+  interestedProperties Property[]   @relation("InterestedContacts")
+  
+  // Financial & Legal
+  creditScore       Int?
+  taxIdentifier     String?         // Tax ID or equivalent
+  // legalDocuments    Document[]      @relation("ContactLegal")
+  
+  // Relationships
+  // assignedAgent     User?           @relation(fields: [assignedAgentId], references: [id])
+  // assignedAgentId   String?
+  
+  // Activity & Communication
+  lastContactedAt   DateTime?
+  nextFollowUpDate  DateTime?
+  notes             ContactNote[]
+  // inquiries         PublicInquiry[]
+  // transactions      Transaction[]   @relation("ContactTransactions")
+  // leads            Lead[]
+  //deals            Deal[]
+
+  subscriptions      Subscription[]
+  leads             Lead[]
+  
+  // System Fields
+  metadata          Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+
+  @@map("contacts")
+ 
+  Client Client[]
+  DealParty DealParty[]
+}
+
+model ContactNote {
+  id          String    @id @default(cuid())
+  contact     Contact   @relation(fields: [contactId], references: [id])
+  contactId   String
+  noteId      String    @unique
+  note        String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("contact_notes")
+}
+
+enum ViewingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+
+// model PropertyViewing {
+//   id              String    @id @default(cuid())
+//   property        Property  @relation(fields: [propertyId], references: [id])
+//   propertyId      String
+//   contact         Contact   @relation(fields: [contactId], references: [id])
+//   contactId       String
+//   scheduledFor    DateTime
+//   status          ViewingStatus @default(SCHEDULED)
+//   notes           String?
+//   feedback        Json?     // Structured feedback about the viewing
+//   agent           User      @relation(fields: [agentId], references: [id])
+//   agentId         String
+//   createdAt       DateTime  @default(now())
+//   updatedAt       DateTime  @updatedAt
+
+//   @@map("property_viewings")
+// }
+
+model Client {
+  id                String          @id @default(cuid())
+  referenceNumber   String          @unique  // Internal reference
+  type              ClientType
+  category          ClientCategory  @default(STANDARD)
+  status            ClientStatus    @default(PENDING_VERIFICATION)
+  priority          Priority  @default(MEDIUM)
+  
+  // Basic Information
+  title            String?         // Dr., Sheikh, H.E., etc.
+  firstName        String?
+  lastName         String?
+  displayName      String          // Public/Preferred name
+  dateOfBirth      DateTime?
+  nationality      String?
+  languages        Language[]
+  
+  // Privacy & Security
+  // privacyLevel     PrivacyLevel    @default(STANDARD)
+  privacyNotes     String?         // Special handling instructions
+  ndaSigned        Boolean         @default(false)
+  // ndaDetails       Document?       // NDA document reference
+  
+  // Contact Information
+  contact          Contact         @relation(fields: [contactId], references: [id])
+  contactId        String          @unique
+  
+  // Wealth & Financial Profile
+  // wealthProfile    WealthProfile?
+  // financialProfile FinancialProfile?
+  
+  // Preferences & Requirements
+  // preferences      ClientPreference?
+  requirements     PropertyRequirement[]
+  
+  // Business & Corporate Details
+  // businessProfile  BusinessProfile?    // For corporate clients
+  // corporateContacts CorporateContact[]
+  
+  // Relationships
+  // assignedAgents   User[]          @relation("AgentClients")
+  relatedClients   ClientRelation[] @relation("PrimaryClient")
+  relatedTo        ClientRelation[] @relation("RelatedClient")
+  
+  // Portfolio & History
+  // portfolio        Portfolio?
+  // viewingHistory   PropertyViewing[]
+  // transactionHistory Transaction[]
+  // inquiries        Inquiry[]
+  
+  // Service & Support
+  // serviceLevels    ServiceLevel[]
+  // conciergeRequests ConciergeRequest[]
+  vipServices      VIPService[]
+  
+  // Documents & Compliance
+  documents        ClientDocument[]
+  // compliance       ClientCompliance?
+  // verification     ClientVerification?
+  
+  // Communication & Engagement
+  // communications   Communication[]
+  // appointments     Appointment[]
+  // events           EventAttendance[]
+  // preferences      CommunicationPreference?
+  
+  // Notes & Activities
+  // notes            ClientNote[]
+  // activities       ClientActivity[] 
+  
+  // System Fields
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  lastContactAt   DateTime?
+  nextFollowUp    DateTime?
+  
+  @@index([category, status, priority])
+  @@map("clients")
+  CommunicationPreference CommunicationPreference[]
+  ClientTag ClientTag[]
+}
+
+// model WealthProfile {
+//   id              String    @id @default(cuid())
+//   client          Client    @relation(fields: [clientId], references: [id])
+//   clientId        String    @unique
+  
+//   // Wealth Information
+//   wealthSource    WealthSource[]
+//   estimatedNetWorth DecimalRange? // Range of estimated net worth
+//   investmentCapacity DecimalRange? // Investment capacity range
+//   incomeRange     DecimalRange?
+  
+//   // Investment Profile
+//   investmentStrategy String?
+//   riskTolerance   String?
+//   investmentGoals String[]
+//   preferredAssetTypes String[]
+  
+//   // Portfolio Overview
+//   realEstateHoldings Json?    // Summary of current holdings
+//   otherInvestments  Json?     // Other investment types
+  
+//   // Private Banking
+//   privateBanker   String?
+//   bankingInstitutions String[]
+  
+//   // Verification
+//   verifiedBy      String?    // User who verified
+//   verifiedAt      DateTime?
+//   lastReviewDate  DateTime?
+  
+//   @@map("wealth_profiles")
+// }
+
+model PropertyRequirement {
+  id              String    @id @default(cuid())
+  client          Client    @relation(fields: [clientId], references: [id])
+  clientId        String
+  
+  // Property Preferences
+  propertyTypes   PropertyType[]
+  minPrice        Decimal?
+  maxPrice        Decimal?
+  minSize         Decimal?
+  maxSize         Decimal?
+  minBedrooms     Int?
+  maxBedrooms     Int?
+  minBathrooms    Int?
+  maxBathrooms    Int?
+  furnishingType  FurnishType?
+  readyToMove     Boolean?
+  parkingSpaces   Int?
+  lotSize         Decimal?
+  amenities       String[]
+  features        String[]
+  
+  // Additional Preferences
+  style           String[]   // Architecture style
+  condition       String[]   // New, renovated, etc.
+  viewPreferences String[]   // Sea view, city view, etc.
+  
+  // Usage Intent
+  purpose         String     // Investment, Personal Use, etc.
+  timeline        String?    // When needed
+  flexibility     String?    // How flexible on requirements
+  
+  // Notes
+  notes           String?
+  priority        Priority   @default(MEDIUM)
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@map("property_requirements")
+}
+
+model VIPService {
+  id              String    @id @default(cuid())
+  client          Client    @relation(fields: [clientId], references: [id])
+  clientId        String
+  
+  // Service Details
+  serviceType     String    // Concierge, Private Viewing, etc.
+  description     String
+  status          String
+  
+  // Scheduling
+  scheduledFor    DateTime?
+  completedAt     DateTime?
+  
+  // Service Provider
+  provider        String?
+  providerContact String?
+  
+  // Costs
+  cost           Decimal?
+  currency       String?
+  
+  // Notes
+  specialInstructions String?
+  feedback        String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("vip_services")
+}
+
+model ClientRelation {
+  id              String    @id @default(cuid())
+  primaryClient   Client    @relation("PrimaryClient", fields: [primaryId], references: [id])
+  primaryId       String
+  relatedClient   Client    @relation("RelatedClient", fields: [relatedId], references: [id])
+  relatedId       String
+  
+  relationType    String    // Family, Business Partner, etc.
+  description     String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([primaryId, relatedId])
+  @@map("client_relations")
+}
+
+// model ClientCompliance {
+//   id              String    @id @default(cuid())
+//   client          Client    @relation(fields: [clientId], references: [id])
+//   clientId        String    @unique
+  
+//   // KYC/AML
+//   kycStatus       String
+//   kycCompletedAt  DateTime?
+//   kycDocuments    Document[]
+  
+//   // Risk Assessment
+//   riskLevel       String
+//   riskAssessment  String?
+//   lastRiskReview  DateTime?
+  
+//   // Compliance Checks
+//   sanctions       Boolean   @default(false)
+//   pep            Boolean   @default(false)  // Politically Exposed Person
+//   watchlists     Boolean   @default(false)
+  
+//   // Review & Approval
+//   reviewedBy      String?   // User who reviewed
+//   reviewedAt      DateTime?
+//   approvedBy      String?   // User who approved
+//   approvedAt      DateTime?
+  
+//   // Notes
+//   complianceNotes String?
+//   restrictions    String?
+
+//   @@map("client_compliance")
+// }
+
+model ClientDocument {
+  id              String    @id @default(cuid())
+  client          Client    @relation(fields: [clientId], references: [id])
+  clientId        String
+  
+  // Document Details
+  type            String    // Passport, ID, Contract, etc.
+  title           String
+  description     String?
+  
+  // File Details
+  fileUrl         String
+  fileType        String
+  fileSize        Int
+  
+  // Verification
+  isVerified      Boolean   @default(false)
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  expiryDate      DateTime?
+  
+  // Security
+  accessLevel     String    // Who can access this document
+  encryptionKey   String?   // For encrypted documents
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("client_documents")
+}
+
+model CommunicationPreference {
+  id              String    @id @default(cuid())
+  client          Client    @relation(fields: [clientId], references: [id])
+  clientId        String    @unique
+  
+  // Contact Preferences
+  preferredLanguage Language
+  preferredChannel NotificationChannel
+  alternativeChannels NotificationChannel[]
+  
+  // Time Preferences
+  preferredTime   String?   // Morning, Afternoon, Evening
+  timezone        String
+  dndStart        String?   // Do Not Disturb start time
+  dndEnd          String?   // Do Not Disturb end time
+  
+  // Marketing Preferences
+  allowMarketing  Boolean   @default(false)
+  marketingChannels NotificationChannel[]
+  
+  // Special Instructions
+  specialInstructions String?
+  
+  updatedAt       DateTime  @updatedAt
+
+  @@map("communication_preferences")
+}
+
+enum NoteType {
+  CLIENT_NOTE
+  PROPERTY_NOTE
+  DEAL_NOTE
+  LEAD_NOTE
+  TASK_NOTE
+  DOCUMENT_NOTE
+}
+
+enum NoteStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+model Note {
+  id          String      @id @default(cuid())
+  type        NoteType
+  title       String?
+  content     Json        // Rich text content with formatting
+  priority    Priority    @default(MEDIUM)
+  status      NoteStatus @default(ACTIVE)
+  isPrivate   Boolean    @default(false)
+  isPinned    Boolean    @default(false)
+
+  // Rich Content Support
+  attachments NoteAttachment[]
+  // mentions    Mention[]
+  
+  // Relations to Different Entities
+  // client      Client?     @relation(fields: [clientId], references: [id])
+  // clientId    String?
+  deal        Deal?       @relation(fields: [dealId], references: [id])
+  dealId      String?
+  lead        Lead?       @relation(fields: [leadId], references: [id])
+  leadId      String?
+  
+  // Organization Context
+  company     Company     @relation(fields: [companyId], references: [id])
+  companyId   String
+  team        Team?       @relation(fields: [teamId], references: [id])
+  teamId      String?
+
+  // Collaboration
+  author      User        @relation("AuthoredNotes", fields: [authorId], references: [id])
+  authorId    String
+  comments    Comment[]
+  reminders   Reminder[]
+
+  // Timeline & Activity
+  activities  NoteActivity[]
+  followUps   FollowUp[]
+  noteTags NoteTag[]
+
+  // System Fields
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+
+  @@map("notes")
+  TransactionNote TransactionNote[]
+}
+
+model NoteActivity {
+  id          String         @id @default(cuid())
+  note        Note          @relation(fields: [noteId], references: [id])
+  noteId      String
+  type        ActivityType
+  action      String        // Specific action taken
+  description String?
+  metadata    Json?         // Additional activity details
+  user        User          @relation(fields: [userId], references: [id])
+  userId      String
+  createdAt   DateTime      @default(now())
+
+  @@map("note_activities")
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  OTHER
+}
+
+model Attachment {
+  id          String       @id @default(cuid())
+  type        FileType
+  name        String
+  url         String
+  size        Int         // Size in bytes
+  mimeType    String
+  metadata    Json?       // Additional file metadata
+  thumbnail   String?     // URL for preview
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime    @default(now())
+  noteAttachments NoteAttachment[]
+
+  @@map("attachments")
+  TaskAttachment TaskAttachment[]
+}
+
+model NoteAttachment {
+  id          String       @id @default(cuid())
+  note        Note         @relation(fields: [noteId], references: [id])
+  noteId      String
+  attachment  Attachment   @relation(fields: [attachmentId], references: [id])
+  attachmentId String
+  createdAt   DateTime    @default(now())
+
+  @@map("note_attachments")
+}
+
+model Mention {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  position    Int       // Position in content
+  resolved    Boolean   @default(false)
+  notified    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  commentMention CommentMention[]
+
+  @@map("mentions")
+}
+
+model CommentMention {
+  id          String    @id @default(cuid())
+  comment     Comment   @relation(fields: [commentId], references: [id])
+  commentId   String
+  mention     Mention   @relation(fields: [mentionId], references: [id])
+  mentionId   String
+  createdAt   DateTime  @default(now())
+
+  @@map("comment_mentions")
+}
+
+model Comment {
+  id          String    @id @default(cuid())
+  note        Note      @relation(fields: [noteId], references: [id])
+  noteId      String
+  content     Json      // Rich text content
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String
+  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId    String?
+  replies     Comment[] @relation("CommentReplies")
+  // attachments Attachment[] @relation("CommentAttachments")
+  commentMentions CommentMention[]
+  isEdited    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@map("comments")
+  
+}
+
+enum FollowUpType {
+  CALL
+  MEETING
+  EMAIL
+  TASK
+  NOTE
+}
+
+enum FollowUpStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model FollowUp {
+  id          String        @id @default(cuid())
+  note        Note          @relation(fields: [noteId], references: [id])
+  noteId      String
+  type        FollowUpType
+  status      FollowUpStatus @default(PENDING)
+  dueDate     DateTime
+  description String?
+  assignedTo  User?          @relation("AssignedFollowUps", fields: [assignedToId], references: [id])
+  assignedToId String?
+  completedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("follow_ups")
+}
+
+enum ReminderType {
+  EMAIL
+  SMS
+  CALL
+}
+
+enum ReminderFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum ReminderStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model Reminder {
+  id          String         @id @default(cuid())
+  note        Note           @relation(fields: [noteId], references: [id])
+  noteId      String
+  type        ReminderType
+  dueDate     DateTime
+  repeats     Boolean        @default(false)
+  frequency   ReminderFrequency?
+  status      ReminderStatus @default(PENDING)
+  notifiedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("reminders")
+}
+
+// model PropertyView {
+//   id          String    @id @default(cuid())
+//   property    Property  @relation(fields: [propertyId], references: [id])
+//   propertyId  String
+//   user        User?     @relation(fields: [userId], references: [id])
+//   userId      String?
+//   ipAddress   String?
+//   userAgent   String?
+//   viewedAt    DateTime  @default(now())
+//   duration    Int?      // Duration in seconds
+//   source      String?   // Where the view came from
+  
+//   @@index([propertyId, viewedAt])
+// }
+
+// model PropertyReview {
+//   id          String    @id @default(cuid())
+//   property    Property  @relation(fields: [propertyId], references: [id])
+//   propertyId  String
+//   reviewer    User      @relation(fields: [reviewerId], references: [id])
+//   reviewerId  String
+//   rating      Int       @default(0)
+//   comment     String?
+//   status      ModerationStatus @default(PENDING)
+//   createdAt   DateTime  @default(now())
+//   updatedAt   DateTime  @updatedAt
+  
+//   @@index([propertyId, rating])
+// }
+
+// Activity & Communication Related Enums
+enum ActivityType {
+  CREATED
+  UPDATED
+  DELETED
+  VIEWED
+  COMMENTED
+  SHARED
+  STATUS_CHANGED
+  ASSIGNED
+  COMPLETED
+  CANCELLED
+}
+
+enum ActivityEntityType {
+  PROPERTY
+  LEAD
+  DEAL
+  CLIENT
+  DOCUMENT
+  TASK
+  MEETING
+  MESSAGE
+}
+
+enum MessageType {
+  TEXT
+  EMAIL
+  SMS
+  NOTIFICATION
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum TaskType {
+  FOLLOW_UP
+  VIEWING
+  MEETING
+  DOCUMENT_REVIEW
+  CALL
+  EMAIL
+  OTHER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  BLOCKED
+}
+
+// Activity Tracking Models
+model Activity {
+  id              String            @id @default(cuid())
+  type            ActivityType
+  entityType      ActivityEntityType
+  entityId        String
+  description     String
+  metadata        Json?             // Additional context
+  
+  // Relations
+  user            User              @relation(fields: [userId], references: [id])
+  userId          String
+  company         Company           @relation(fields: [companyId], references: [id])
+  companyId       String
+  leadActivities LeadActivity[]
+  
+  // System Fields
+  createdAt       DateTime          @default(now())
+  
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+  @@map("activities")
+  
+  DealActivity DealActivity[]
+  Deal Deal[]
+}
+
+model LeadActivity {
+  id              String            @id @default(cuid())
+  lead            Lead              @relation(fields: [leadId], references: [id])
+  leadId          String
+  activity        Activity           @relation(fields: [activityId], references: [id])
+  activityId      String
+  // System Fields
+  createdAt       DateTime          @default(now())
+  
+  @@index([leadId, createdAt])
+  @@map("lead_activities")
+}
+
+model DealActivity {
+  id              String            @id @default(cuid())
+  deal            Deal              @relation(fields: [dealId], references: [id])
+  dealId          String
+  activity        Activity           @relation(fields: [activityId], references: [id])
+  activityId      String
+  // System Fields
+  createdAt       DateTime          @default(now())
+  
+  @@index([dealId, createdAt])
+  @@map("deal_activities")
+}
+
+// Communication Models
+model Message {
+  id              String          @id @default(cuid())
+  type            MessageType
+  content         String
+  metadata        Json?           // Additional message data
+  status          MessageStatus   @default(SENT)
+  
+  // Relations
+  sender          User            @relation(fields: [senderId], references: [id])
+  senderId        String
+  conversation    Conversation    @relation(fields: [conversationId], references: [id])
+  conversationId  String
+  
+  // Tracking
+  readBy          MessageRead[]
+  deliveredTo     MessageDelivery[]
+  
+  // System Fields
+  sentAt          DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([conversationId, sentAt])
+  @@map("messages")
+}
+
+model Conversation {
+  id              String          @id @default(cuid())
+  title           String?
+  type            String          // DIRECT, GROUP, CHANNEL
+  
+  // Relations
+  //participants    User[]          @relation("Participants")
+  messages        Message[]
+  
+  // System Fields
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@map("conversations")
+}
+
+model MessageRead {
+  id              String          @id @default(cuid())
+  message         Message         @relation(fields: [messageId], references: [id])
+  messageId       String
+  user            User            @relation("ReadMessages", fields: [userId], references: [id])
+  userId          String
+  readAt          DateTime        @default(now())
+  
+  @@unique([messageId, userId])
+  @@map("message_reads")
+}
+
+model MessageDelivery {
+  id              String          @id @default(cuid())
+  message         Message         @relation(fields: [messageId], references: [id])
+  messageId       String
+  user            User            @relation("DeliveredMessages", fields: [userId], references: [id])
+  userId          String
+  deliveredAt     DateTime        @default(now())
+  
+  @@unique([messageId, userId])
+  @@map("message_deliveries")
+}
+
+// Task Management Models
+model Task {
+  id              String          @id @default(cuid())
+  title           String
+  description     String?
+  type            TaskType
+  status          TaskStatus      @default(TODO)
+  priority        Priority        @default(MEDIUM)
+  dueDate         DateTime?
+  
+  createdBy       User            @relation("TaskCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  
+  // Additional Fields
+  checklist       TaskChecklist[]
+  attachments     TaskAttachment[]
+  comments        TaskComment[]
+  
+  // System Fields
+  startDate       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // relations
+  assignedTo User[]  @relation("AssignedTasks")
+  teamTasks TeamTask[]
+  leads Lead[]  @relation("LeadTasks")
+  deals Deal[]  @relation("DealTasks")
+  propertyTasks PropertyTask[]
+  
+  @@index([status, dueDate])
+  @@map("tasks")
+}
+
+model TeamTask {
+  id              String          @id @default(cuid())
+  task            Task            @relation(fields: [taskId], references: [id])
+  taskId          String
+  team            Team            @relation(fields: [teamId], references: [id])
+  teamId          String
+  assignedAt      DateTime        @default(now())
+  
+  @@unique([taskId, teamId])
+  @@map("team_tasks")
+}
+
+model PropertyTask {
+  id              String          @id @default(cuid())
+  task            Task            @relation(fields: [taskId], references: [id])
+  taskId          String
+  property        Property        @relation(fields: [propertyId], references: [id])
+  propertyId      String
+  assignedAt      DateTime        @default(now())
+  
+  @@unique([taskId, propertyId])
+  @@map("property_tasks")
+}
+
+model TaskChecklist {
+  id              String          @id @default(cuid())
+  task            Task            @relation(fields: [taskId], references: [id])
+  taskId          String
+  item            String
+  completed       Boolean         @default(false)
+  completedAt     DateTime?
+  order           Int             @default(0)
+  
+  @@map("task_checklists")
+}
+
+model TaskAttachment {
+  id              String          @id @default(cuid())
+  task            Task            @relation(fields: [taskId], references: [id])
+  taskId          String
+  attachment      Attachment      @relation(fields: [attachmentId], references: [id])
+  attachmentId    String
+  
+  @@map("task_attachments")
+}
+
+model TaskComment {
+  id              String          @id @default(cuid())
+  task            Task            @relation(fields: [taskId], references: [id])
+  taskId          String
+  content         String
+  author          User            @relation(fields: [authorId], references: [id])
+  authorId        String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@map("task_comments")
+}
