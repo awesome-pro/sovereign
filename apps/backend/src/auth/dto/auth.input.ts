@@ -5,12 +5,12 @@ import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 export class LoginInput {
   @Field(() => String)
   @IsEmail()
-  email: string;
+  email!: string;
 
   @Field(() => String)
   @IsString()
   @MinLength(8)
-  password: string;
+  password!: string;
 
   @Field(() => String, { nullable: true })
   @IsString()
@@ -22,31 +22,31 @@ export class LoginInput {
 export class RefreshTokenInput {
   @Field(() => String)
   @IsString()
-  refreshToken: string;
+  refreshToken!: string;
 }
 
 @InputType()
 export class TwoFactorTokenInput {
   @Field(() => String)
   @IsString()
-  token: string;
+  token!: string;
 }
 
 @InputType()
 export class SecurityLogsInput {
   @Field(() => String)
   @IsString()
-  userId: string;
+  userId!: string;
 
   @Field(() => Date)
-  startDate: Date;
+  startDate!: Date;
 
   @Field(() => Date)
-  endDate: Date;
+  endDate!: Date;
 }
 
 @InputType()
 export class LoginHistoryInput {
   @Field(() => Number, { defaultValue: 10 })
-  limit: number;
+  limit: number = 10;
 }
