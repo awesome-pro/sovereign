@@ -23,8 +23,6 @@
   "exclude": ["node_modules"],
   "include": ["packages/*/src/**/*"],
   "references": [
-    { "path": "packages/database" },
-    { "path": "packages/types" },
-    { "path": "packages/utils" }
+    { "path": "packages/database" }
   ]
 }

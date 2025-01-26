@@ -1,0 +1,84 @@
+type User {
+  id: ID!
+  email: String!
+  phone: String
+  emailVerified: DateTime
+  phoneVerified: DateTime
+  status: UserStatus!
+  roles: [UserRole!]!
+  twoFactorEnabled: Boolean!
+  profile: UserProfile
+}
+
+type AuthResponse {
+  accessToken: String!
+  refreshToken: String
+  user: User
+}
+
+type TwoFactorResponse {
+  secret: String!
+  qrCodeUrl: String!
+}
+
+type SecurityLog {
+  id: ID!
+  userId: String!
+  action: String!
+  description: String
+  ip: String
+  device: String
+  userAgent: String
+  createdAt: DateTime!
+}
+
+type LoginHistory {
+  id: ID!
+  userId: String!
+  device: String
+  ip: String
+  location: String
+  success: Boolean!
+  reason: String
+  createdAt: DateTime!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+  twoFactorToken: String
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
+}
+
+input TwoFactorTokenInput {
+  token: String!
+}
+
+input SecurityLogsInput {
+  userId: String!
+  startDate: DateTime!
+  endDate: DateTime!
+}
+
+input LoginHistoryInput {
+  limit: Int = 10
+}
+
+type Query {
+  getSecurityLogs(input: SecurityLogsInput!): [SecurityLog!]!
+  getLoginHistory(input: LoginHistoryInput!): [LoginHistory!]!
+}
+
+type Mutation {
+  login(input: LoginInput!): AuthResponse!
+  refreshToken(input: RefreshTokenInput!): AuthResponse!
+  logout(refreshToken: String!): Boolean!
+  setupTwoFactor: TwoFactorResponse!
+  verifyAndEnableTwoFactor(input: TwoFactorTokenInput!): Boolean!
+  disableTwoFactor(password: String!): Boolean!
+}
+
+scalar DateTime

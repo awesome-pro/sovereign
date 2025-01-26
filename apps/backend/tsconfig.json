@@ -17,6 +17,7 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
+      "@/*": ["src/*"],
       "@sovereign/*": ["../../packages/*/src"]
     }
   },

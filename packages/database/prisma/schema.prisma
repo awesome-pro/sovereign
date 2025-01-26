@@ -510,7 +510,7 @@ model User {
   FollowUp FollowUp[] @relation("AssignedFollowUps")
   Comment Comment[]
   Mention Mention[]
-  Attachment Attachment[]
+  attachments Attachment[]
   Message Message[]
   MessageRead MessageRead[] @relation("ReadMessages")
   MessageDelivery MessageDelivery[] @relation("DeliveredMessages")
