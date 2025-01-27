@@ -2,27 +2,27 @@
 import { UseGuards } from '@nestjs/common';
 import { Resolver, Mutation, Args, Query, Context } from '@nestjs/graphql';
 import type { User } from '@sovereign/database';
-import { LoggerService } from '@/logging/logging.service';
-import { CurrentUser } from '../decorators/current-user.decorator';
+import { LoggerService } from '../../logging/logging.service.js';
+import { CurrentUser } from '../decorators/current-user.decorator.js';
 import {
   LoginInput,
   RefreshTokenInput,
   TwoFactorTokenInput,
   SecurityLogsInput,
   LoginHistoryInput,
-} from '../dto/auth.input';
-import { GqlAuthGuard } from '../guards/gql-auth.guard';
-import { RolesGuard } from '../guards/roles.guard';
-import { AuthService } from '../services/auth.service';
-import { SecurityService } from '../services/security.service';
-import { TwoFactorAuthService } from '../services/two-factor-auth.service';
+} from '../dto/auth.input.js';
+import { GqlAuthGuard } from '../guards/gql-auth.guard.js';
+import { RolesGuard } from '../guards/roles.guard.js';
+import { AuthService } from '../services/auth.service.js';
+import { SecurityService } from '../services/security.service.js';
+import { TwoFactorAuthService } from '../services/two-factor-auth.service.js';
 import {
   AuthResponse,
   TwoFactorResponse,
   SecurityLog,
   LoginHistory,
-} from '../types/auth.types';
-import { Roles } from '../decorators/roles.decorator';
+} from '../types/auth.types.js';
+import { Roles } from '../decorators/roles.decorator.js';
 
 @Resolver()
 export class AuthResolver {

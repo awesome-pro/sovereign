@@ -1,13 +1,13 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from './app.module.js';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
-import { LoggerService } from './logging/logging.service';
+import { LoggerService } from './logging/logging.service.js';
 import { WinstonModule } from 'nest-winston';
-import { configureWinston } from './logging/winston.config';
+import { configureWinston } from './logging/winston.config.js';
 
 async function bootstrap() {
-  // Create Winston logger instance
+  // Create Winston logger instance for initial bootstrap
   const winstonLogger = WinstonModule.createLogger(configureWinston());
 
   // Create the NestJS application with Winston logger
@@ -16,8 +16,7 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
-  const logger = app.get(LoggerService);
-  logger.setContext('Bootstrap');
+  const logger = new LoggerService().setContext('Bootstrap');
 
   // Configure CORS
   app.enableCors({
@@ -42,9 +41,10 @@ async function bootstrap() {
   // Add request logging middleware
   app.use((req: any, res: any, next: () => void) => {
     const startTime = Date.now();
+    const requestLogger = new LoggerService().setContext('HTTP');
 
     // Log the incoming request
-    logger.debug(`Incoming ${req.method} request to ${req.url}`, {
+    requestLogger.debug(`Incoming ${req.method} request to ${req.url}`, {
       method: req.method,
       url: req.url,
       ip: req.ip,
@@ -54,7 +54,7 @@ async function bootstrap() {
     // Log the response after it's sent
     res.on('finish', () => {
       const duration = Date.now() - startTime;
-      logger.debug(`Response sent for ${req.method} ${req.url}`, {
+      requestLogger.debug(`Response sent for ${req.method} ${req.url}`, {
         method: req.method,
         url: req.url,
         statusCode: res.statusCode,
@@ -72,6 +72,7 @@ async function bootstrap() {
 }
 
 bootstrap().catch((error) => {
-  console.error('Application failed to start:', error);
+  const logger = new LoggerService().setContext('Bootstrap');
+  logger.error('Application failed to start', error);
   process.exit(1);
 });

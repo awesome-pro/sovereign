@@ -1,10 +1,10 @@
-import { PrismaService } from '@/prisma/prisma.service';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { LoggerService } from '@/logging/logging.service';
+import { LoggerService } from '../../logging/logging.service.js';
 import * as geoip from 'geoip-lite';
 import { UAParser } from 'ua-parser-js';
-import type { SecurityLog, LoginHistory } from '../types/auth.types';
+import type { SecurityLog, LoginHistory } from '../types/auth.types.js';
 
 @Injectable()
 export class SecurityService {

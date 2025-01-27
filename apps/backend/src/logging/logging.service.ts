@@ -1,29 +1,47 @@
 import {
   Injectable,
-  Scope,
   LoggerService as NestLoggerService,
 } from '@nestjs/common';
 import { createLogger, Logger } from 'winston';
-import { configureWinston } from './winston.config';
+import { configureWinston } from './winston.config.js';
 
-@Injectable({ scope: Scope.TRANSIENT })
+@Injectable()
 export class LoggerService implements NestLoggerService {
-  private logger: Logger;
-  private context?: string;
+  private static instance: LoggerService;
+  private logger!: Logger;  // Use non-null assertion
+  private contexts: Map<string, Logger> = new Map();
 
   constructor() {
+    // If an instance already exists, return it
+    if (LoggerService.instance) {
+      return LoggerService.instance;
+    }
+
+    // Initialize logger if no instance exists
     this.logger = createLogger(configureWinston());
+    LoggerService.instance = this;
+    return this;
   }
 
   setContext(context: string) {
-    this.context = context;
+    if (!this.contexts.has(context)) {
+      const contextLogger = this.logger.child({ context });
+      this.contexts.set(context, contextLogger);
+    }
     return this;
+  }
+
+  getContextLogger(context?: string): Logger {
+    if (!context) return this.logger;
+    if (!this.contexts.has(context)) {
+      this.setContext(context);
+    }
+    return this.contexts.get(context) || this.logger;
   }
 
   private formatMeta(meta: Record<string, any> = {}) {
     return {
       ...meta,
-      context: this.context,
       timestamp: new Date().toISOString(),
     };
   }
@@ -63,7 +81,6 @@ export class LoggerService implements NestLoggerService {
     this.logger.verbose(message, this.formatMeta(meta));
   }
 
-  // Required by NestLoggerService interface
   fatal(message: string, meta: Record<string, any> = {}) {
     this.error(message, undefined, { ...meta, level: 'FATAL' });
   }

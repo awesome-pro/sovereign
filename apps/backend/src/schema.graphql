@@ -1,0 +1,114 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AuthResponse {
+  accessToken: String!
+  refreshToken: String
+  user: User
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type DeviceInfo {
+  browser: String!
+  device: String!
+  os: String!
+}
+
+type LoginHistory {
+  createdAt: DateTime!
+  device: String
+  deviceInfo: DeviceInfo
+  id: String!
+  ip: String
+  location: String
+  reason: String
+  success: Boolean!
+  userEmail: String
+  userId: String!
+}
+
+input LoginHistoryInput {
+  limit: Float! = 10
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+  twoFactorToken: String
+}
+
+type Mutation {
+  disableTwoFactor(password: String!): Boolean!
+  login(input: LoginInput!): AuthResponse!
+  logout(refreshToken: String!): Boolean!
+  refreshToken(input: RefreshTokenInput!): AuthResponse!
+  setupTwoFactor: TwoFactorResponse!
+  verifyAndEnableTwoFactor(input: TwoFactorTokenInput!): Boolean!
+}
+
+type Query {
+  getLoginHistory(input: LoginHistoryInput!): [LoginHistory!]!
+  getSecurityLogs(input: SecurityLogsInput!): [SecurityLog!]!
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
+}
+
+type SecurityLog {
+  action: String!
+  createdAt: DateTime!
+  description: String
+  device: String
+  id: String!
+  ip: String
+  location: String
+  userAgent: String
+  userEmail: String
+  userId: String!
+  userName: String
+}
+
+input SecurityLogsInput {
+  endDate: DateTime!
+  startDate: DateTime!
+  userId: String!
+}
+
+type TwoFactorResponse {
+  qrCodeUrl: String!
+  secret: String!
+}
+
+input TwoFactorTokenInput {
+  token: String!
+}
+
+type User {
+  createdAt: DateTime!
+  deletedAt: DateTime
+  email: String!
+  emailVerified: DateTime
+  id: String!
+  phone: String
+  phoneVerified: DateTime
+  roles: [String!]!
+  status: UserStatus!
+  twoFactorEnabled: Boolean!
+  updatedAt: DateTime!
+}
+
+"""User account status"""
+enum UserStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+  INACTIVE
+  PENDING_VERIFICATION
+  SUSPENDED
+}

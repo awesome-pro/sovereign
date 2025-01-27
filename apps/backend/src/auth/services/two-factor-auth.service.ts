@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { authenticator } from 'otplib';
-import { PrismaService } from '@/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service.js';
 import { ConfigService } from '@nestjs/config';
 import * as QRCode from 'qrcode';
 

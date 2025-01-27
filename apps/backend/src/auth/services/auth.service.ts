@@ -5,8 +5,8 @@ import { User, UserStatus } from '@sovereign/database';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
-import { PrismaService } from '@/prisma/prisma.service';
-import { LoggerService } from '@/logging/logging.service';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { LoggerService } from '../../logging/logging.service.js';
 
 interface JwtPayload {
   sub: string;

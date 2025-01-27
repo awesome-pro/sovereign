@@ -2,13 +2,13 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthService } from './services/auth.service';
-import { AuthResolver } from './resolvers/auth.resolver';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { LocalStrategy } from './strategies/local.strategy';
-import { TwoFactorAuthService } from './services/two-factor-auth.service';
-import { SecurityService } from './services/security.service';
-import { PrismaService } from '@/prisma/prisma.service';
+import { AuthService } from './services/auth.service.js';
+import { AuthResolver } from './resolvers/auth.resolver.js';
+import { JwtStrategy } from './strategies/jwt.strategy.js';
+import { LocalStrategy } from './strategies/local.strategy.js';
+import { TwoFactorAuthService } from './services/two-factor-auth.service.js';
+import { SecurityService } from './services/security.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 @Module({
   imports: [

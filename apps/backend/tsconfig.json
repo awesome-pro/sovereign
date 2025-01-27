@@ -20,7 +20,6 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["src/*"],
       "@sovereign/database": ["../../packages/database/src"]
     }
   },
