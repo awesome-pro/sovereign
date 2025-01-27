@@ -25,6 +25,7 @@ export function useAuth() {
 
   const clearTokens = useCallback(() => {
     Cookies.remove('accessToken', { path: '/' });
+    Cookies.remove('refreshToken', { path: '/' });
   }, []);
 
   const logout = useCallback(async () => {
@@ -34,12 +35,20 @@ export function useAuth() {
     router.push('/auth/sign-in');
   }, [client, router, clearTokens]);
 
-  const handleAuthSuccess = useCallback((accessToken: string, user: User) => {
+  const handleAuthSuccess = useCallback((accessToken: string, refreshToken: string, user: User) => {
     Cookies.set('accessToken', accessToken, {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
     });
+    
+    Cookies.set('refreshToken', refreshToken, {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      expires: 7, // 7 days
+    });
+    
     setUser(user);
   }, []);
 
@@ -49,8 +58,8 @@ export function useAuth() {
         variables: { input },
       });
 
-      const { accessToken, user } = data.login;
-      handleAuthSuccess(accessToken, user);
+      const { accessToken, refreshToken, user } = data.login;
+      handleAuthSuccess(accessToken, refreshToken, user);
 
       // Redirect based on user role and status
       if (user.status === 'PENDING_VERIFICATION') {

@@ -1,14 +1,15 @@
 import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { User, UserStatus } from '@sovereign/database';
+import { User as PrismaUser, UserStatus } from '@sovereign/database';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { LoggerService } from '../../logging/logging.service.js';
 import { RegisterInput } from '../dto/auth.input.js';
-import { AuthResponse, VerificationResponse } from '../types/auth.types.js';
+import { AuthResponse, VerificationResponse, User } from '../types/auth.types.js';
+import { mapPrismaUserToGraphQL } from '../utils/type-mappers.js';
 
 interface JwtPayload {
   sub: string;
@@ -100,7 +101,7 @@ export class AuthService {
   //   }
   // }
 
-  async login(user: User, deviceInfo: DeviceInfo): Promise<any> {
+  async login(user: PrismaUser, deviceInfo: DeviceInfo): Promise<AuthResponse> {
     try {
       const accessToken = await this.createAccessToken(user);
       const refreshToken = await this.createRefreshToken(user, deviceInfo);
@@ -111,7 +112,7 @@ export class AuthService {
       return {
         accessToken,
         refreshToken,
-        user,
+        user: mapPrismaUserToGraphQL(user),
       };
     } catch (error) {
       this.logger.error('Login failed', error);
@@ -119,49 +120,65 @@ export class AuthService {
     }
   }
 
-  // async refreshToken(token: string, deviceInfo: DeviceInfo): Promise<AuthResponse> {
-  //   try {
-  //     const hashedToken = await bcrypt.hash(token, 10);
-  //     const tokenRecord = await this.prisma.refreshToken.findFirst({
-  //       where: { hashedToken },
-  //       include: {
-  //         user: {
-  //           include: {
-  //             roles: {
-  //               include: {
-  //                 role: true,
-  //               },
-  //             },
-  //             profile: true,
-  //             company: true,
-  //           },
-  //         },
-  //       },
-  //     });
+  async refreshToken(token: string, deviceInfo: DeviceInfo): Promise<AuthResponse> {
+    try {
+      // Find the refresh token in the database
+      const refreshTokenRecord = await this.prisma.refreshToken.findFirst({
+        where: {
+          hashedToken: await bcrypt.hash(token, 10),
+          revokedAt: null,
+          expiresAt: {
+            gt: new Date(),
+          },
+        },
+        include: {
+          user: {
+            include: {
+              roles: {
+                include: {
+                  role: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-  //     if (!tokenRecord || tokenRecord.revokedAt || new Date() > tokenRecord.expiresAt) {
-  //       throw new UnauthorizedException('Invalid or expired refresh token');
-  //     }
+      if (!refreshTokenRecord) {
+        throw new UnauthorizedException('Invalid or expired refresh token');
+      }
 
-  //     // Generate new tokens
-  //     const accessToken = await this.createAccessToken(tokenRecord.user);
-  //     const refreshToken = await this.createRefreshToken(tokenRecord.user, deviceInfo);
+      // Check if user is still active
+      if (refreshTokenRecord.user.status !== UserStatus.ACTIVE) {
+        await this.revokeAllUserTokens(refreshTokenRecord.user.id);
+        throw new UnauthorizedException('User account is not active');
+      }
 
-  //     // Revoke old token
-  //     await this.revokeRefreshToken(tokenRecord.id);
+      // Revoke the used refresh token (one-time use)
+      await this.revokeRefreshToken(refreshTokenRecord.id);
 
-  //     return {
-  //       accessToken,
-  //       refreshToken,
-  //       user: tokenRecord.user,
-  //     };
-  //   } catch (error) {
-  //     this.logger.error('Token refresh failed', error);
-  //     throw error;
-  //   }
-  // }
+      // Generate new tokens
+      const accessToken = await this.createAccessToken(refreshTokenRecord.user);
+      const newRefreshToken = await this.createRefreshToken(refreshTokenRecord.user, deviceInfo);
 
-  async validateUser(email: string, password: string): Promise<User> {
+      // Log the token refresh
+      await this.logSecurityEvent(refreshTokenRecord.user.id, 'TOKEN_REFRESH', {
+        description: 'Refresh token used to generate new tokens',
+        ...deviceInfo,
+      });
+
+      return {
+        accessToken,
+        refreshToken: newRefreshToken,
+        user: mapPrismaUserToGraphQL(refreshTokenRecord.user),
+      };
+    } catch (error) {
+      this.logger.error('Token refresh failed', error);
+      throw error;
+    }
+  }
+
+  async validateUser(email: string, password: string): Promise<PrismaUser> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email },
@@ -174,14 +191,14 @@ export class AuthService {
         },
       });
 
-      if (!user || user.status == UserStatus.INACTIVE || user.status === UserStatus.SUSPENDED) {
+      if (!user || user.status === UserStatus.INACTIVE || user.status === UserStatus.SUSPENDED) {
         throw new UnauthorizedException('Invalid credentials or inactive account');
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
-      // if (!isPasswordValid) {
-      //   throw new UnauthorizedException('Invalid credentials');
-      // }
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
 
       return user;
     } catch (error) {
@@ -290,7 +307,7 @@ export class AuthService {
     }
   }
 
-  async createAccessToken(user: User): Promise<string> {
+  async createAccessToken(user: PrismaUser): Promise<string> {
     try {
       const roles = await this.prisma.userRole.findMany({
         where: { userId: user.id },
@@ -310,10 +327,14 @@ export class AuthService {
     }
   }
 
-  async createRefreshToken(user: User, deviceInfo?: DeviceInfo): Promise<string> {
+  async createRefreshToken(user: PrismaUser, deviceInfo?: DeviceInfo): Promise<string> {
     try {
       const token = uuidv4();
       const hashedToken = await bcrypt.hash(token, 10);
+      const expiresIn = this.configService.get<number>('REFRESH_TOKEN_EXPIRES_IN') || 7 * 24 * 60 * 60 * 1000; // 7 days default
+
+      // Cleanup old refresh tokens
+      await this.cleanupOldRefreshTokens(user.id);
 
       await this.prisma.refreshToken.create({
         data: {
@@ -321,7 +342,7 @@ export class AuthService {
           userId: user.id,
           device: deviceInfo?.device,
           ip: deviceInfo?.ip,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+          expiresAt: new Date(Date.now() + expiresIn),
         },
       });
 
@@ -395,6 +416,41 @@ export class AuthService {
     } catch (error) {
       this.logger.error('Error hashing password', error);
       throw error;
+    }
+  }
+
+  private async cleanupOldRefreshTokens(userId: string): Promise<void> {
+    try {
+      const maxTokensPerUser = this.configService.get<number>('MAX_REFRESH_TOKENS_PER_USER') || 5;
+
+      // Get all active tokens for the user
+      const activeTokens = await this.prisma.refreshToken.findMany({
+        where: {
+          userId,
+          revokedAt: null,
+          expiresAt: {
+            gt: new Date(),
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      // If we have more tokens than allowed, revoke the oldest ones
+      if (activeTokens.length >= maxTokensPerUser) {
+        const tokensToRevoke = activeTokens.slice(maxTokensPerUser - 1);
+        await Promise.all(
+          tokensToRevoke.map((token) =>
+            this.prisma.refreshToken.update({
+              where: { id: token.id },
+              data: { revokedAt: new Date() },
+            }),
+          ),
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error cleaning up old refresh tokens', error);
     }
   }
 }

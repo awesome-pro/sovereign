@@ -116,22 +116,22 @@ export class AuthResolver {
     }
   }
 
-  // @Mutation(() => AuthResponse)
-  // async refreshToken(
-  //   @Args('input') input: RefreshTokenInput,
-  //   @Context() context: any,
-  // ): Promise<AuthResponse> {
-  //   try {
-  //     const { req } = context;
-  //     const ip = req.ip;
-  //     const userAgent = req.headers['user-agent'];
+  @Mutation(() => AuthResponse)
+  async refreshToken(
+    @Args('input') input: RefreshTokenInput,
+    @Context() context: any,
+  ): Promise<AuthResponse> {
+    try {
+      const { req } = context;
+      const ip = req.ip;
+      const userAgent = req.headers['user-agent'];
 
-  //     return await this.authService.refreshToken(input.refreshToken, { ip, userAgent });
-  //   } catch (error) {
-  //     this.logger.error('Token refresh failed', error);
-  //     throw error;
-  //   }
-  // }
+      return await this.authService.refreshToken(input.refreshToken, { ip, userAgent });
+    } catch (error) {
+      this.logger.error('Token refresh failed', error);
+      throw error;
+    }
+  }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)

@@ -37,6 +37,7 @@ input LoginInput {
 type Mutation {
   login(input: LoginInput!): AuthResponse!
   logout(refreshToken: String!): Boolean!
+  refreshToken(input: RefreshTokenInput!): AuthResponse!
   requestPasswordReset(email: String!): VerificationResponse!
   resetPassword(input: ResetPasswordInput!): VerificationResponse!
   setupTwoFactor: TwoFactorResponse!
@@ -48,6 +49,10 @@ type Query {
   getLoginHistory(input: LoginHistoryInput!): [LoginHistory!]!
   getSecurityLogs(input: SecurityLogsInput!): [SecurityLog!]!
   me: User!
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
 }
 
 input ResetPasswordInput {
