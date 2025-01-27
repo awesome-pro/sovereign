@@ -50,6 +50,7 @@ function makeClient() {
     }
     if (networkError) {
       console.error(`[Network error]: ${networkError}`);
+      window.location.href = '/auth/sign-in';
     }
   });
 
