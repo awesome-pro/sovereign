@@ -1,13 +1,11 @@
 'use client';
 
-import { RoleGuard } from '@/components/auth/RoleGuard';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function DashboardPage() {
   const { user } = useAuth()
 
   return (
-    <RoleGuard allowedRoles={['USER', 'AGENT', 'COMPANY_ADMIN', 'ADMIN', 'SUPER_ADMIN']}>
       <div className="p-8">
         <h1 className="text-2xl font-bold mb-4">
           Welcome, {user?.email}!
@@ -51,6 +49,5 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </RoleGuard>
   );
 }
