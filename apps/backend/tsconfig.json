@@ -1,11 +1,14 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "target": "ES2024",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
@@ -18,12 +21,10 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@/*": ["src/*"],
-      "@sovereign/*": ["../../packages/*/src"]
+      "@sovereign/database": ["../../packages/database/src"]
     }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../../packages/database" }
-  ]
+  "references": [{ "path": "../../packages/database" }]
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { UseGuards } from '@nestjs/common';
 import { Resolver, Mutation, Args, Query, Context } from '@nestjs/graphql';
 import type { User } from '@sovereign/database';

@@ -18,6 +18,8 @@
     "format:write": "prettier --write \"**/*.{ts,tsx,mdx}\" --cache",
     "format": "prettier \"**/*.{ts,tsx,mdx}\" --cache",
     "lint": "eslint . --ext .ts,.tsx",
+    "prebuild": "npm run db:generate",
+    "predev": "npm run db:generate",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

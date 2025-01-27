@@ -1,13 +1,13 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ["src/index.ts"],
-  format: ["cjs", "esm"],
+  entry: ['src/index.ts'],
+  format: ['cjs', 'esm'],
   target: "es2024",
   dts: true,
-  splitting: false,
+  clean: true,
   sourcemap: true,
-  clean: false,
-  treeshake: false,
-  external: ["@prisma/client"],
+  splitting: false,
+  treeshake: true,
+  external: ['@prisma/client'],
 });

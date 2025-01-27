@@ -17,7 +17,7 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@sovereign/*": ["packages/*/src"]
+      "@sovereign/database": ["packages/database/src"]
     }
   },
   "exclude": ["node_modules"],

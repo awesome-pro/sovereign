@@ -7,6 +7,6 @@ import { configureWinston } from './winston.config';
 @Module({
   imports: [WinstonModule.forRoot(configureWinston())],
   providers: [LoggerService],
-  exports: [LoggerService],
+  exports: [LoggerService, WinstonModule],
 })
 export class LoggingModule {}
