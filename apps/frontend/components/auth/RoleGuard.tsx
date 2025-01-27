@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthContext } from '../providers/AuthProvider';
+import { useAuthContext } from '@/providers/auth-provider';
 
 interface RoleGuardProps {
   children: React.ReactNode;
@@ -14,7 +14,7 @@ interface RoleGuardProps {
 export function RoleGuard({
   children,
   allowedRoles,
-  redirectTo = '/login',
+  redirectTo = '/auth/sign-in',
   loadingComponent = <div className="flex items-center justify-center min-h-screen">Loading...</div>,
 }: RoleGuardProps) {
   const { user, loading, checkAuth } = useAuthContext();

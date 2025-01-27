@@ -1,16 +1,16 @@
 'use client';
 
-import { RoleGuard } from '@/app/auth/components/RoleGuard';
-import { useAuthContext } from '@/app/auth/providers/AuthProvider';
+import { RoleGuard } from '@/components/auth/RoleGuard';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function DashboardPage() {
-  const { user } = useAuthContext();
+  const { user } = useAuth()
 
   return (
     <RoleGuard allowedRoles={['USER', 'AGENT', 'COMPANY_ADMIN', 'ADMIN', 'SUPER_ADMIN']}>
       <div className="p-8">
         <h1 className="text-2xl font-bold mb-4">
-          Welcome, {user?.profile?.firstName}!
+          Welcome, {user?.email}!
         </h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -20,23 +20,21 @@ export default function DashboardPage() {
             <div className="space-y-2">
               <p>Email: {user?.email}</p>
               <p>Role: {user?.roles[0]?.role.name}</p>
-              {user?.company && (
-                <p>Company: {user.company.name}</p>
-              )}
+              {user?.status}
             </div>
           </div>
 
           {/* Activity Stats */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-4">Activity</h2>
-            {user?.profile && (
+            {/* {user?.profile && (
               <div className="space-y-2">
                 <p>Active Listings: {user.profile.activeListings}</p>
                 {user.profile.rating && (
                   <p>Rating: {user.profile.rating.toFixed(1)}</p>
                 )}
               </div>
-            )}
+            )} */}
           </div>
 
           {/* Quick Actions */}

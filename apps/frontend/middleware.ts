@@ -2,11 +2,16 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Add paths that don't require authentication
-const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
+const publicPaths = [
+  '/auth/sign-in',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Check if the path is public
   if (publicPaths.includes(pathname)) {
     return NextResponse.next();
@@ -16,7 +21,7 @@ export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get('accessToken')?.value;
   
   if (!accessToken && !pathname.startsWith('/api')) {
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/auth/sign-in', request.url);
     loginUrl.searchParams.set('from', pathname);
     return NextResponse.redirect(loginUrl);
   }
