@@ -1,14 +1,11 @@
-import {
-  Injectable,
-  LoggerService as NestLoggerService,
-} from '@nestjs/common';
+import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
 import { createLogger, Logger } from 'winston';
 import { configureWinston } from './winston.config.js';
 
 @Injectable()
 export class LoggerService implements NestLoggerService {
   private static instance: LoggerService;
-  private logger!: Logger;  // Use non-null assertion
+  private logger!: Logger; // Use non-null assertion
   private contexts: Map<string, Logger> = new Map();
 
   constructor() {

@@ -22,7 +22,7 @@ import { LoggerService } from './logging/logging.service.js';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const logger = new LoggerService().setContext('GraphQL');
-        
+
         return {
           autoSchemaFile: join(process.cwd(), 'src/schema.graphql'),
           sortSchema: true,
