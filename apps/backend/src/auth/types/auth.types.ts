@@ -1,37 +1,28 @@
-import { ObjectType, Field, registerEnumType } from '@nestjs/graphql';
-import { User as PrismaUser, UserStatus } from '@sovereign/database';
+import { ObjectType, Field, ID, Float, Int, registerEnumType } from '@nestjs/graphql';
+import { UserStatus } from '@sovereign/database';
 
 registerEnumType(UserStatus, {
   name: 'UserStatus',
   description: 'User account status',
 });
 
-@ObjectType('User')
-export class UserType implements Partial<PrismaUser> {
-  @Field(() => String)
+@ObjectType()
+export class Role {
+  @Field(() => ID)
   id!: string;
 
-  @Field(() => String)
-  email!: string;
+  @Field()
+  name!: string;
 
-  @Field(() => String, { nullable: true })
-  phone?: string;
+  @Field({ nullable: true })
+  description?: string;
 
-  @Field(() => Date, { nullable: true })
-  emailVerified?: Date;
+  @Field(() => [UserRole])
+  users!: UserRole[];
+}
 
-  @Field(() => Date, { nullable: true })
-  phoneVerified?: Date;
-
-  @Field(() => UserStatus)
-  status!: UserStatus;
-
-  @Field(() => [String])
-  roles!: string[];
-
-  @Field(() => Boolean)
-  twoFactorEnabled!: boolean;
-
+@ObjectType()
+export class RoleWithMetadata extends Role {
   @Field(() => Date)
   createdAt!: Date;
 
@@ -43,103 +34,230 @@ export class UserType implements Partial<PrismaUser> {
 }
 
 @ObjectType()
+export class UserRole {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => Role)
+  role!: Role;
+
+  @Field()
+  assignedAt!: Date;
+}
+
+@ObjectType()
+export class UserProfile {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  userId!: string;
+
+  @Field()
+  firstName!: string;
+
+  @Field()
+  lastName!: string;
+
+  @Field({ nullable: true })
+  displayName?: string;
+
+  @Field({ nullable: true })
+  avatar?: string;
+
+  @Field({ nullable: true })
+  bio?: string;
+
+  @Field({ nullable: true })
+  coverImage?: string;
+
+  @Field(() => Date, { nullable: true })
+  dateOfBirth?: Date;
+
+  @Field({ nullable: true })
+  gender?: string;
+
+  @Field({ nullable: true })
+  nationality?: string;
+
+  @Field({ nullable: true })
+  secondaryEmail?: string;
+
+  @Field({ nullable: true })
+  secondaryPhone?: string;
+
+  @Field({ nullable: true })
+  whatsapp?: string;
+
+  // @Field(() => UserAddress, { nullable: true })
+  // address?: UserAddress;
+
+  @Field({ nullable: true })
+  title?: string;
+
+  @Field(() => [String])
+  specializations!: string[];
+
+  // @Field(() => [UserLicense])
+  // licenses!: UserLicense[];
+
+  // @Field(() => [UserCertification])
+  // certifications!: UserCertification[];
+
+  @Field({ nullable: true })
+  experience?: number;
+
+  @Field({ nullable: true })
+  activeListings?: number;
+
+  @Field({ nullable: true })
+  rating?: number;
+
+  @Field({ nullable: true })
+  reviewCount?: number;
+
+  // @Field(() => [Language])
+  // languages!: Language[];
+
+  @Field()
+  timeZone!: string;
+
+  @Field()
+  currency!: string;
+
+  // @Field(() => GraphQLJSON, { nullable: true })
+  // socialLinks?: any;
+
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
+}
+
+@ObjectType()
+export class Company {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  name!: string;
+
+  @Field()
+  type!: string;
+
+  @Field()
+  status!: string;
+}
+
+@ObjectType()
+export class User {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  email!: string;
+
+  @Field({ nullable: true })
+  phone?: string;
+
+  @Field({ nullable: true })
+  emailVerified?: Date;
+
+  @Field({ nullable: true })
+  phoneVerified?: Date;
+
+  @Field(() => UserStatus)
+  status!: UserStatus;
+
+  @Field(() => [UserRole])
+  roles!: UserRole[];
+
+  @Field()
+  twoFactorEnabled!: boolean;
+
+}
+
+@ObjectType()
 export class AuthResponse {
-  @Field(() => String)
+  @Field()
   accessToken!: string;
 
-  @Field(() => String, { nullable: true })
-  refreshToken?: string;
+  @Field()
+  refreshToken!: string;
 
-  @Field(() => UserType, { nullable: true })
-  user?: UserType;
+  @Field(() => User)
+  user!: User;
 }
 
 @ObjectType()
 export class TwoFactorResponse {
-  @Field(() => String)
+  @Field()
   secret!: string;
 
-  @Field(() => String)
+  @Field()
   qrCodeUrl!: string;
 }
 
 @ObjectType()
 export class SecurityLog {
-  @Field(() => String)
+  @Field(() => ID)
   id!: string;
 
-  @Field(() => String)
+  @Field()
   userId!: string;
 
-  @Field(() => String)
-  action!: string;
+  @Field()
+  action?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   description?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   ip?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   device?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   userAgent?: string;
 
-  @Field(() => Date)
-  createdAt!: Date;
-
-  @Field(() => String, { nullable: true })
-  location?: string;
-
-  @Field(() => String, { nullable: true })
-  userEmail?: string;
-
-  @Field(() => String, { nullable: true })
-  userName?: string;
-}
-
-@ObjectType()
-export class DeviceInfo {
-  @Field(() => String)
-  browser!: string;
-
-  @Field(() => String)
-  os!: string;
-
-  @Field(() => String)
-  device!: string;
+  @Field()
+  createdAt?: Date;
 }
 
 @ObjectType()
 export class LoginHistory {
-  @Field(() => String)
+  @Field(() => ID)
   id!: string;
 
-  @Field(() => String)
+  @Field()
   userId!: string;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   device?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   ip?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   location?: string;
 
-  @Field(() => Boolean)
+  @Field()
   success!: boolean;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   reason?: string;
 
-  @Field(() => Date)
-  createdAt!: Date;
+  @Field()
+  createdAt?: Date;
+}
 
-  @Field(() => String, { nullable: true })
-  userEmail?: string;
+@ObjectType()
+export class VerificationResponse {
+  @Field()
+  success!: boolean;
 
-  @Field(() => DeviceInfo, { nullable: true })
-  deviceInfo?: DeviceInfo;
+  @Field()
+  message!: string;
 }

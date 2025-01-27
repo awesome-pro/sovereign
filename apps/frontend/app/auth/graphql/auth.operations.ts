@@ -9,15 +9,17 @@ export const REGISTER_MUTATION = gql`
         id
         email
         status
+        emailVerified
+        phoneVerified
+        twoFactorEnabled
         roles {
+          id
           role {
+            id
             name
+            description
           }
-        }
-        profile {
-          firstName
-          lastName
-          avatar
+          assignedAt
         }
       }
     }
@@ -33,26 +35,17 @@ export const LOGIN_MUTATION = gql`
         id
         email
         status
+        emailVerified
+        phoneVerified
         twoFactorEnabled
         roles {
-          role {
-            name
-          }
-        }
-        profile {
-          firstName
-          lastName
-          avatar
-          title
-          specializations
-          activeListings
-          rating
-        }
-        company {
           id
-          name
-          type
-          status
+          role {
+            id
+            name
+            description
+          }
+          assignedAt
         }
       }
     }
@@ -119,26 +112,17 @@ export const GET_CURRENT_USER_QUERY = gql`
       id
       email
       status
+      emailVerified
+      phoneVerified
       twoFactorEnabled
       roles {
-        role {
-          name
-        }
-      }
-      profile {
-        firstName
-        lastName
-        avatar
-        title
-        specializations
-        activeListings
-        rating
-      }
-      company {
         id
-        name
-        type
-        status
+        role {
+          id
+          name
+          description
+        }
+        assignedAt
       }
     }
   }

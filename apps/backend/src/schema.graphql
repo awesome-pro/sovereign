@@ -4,8 +4,8 @@
 
 type AuthResponse {
   accessToken: String!
-  refreshToken: String
-  user: User
+  refreshToken: String!
+  user: User!
 }
 
 """
@@ -13,27 +13,19 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
-type DeviceInfo {
-  browser: String!
-  device: String!
-  os: String!
-}
-
 type LoginHistory {
   createdAt: DateTime!
   device: String
-  deviceInfo: DeviceInfo
-  id: String!
+  id: ID!
   ip: String
   location: String
   reason: String
   success: Boolean!
-  userEmail: String
   userId: String!
 }
 
 input LoginHistoryInput {
-  limit: Float! = 10
+  limit: Int! = 10
 }
 
 input LoginInput {
@@ -43,21 +35,31 @@ input LoginInput {
 }
 
 type Mutation {
-  disableTwoFactor(password: String!): Boolean!
   login(input: LoginInput!): AuthResponse!
   logout(refreshToken: String!): Boolean!
-  refreshToken(input: RefreshTokenInput!): AuthResponse!
+  requestPasswordReset(email: String!): VerificationResponse!
+  resetPassword(input: ResetPasswordInput!): VerificationResponse!
   setupTwoFactor: TwoFactorResponse!
   verifyAndEnableTwoFactor(input: TwoFactorTokenInput!): Boolean!
+  verifyEmail(token: String!): VerificationResponse!
 }
 
 type Query {
   getLoginHistory(input: LoginHistoryInput!): [LoginHistory!]!
   getSecurityLogs(input: SecurityLogsInput!): [SecurityLog!]!
+  me: User!
 }
 
-input RefreshTokenInput {
-  refreshToken: String!
+input ResetPasswordInput {
+  password: String!
+  token: String!
+}
+
+type Role {
+  description: String
+  id: ID!
+  name: String!
+  users: [UserRole!]!
 }
 
 type SecurityLog {
@@ -65,13 +67,10 @@ type SecurityLog {
   createdAt: DateTime!
   description: String
   device: String
-  id: String!
+  id: ID!
   ip: String
-  location: String
   userAgent: String
-  userEmail: String
   userId: String!
-  userName: String
 }
 
 input SecurityLogsInput {
@@ -90,17 +89,20 @@ input TwoFactorTokenInput {
 }
 
 type User {
-  createdAt: DateTime!
-  deletedAt: DateTime
   email: String!
   emailVerified: DateTime
-  id: String!
+  id: ID!
   phone: String
   phoneVerified: DateTime
-  roles: [String!]!
+  roles: [UserRole!]!
   status: UserStatus!
   twoFactorEnabled: Boolean!
-  updatedAt: DateTime!
+}
+
+type UserRole {
+  assignedAt: DateTime!
+  id: ID!
+  role: Role!
 }
 
 """User account status"""
@@ -111,4 +113,9 @@ enum UserStatus {
   INACTIVE
   PENDING_VERIFICATION
   SUSPENDED
+}
+
+type VerificationResponse {
+  message: String!
+  success: Boolean!
 }

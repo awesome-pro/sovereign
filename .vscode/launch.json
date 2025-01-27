@@ -1,0 +1,68 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Backend (NestJS)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:debug"],
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/apps/backend",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/apps/backend/**",
+        "!**/node_modules/**"
+      ],
+      "envFile": "${workspaceFolder}/apps/backend/.env",
+      "outFiles": ["${workspaceFolder}/apps/backend/dist/**/*.js"],
+      "restart": true,
+      "autoAttachChildProcesses": true,
+      "serverReadyAction": {
+        "pattern": "Listening at http://localhost:([0-9]+)",
+        "uriFormat": "http://localhost:%s/graphql",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "Attach Backend",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "cwd": "${workspaceFolder}/apps/backend",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/apps/backend/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "name": "Debug Frontend (Next.js)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "${workspaceFolder}/apps/frontend",
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "pattern": "- Local:.+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack: Backend + Frontend",
+      "configurations": ["Debug Backend (NestJS)", "Debug Frontend (Next.js)"],
+      "presentation": {
+        "hidden": false,
+        "group": "fullstack",
+        "order": 1
+      },
+      "stopAll": true
+    }
+  ]
+}

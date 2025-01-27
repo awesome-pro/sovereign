@@ -1,15 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { UseGuards } from '@nestjs/common';
 import { Resolver, Mutation, Args, Query, Context } from '@nestjs/graphql';
-import type { User } from '@sovereign/database';
+// import type { User } from '@sovereign/database';
 import { LoggerService } from '../../logging/logging.service.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
 import {
   LoginInput,
+  RegisterInput,
   RefreshTokenInput,
   TwoFactorTokenInput,
   SecurityLogsInput,
   LoginHistoryInput,
+  ResetPasswordInput,
 } from '../dto/auth.input.js';
 import { GqlAuthGuard } from '../guards/gql-auth.guard.js';
 import { RolesGuard } from '../guards/roles.guard.js';
@@ -21,6 +23,8 @@ import {
   TwoFactorResponse,
   SecurityLog,
   LoginHistory,
+  VerificationResponse,
+  User,
 } from '../types/auth.types.js';
 import { Roles } from '../decorators/roles.decorator.js';
 
@@ -37,9 +41,37 @@ export class AuthResolver {
     this.logger = loggerService.setContext('AuthResolver');
   }
 
+  @Query(() => User, { name: 'me' })
+  @UseGuards(GqlAuthGuard)
+  async getCurrentUser(@CurrentUser() user: User): Promise<User> {
+    return user;
+  }
+
+  // @Mutation(() => AuthResponse)
+  // async register(
+  //   @Args('input') input: RegisterInput,
+  //   @Context() context: any,
+  // ): Promise<AuthResponse> {
+  //   try {
+  //     const { req } = context;
+  //     const ip = req.ip;
+  //     const userAgent = req.headers['user-agent'];
+
+  //     this.logger.debug('Registration attempt', { email: input.email, ip });
+
+  //     const result = await this.authService.register(input, { ip, userAgent });
+  //     this.logger.debug('Registration successful', { userId: result.user.id });
+
+  //     return result;
+  //   } catch (error) {
+  //     this.logger.error('Registration failed', error, { email: input.email });
+  //     throw error;
+  //   }
+  // }
+
   @Mutation(() => AuthResponse)
   async login(
-    @Args('input') { email, password, twoFactorToken }: LoginInput,
+    @Args('input') input: LoginInput,
     @Context() context: any,
   ): Promise<AuthResponse> {
     try {
@@ -47,101 +79,67 @@ export class AuthResolver {
       const ip = req.ip;
       const userAgent = req.headers['user-agent'];
 
-      this.logger.debug('Login attempt', { email, ip, userAgent });
+      this.logger.debug('Login attempt', { email: input.email, ip });
 
       // Check for account lockout
-      const canLogin = await this.securityService.checkLoginAttempts(email, ip);
+      const canLogin = await this.securityService.checkLoginAttempts(input.email, ip);
       if (!canLogin) {
-        this.logger.warn('Account locked', { email, ip });
         throw new Error('Account temporarily locked. Please try again later.');
       }
 
       // Validate credentials
-      const user = await this.authService.validateUser(email, password);
+      const user = await this.authService.validateUser(input.email, input.password);
 
       // Check 2FA if enabled
       if (user.twoFactorEnabled) {
-        if (!twoFactorToken) {
-          this.logger.warn('2FA token required but not provided', {
-            userId: user.id,
-          });
+        if (!input.twoFactorToken) {
           throw new Error('Two-factor authentication token required');
         }
         const isValid = await this.twoFactorAuthService.verifyTwoFactorToken(
           user.id,
-          twoFactorToken,
+          input.twoFactorToken,
         );
         if (!isValid) {
-          this.logger.warn('Invalid 2FA token', { userId: user.id });
           throw new Error('Invalid two-factor authentication token');
         }
       }
 
-      // Check for suspicious activity
-      const isSuspicious = await this.securityService.detectSuspiciousActivity(
-        user.id,
-        ip,
-        userAgent,
-      );
-      if (isSuspicious) {
-        this.logger.warn('Suspicious activity detected', {
-          userId: user.id,
-          ip,
-          userAgent,
-        });
-      }
-
       // Generate tokens
-      const accessToken = await this.authService.createAccessToken(user);
-      const refreshToken = await this.authService.createRefreshToken(user, {
-        ip,
-        device: userAgent,
-      });
-
-      // Log successful login
-      await this.authService.logLoginAttempt(user.id, true, {
-        ip,
-        device: userAgent,
-      });
+      const result = await this.authService.login(user, { ip, userAgent });
 
       this.logger.debug('Login successful', { userId: user.id });
 
-      return {
-        accessToken,
-        refreshToken,
-        user,
-      };
+      return result;
     } catch (error) {
-      this.logger.error('Login failed', error, { email });
+      this.logger.error('Login failed', error, { email: input.email });
       throw error;
     }
   }
 
-  @Mutation(() => AuthResponse)
-  async refreshToken(
-    @Args('input') { refreshToken }: RefreshTokenInput,
-    @Context() context: any,
-  ): Promise<AuthResponse> {
-    try {
-      this.logger.debug('Token refresh attempt');
-      const accessToken =
-        await this.authService.refreshAccessToken(refreshToken);
-      return { accessToken };
-    } catch (error) {
-      this.logger.error('Token refresh failed', error);
-      throw error;
-    }
-  }
+  // @Mutation(() => AuthResponse)
+  // async refreshToken(
+  //   @Args('input') input: RefreshTokenInput,
+  //   @Context() context: any,
+  // ): Promise<AuthResponse> {
+  //   try {
+  //     const { req } = context;
+  //     const ip = req.ip;
+  //     const userAgent = req.headers['user-agent'];
+
+  //     return await this.authService.refreshToken(input.refreshToken, { ip, userAgent });
+  //   } catch (error) {
+  //     this.logger.error('Token refresh failed', error);
+  //     throw error;
+  //   }
+  // }
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)
   async logout(
     @CurrentUser() user: User,
     @Args('refreshToken') refreshToken: string,
-    @Context() context: any,
   ): Promise<boolean> {
     try {
-      this.logger.debug('Logout attempt', { userId: user.id });
       await this.authService.revokeRefreshToken(refreshToken);
       return true;
     } catch (error) {
@@ -154,8 +152,7 @@ export class AuthResolver {
   @Mutation(() => TwoFactorResponse)
   async setupTwoFactor(@CurrentUser() user: User): Promise<TwoFactorResponse> {
     try {
-      this.logger.debug('Setting up 2FA', { userId: user.id });
-      return this.twoFactorAuthService.generateTwoFactorSecret(user.id);
+      return await this.twoFactorAuthService.generateTwoFactorSecret(user.id);
     } catch (error) {
       this.logger.error('Failed to set up 2FA', error, { userId: user.id });
       throw error;
@@ -166,13 +163,12 @@ export class AuthResolver {
   @Mutation(() => Boolean)
   async verifyAndEnableTwoFactor(
     @CurrentUser() user: User,
-    @Args('input') { token }: TwoFactorTokenInput,
+    @Args('input') input: TwoFactorTokenInput,
   ): Promise<boolean> {
     try {
-      this.logger.debug('Verifying and enabling 2FA', { userId: user.id });
       const isValid = await this.twoFactorAuthService.verifyTwoFactorToken(
         user.id,
-        token,
+        input.token,
       );
       if (isValid) {
         await this.twoFactorAuthService.enableTwoFactor(user.id);
@@ -180,50 +176,25 @@ export class AuthResolver {
       }
       return false;
     } catch (error) {
-      this.logger.error('Failed to verify and enable 2FA', error, {
-        userId: user.id,
-      });
+      this.logger.error('Failed to verify and enable 2FA', error, { userId: user.id });
       throw error;
     }
   }
 
   @UseGuards(GqlAuthGuard)
-  @Mutation(() => Boolean)
-  async disableTwoFactor(
-    @CurrentUser() user: User,
-    @Args('password') password: string,
-  ): Promise<boolean> {
-    try {
-      this.logger.debug('Disabling 2FA', { userId: user.id });
-      await this.authService.validateUser(user.email, password);
-      await this.twoFactorAuthService.disableTwoFactor(user.id);
-      return true;
-    } catch (error) {
-      this.logger.error('Failed to disable 2FA', error, { userId: user.id });
-      throw error;
-    }
-  }
-
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Query(() => [SecurityLog])
+  @Roles('ADMIN')
   async getSecurityLogs(
-    @Args('input') { userId, startDate, endDate }: SecurityLogsInput,
+    @Args('input') input: SecurityLogsInput,
   ): Promise<SecurityLog[]> {
     try {
-      this.logger.debug('Fetching security logs', {
-        userId,
-        startDate,
-        endDate,
-      });
-      const logs = await this.securityService.getSecurityLogs(
-        userId,
-        startDate,
-        endDate,
+      return await this.securityService.getSecurityLogs(
+        input.userId,
+        input.startDate,
+        input.endDate,
       );
-      return logs;
     } catch (error) {
-      this.logger.error('Failed to fetch security logs', error, { userId });
+      this.logger.error('Failed to fetch security logs', error, { userId: input.userId });
       throw error;
     }
   }
@@ -232,19 +203,48 @@ export class AuthResolver {
   @Query(() => [LoginHistory])
   async getLoginHistory(
     @CurrentUser() user: User,
-    @Args('input') { limit }: LoginHistoryInput,
+    @Args('input') input: LoginHistoryInput,
   ): Promise<LoginHistory[]> {
     try {
-      this.logger.debug('Fetching login history', { userId: user.id, limit });
-      const history = await this.securityService.getLoginHistory(
-        user.id,
-        limit,
-      );
-      return history;
+      return await this.securityService.getLoginHistory(user.id, input.limit);
     } catch (error) {
-      this.logger.error('Failed to fetch login history', error, {
-        userId: user.id,
-      });
+      this.logger.error('Failed to fetch login history', error, { userId: user.id });
+      throw error;
+    }
+  }
+
+  @Mutation(() => VerificationResponse)
+  async verifyEmail(
+    @Args('token') token: string,
+  ): Promise<VerificationResponse> {
+    try {
+      return await this.authService.verifyEmail(token);
+    } catch (error) {
+      this.logger.error('Email verification failed', error);
+      throw error;
+    }
+  }
+
+  @Mutation(() => VerificationResponse)
+  async requestPasswordReset(
+    @Args('email') email: string,
+  ): Promise<VerificationResponse> {
+    try {
+      return await this.authService.requestPasswordReset(email);
+    } catch (error) {
+      this.logger.error('Password reset request failed', error, { email });
+      throw error;
+    }
+  }
+
+  @Mutation(() => VerificationResponse)
+  async resetPassword(
+    @Args('input') input: ResetPasswordInput,
+  ): Promise<VerificationResponse> {
+    try {
+      return await this.authService.resetPassword(input.token, input.password);
+    } catch (error) {
+      this.logger.error('Password reset failed', error);
       throw error;
     }
   }

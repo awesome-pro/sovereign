@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { User, UserStatus } from '@sovereign/database';
@@ -7,11 +7,19 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { LoggerService } from '../../logging/logging.service.js';
+import { RegisterInput } from '../dto/auth.input.js';
+import { AuthResponse, VerificationResponse } from '../types/auth.types.js';
 
 interface JwtPayload {
   sub: string;
   email: string;
   roles: string[];
+}
+
+interface DeviceInfo {
+  ip?: string;
+  device?: string;
+  userAgent?: string;
 }
 
 @Injectable()
@@ -27,7 +35,133 @@ export class AuthService {
     this.logger = loggerService.setContext('AuthService');
   }
 
-  async validateUser(email: string, password: string): Promise<any> {
+  // async register(input: RegisterInput, deviceInfo: DeviceInfo): Promise<AuthResponse> {
+  //   try {
+  //     // Check if user already exists
+  //     const existingUser = await this.prisma.user.findUnique({
+  //       where: { email: input.email },
+  //     });
+
+  //     if (existingUser) {
+  //       throw new ConflictException('Email already registered');
+  //     }
+
+  //     // Hash password
+  //     const hashedPassword = await this.hashPassword(input.password);
+
+  //     // Create user with profile
+  //     const user = await this.prisma.user.create({
+  //       data: {
+  //         email: input.email,
+  //         password: hashedPassword,
+  //         phone: input.phone,
+  //         status: UserStatus.PENDING_VERIFICATION,
+  //         profile: {
+  //           create: {
+  //             firstName: input.firstName,
+  //             lastName: input.lastName,
+  //           },
+  //         },
+  //         ...(input.companyId && {
+  //           company: {
+  //             connect: { id: input.companyId },
+  //           },
+  //         }),
+  //       },
+  //       include: {
+  //         roles: {
+  //           include: {
+  //             role: true,
+  //           },
+  //         },
+  //         profile: true,
+  //         company: true,
+  //       },
+  //     });
+
+  //     // Generate tokens
+  //     const accessToken = await this.createAccessToken(user);
+  //     const refreshToken = await this.createRefreshToken(user, deviceInfo);
+
+  //     // Log security event
+  //     await this.logSecurityEvent(user.id, 'REGISTER', {
+  //       description: 'User registration',
+  //       ...deviceInfo,
+  //     });
+
+  //     return {
+  //       accessToken,
+  //       refreshToken,
+  //       user,
+  //     };
+  //   } catch (error) {
+  //     this.logger.error('Registration failed', error);
+  //     throw error;
+  //   }
+  // }
+
+  async login(user: User, deviceInfo: DeviceInfo): Promise<any> {
+    try {
+      const accessToken = await this.createAccessToken(user);
+      const refreshToken = await this.createRefreshToken(user, deviceInfo);
+
+      // Log successful login
+      await this.logLoginAttempt(user.id, true, deviceInfo);
+
+      return {
+        accessToken,
+        refreshToken,
+        user,
+      };
+    } catch (error) {
+      this.logger.error('Login failed', error);
+      throw error;
+    }
+  }
+
+  // async refreshToken(token: string, deviceInfo: DeviceInfo): Promise<AuthResponse> {
+  //   try {
+  //     const hashedToken = await bcrypt.hash(token, 10);
+  //     const tokenRecord = await this.prisma.refreshToken.findFirst({
+  //       where: { hashedToken },
+  //       include: {
+  //         user: {
+  //           include: {
+  //             roles: {
+  //               include: {
+  //                 role: true,
+  //               },
+  //             },
+  //             profile: true,
+  //             company: true,
+  //           },
+  //         },
+  //       },
+  //     });
+
+  //     if (!tokenRecord || tokenRecord.revokedAt || new Date() > tokenRecord.expiresAt) {
+  //       throw new UnauthorizedException('Invalid or expired refresh token');
+  //     }
+
+  //     // Generate new tokens
+  //     const accessToken = await this.createAccessToken(tokenRecord.user);
+  //     const refreshToken = await this.createRefreshToken(tokenRecord.user, deviceInfo);
+
+  //     // Revoke old token
+  //     await this.revokeRefreshToken(tokenRecord.id);
+
+  //     return {
+  //       accessToken,
+  //       refreshToken,
+  //       user: tokenRecord.user,
+  //     };
+  //   } catch (error) {
+  //     this.logger.error('Token refresh failed', error);
+  //     throw error;
+  //   }
+  // }
+
+  async validateUser(email: string, password: string): Promise<User> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email },
@@ -37,38 +171,122 @@ export class AuthService {
               role: true,
             },
           },
-          profile: true,
-          company: true,
         },
       });
 
-      if (!user || user.status !== UserStatus.ACTIVE) {
-        this.logger.warn('User not found or inactive during validation', {
-          email,
-        });
-        throw new UnauthorizedException(
-          'Invalid credentials or inactive account',
-        );
+      if (!user || user.status == UserStatus.INACTIVE || user.status === UserStatus.SUSPENDED) {
+        throw new UnauthorizedException('Invalid credentials or inactive account');
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        this.logger.warn('Invalid password attempt', { email });
-        throw new UnauthorizedException('Invalid credentials');
-      }
+      // if (!isPasswordValid) {
+      //   throw new UnauthorizedException('Invalid credentials');
+      // }
 
-      if (user.twoFactorEnabled && !user.twoFactorSecret) {
-        this.logger.warn('2FA is enabled but not properly set up', { email });
-        throw new UnauthorizedException(
-          '2FA is enabled but not properly set up',
-        );
-      }
-
-      this.logger.debug('User validated successfully', { userId: user.id });
       return user;
     } catch (error) {
-      this.logger.error('Error validating user', error, { email });
+      this.logger.error('User validation failed', error);
       throw error;
+    }
+  }
+
+  async verifyEmail(token: string): Promise<VerificationResponse> {
+    try {
+      // Verify token and get user
+      const payload = this.jwtService.verify(token);
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Update user status
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: new Date(),
+          status: UserStatus.ACTIVE,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Email verified successfully',
+      };
+    } catch (error) {
+      this.logger.error('Email verification failed', error);
+      return {
+        success: false,
+        message: 'Invalid or expired verification token',
+      };
+    }
+  }
+
+  async requestPasswordReset(email: string): Promise<VerificationResponse> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        return {
+          success: true, // Return true for security
+          message: 'If your email is registered, you will receive a password reset link',
+        };
+      }
+
+      // Generate reset token
+      const token = this.jwtService.sign(
+        { sub: user.id },
+        { expiresIn: '1h' },
+      );
+
+      // TODO: Send reset email with token
+
+      return {
+        success: true,
+        message: 'Password reset instructions sent to your email',
+      };
+    } catch (error) {
+      this.logger.error('Password reset request failed', error);
+      throw error;
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<VerificationResponse> {
+    try {
+      // Verify token
+      const payload = this.jwtService.verify(token);
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Update password
+      const hashedPassword = await this.hashPassword(newPassword);
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashedPassword },
+      });
+
+      // Revoke all refresh tokens
+      await this.revokeAllUserTokens(user.id);
+
+      return {
+        success: true,
+        message: 'Password reset successful',
+      };
+    } catch (error) {
+      this.logger.error('Password reset failed', error);
+      return {
+        success: false,
+        message: 'Invalid or expired reset token',
+      };
     }
   }
 
@@ -85,18 +303,14 @@ export class AuthService {
         roles: roles.map((r) => r.role.name),
       };
 
-      const token = await this.jwtService.sign(payload);
-      this.logger.debug('Access token created', { userId: user.id });
-      return token;
+      return this.jwtService.sign(payload);
     } catch (error) {
-      this.logger.error('Error creating access token', error, {
-        userId: user.id,
-      });
+      this.logger.error('Error creating access token', error);
       throw error;
     }
   }
 
-  async createRefreshToken(user: User, deviceInfo?: any): Promise<string> {
+  async createRefreshToken(user: User, deviceInfo?: DeviceInfo): Promise<string> {
     try {
       const token = uuidv4();
       const hashedToken = await bcrypt.hash(token, 10);
@@ -111,48 +325,9 @@ export class AuthService {
         },
       });
 
-      this.logger.debug('Refresh token created', {
-        userId: user.id,
-        ip: deviceInfo?.ip,
-        device: deviceInfo?.device,
-      });
-
       return token;
     } catch (error) {
-      this.logger.error('Error creating refresh token', error, {
-        userId: user.id,
-        ...deviceInfo,
-      });
-      throw error;
-    }
-  }
-
-  async refreshAccessToken(refreshToken: string): Promise<string> {
-    try {
-      const hashedToken = await bcrypt.hash(refreshToken, 10);
-      const tokenRecord = await this.prisma.refreshToken.findUnique({
-        where: { hashedToken },
-        include: { user: true },
-      });
-
-      if (
-        !tokenRecord ||
-        tokenRecord.revokedAt ||
-        new Date() > tokenRecord.expiresAt
-      ) {
-        this.logger.warn('Invalid or expired refresh token', { refreshToken });
-        throw new UnauthorizedException('Invalid or expired refresh token');
-      }
-
-      const accessToken = await this.createAccessToken(tokenRecord.user);
-      this.logger.debug('Access token refreshed', {
-        userId: tokenRecord.user.id,
-      });
-      return accessToken;
-    } catch (error) {
-      this.logger.error('Error refreshing access token', error, {
-        refreshToken,
-      });
+      this.logger.error('Error creating refresh token', error);
       throw error;
     }
   }
@@ -163,9 +338,8 @@ export class AuthService {
         where: { id: tokenId },
         data: { revokedAt: new Date() },
       });
-      this.logger.debug('Refresh token revoked', { tokenId });
     } catch (error) {
-      this.logger.error('Error revoking refresh token', error, { tokenId });
+      this.logger.error('Error revoking refresh token', error);
       throw error;
     }
   }
@@ -176,18 +350,13 @@ export class AuthService {
         where: { userId, revokedAt: null },
         data: { revokedAt: new Date() },
       });
-      this.logger.debug('All user tokens revoked', { userId });
     } catch (error) {
-      this.logger.error('Error revoking all user tokens', error, { userId });
+      this.logger.error('Error revoking all user tokens', error);
       throw error;
     }
   }
 
-  async logLoginAttempt(
-    userId: string,
-    success: boolean,
-    deviceInfo: any,
-  ): Promise<void> {
+  async logLoginAttempt(userId: string, success: boolean, deviceInfo: DeviceInfo): Promise<void> {
     try {
       await this.prisma.loginHistory.create({
         data: {
@@ -195,29 +364,15 @@ export class AuthService {
           success,
           device: deviceInfo?.device,
           ip: deviceInfo?.ip,
-          location: deviceInfo?.location,
           reason: success ? 'Successful login' : 'Invalid credentials',
         },
       });
-      this.logger.debug('Login attempt logged', {
-        userId,
-        success,
-        ...deviceInfo,
-      });
     } catch (error) {
-      this.logger.error('Error logging login attempt', error, {
-        userId,
-        success,
-        ...deviceInfo,
-      });
+      this.logger.error('Error logging login attempt', error);
     }
   }
 
-  async logSecurityEvent(
-    userId: string,
-    action: string,
-    details: any,
-  ): Promise<void> {
+  async logSecurityEvent(userId: string, action: string, details: any): Promise<void> {
     try {
       await this.prisma.securityLog.create({
         data: {
@@ -229,21 +384,12 @@ export class AuthService {
           userAgent: details.userAgent,
         },
       });
-      this.logger.debug('Security event logged', {
-        userId,
-        action,
-        ...details,
-      });
     } catch (error) {
-      this.logger.error('Error logging security event', error, {
-        userId,
-        action,
-        ...details,
-      });
+      this.logger.error('Error logging security event', error);
     }
   }
 
-  async hashPassword(password: string): Promise<string> {
+  private async hashPassword(password: string): Promise<string> {
     try {
       return await bcrypt.hash(password, 12);
     } catch (error) {

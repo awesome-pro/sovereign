@@ -7,17 +7,19 @@ export interface User {
   phoneVerified?: Date;
   twoFactorEnabled: boolean;
   roles: UserRole[];
-  profile?: UserProfile;
-  company?: Company;
 }
 
 export interface UserRole {
   id: string;
-  role: {
-    name: string;
-    description?: string;
-  };
+  role: Role;
   assignedAt: Date;
+}
+
+export interface Role{
+  id: string;
+  name: string;
+  description?: string;
+  users: UserRole[];
 }
 
 export interface UserProfile {
@@ -42,6 +44,8 @@ export interface Company {
 export enum UserStatus {
   PENDING_VERIFICATION = 'PENDING_VERIFICATION',
   ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  ARCHIVED = 'ARCHIVED',
   SUSPENDED = 'SUSPENDED',
   DEACTIVATED = 'DEACTIVATED',
 }

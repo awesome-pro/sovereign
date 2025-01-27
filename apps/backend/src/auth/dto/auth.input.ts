@@ -1,52 +1,108 @@
-import { InputType, Field } from '@nestjs/graphql';
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { Field, InputType, Int } from '@nestjs/graphql';
+import {
+  IsString,
+  IsEmail,
+  MinLength,
+  IsOptional,
+  IsPhoneNumber,
+  IsUUID,
+  Max,
+  IsDate,
+} from 'class-validator';
 
 @InputType()
 export class LoginInput {
-  @Field(() => String)
+  @Field()
   @IsEmail()
   email!: string;
 
-  @Field(() => String)
+  @Field()
   @IsString()
   @MinLength(8)
   password!: string;
 
-  @Field(() => String, { nullable: true })
+  @Field({ nullable: true })
   @IsString()
   @IsOptional()
   twoFactorToken?: string;
 }
 
 @InputType()
+export class RegisterInput {
+  @Field()
+  @IsEmail()
+  email!: string;
+
+  @Field()
+  @IsString()
+  @MinLength(8)
+  password!: string;
+
+  @Field({ nullable: true })
+  @IsPhoneNumber()
+  @IsOptional()
+  phone?: string;
+
+  @Field()
+  @IsString()
+  @IsOptional()
+  firstName!: string;
+
+  @Field()
+  @IsString()
+  @IsOptional()
+  lastName!: string;
+
+  @Field({ nullable: true })
+  @IsUUID()
+  @IsOptional()
+  companyId?: string;
+}
+
+@InputType()
 export class RefreshTokenInput {
-  @Field(() => String)
+  @Field()
   @IsString()
   refreshToken!: string;
 }
 
 @InputType()
 export class TwoFactorTokenInput {
-  @Field(() => String)
+  @Field()
   @IsString()
   token!: string;
 }
 
 @InputType()
 export class SecurityLogsInput {
-  @Field(() => String)
-  @IsString()
+  @Field()
+  @IsUUID()
   userId!: string;
 
-  @Field(() => Date)
+  @Field()
+  @IsDate()
   startDate!: Date;
 
-  @Field(() => Date)
+  @Field()
+  @IsDate()
   endDate!: Date;
 }
 
 @InputType()
 export class LoginHistoryInput {
-  @Field(() => Number, { defaultValue: 10 })
-  limit: number = 10;
+  @Field(() => Int, { defaultValue: 10 })
+  @Max(100)
+  limit!: number;
+}
+
+@InputType()
+export class ResetPasswordInput {
+  @Field()
+  @IsString()
+  token!: string;
+
+  @Field()
+  @IsString()
+  @MinLength(8)
+  password!: string;
 }
