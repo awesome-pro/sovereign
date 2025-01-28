@@ -9,6 +9,10 @@ import { LocalStrategy } from './strategies/local.strategy.js';
 import { TwoFactorAuthService } from './services/two-factor-auth.service.js';
 import { SecurityService } from './services/security.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PermissionService } from './services/permission.service.js';
+import { RoleService } from './services/role.service.js';
+import { RoleResolver } from './resolvers/role.resolver.js';
+import { PermissionsGuard } from './guards/permissions.guard.js';
 
 @Module({
   imports: [
@@ -33,7 +37,17 @@ import { PrismaService } from '../prisma/prisma.service.js';
     PrismaService,
     TwoFactorAuthService,
     SecurityService,
+    PermissionService,
+    RoleService,
+    RoleResolver,
+    PermissionsGuard,
   ],
-  exports: [AuthService, TwoFactorAuthService, SecurityService],
+  exports: [
+    AuthService, 
+    TwoFactorAuthService, 
+    SecurityService, 
+    PermissionService,
+    RoleService,
+  ],
 })
 export class AuthModule {}

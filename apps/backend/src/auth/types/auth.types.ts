@@ -1,10 +1,33 @@
 import { ObjectType, Field, ID, Float, Int, registerEnumType } from '@nestjs/graphql';
-import { UserStatus } from '@sovereign/database';
+import { PermissionCategory, UserStatus } from '@sovereign/database';
 
 registerEnumType(UserStatus, {
   name: 'UserStatus',
   description: 'User account status',
 });
+
+registerEnumType(PermissionCategory, {
+  name: 'PermissionCategory',
+  description: 'Category of permissions',
+})
+
+@ObjectType()
+export class Permission {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => PermissionCategory)
+  category!: PermissionCategory;
+
+  @Field()
+  name!: string;
+
+  @Field({ nullable: true })
+  description?: string;
+
+  @Field(() => [Role])
+  allowedRoles!: Role[];
+}
 
 @ObjectType()
 export class Role {
@@ -19,6 +42,9 @@ export class Role {
 
   @Field(() => [UserRole])
   users!: UserRole[];
+
+  @Field(() => [Permission])
+  permissions!: Permission[];
 }
 
 @ObjectType()

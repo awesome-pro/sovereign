@@ -6,6 +6,7 @@ export const AUTH_CONSTANTS = {
   MAX_LOGIN_ATTEMPTS: 5,
   LOCKOUT_DURATION: 30, // minutes
   PASSWORD_HASH_ROUNDS: 12,
+  CACHE_TTL: 900, // seconds
   COOKIE_OPTIONS: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

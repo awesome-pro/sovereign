@@ -10,6 +10,7 @@ import { LoggerService } from '../../logging/logging.service.js';
 import { RegisterInput } from '../dto/auth.input.js';
 import { AuthResponse, VerificationResponse, User } from '../types/auth.types.js';
 import { mapPrismaUserToGraphQL } from '../utils/type-mappers.js';
+import { PermissionService } from './permission.service.js';
 
 interface JwtPayload {
   sub: string;
@@ -31,6 +32,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private permissionService: PermissionService,
     loggerService: LoggerService,
   ) {
     this.logger = loggerService.setContext('AuthService');

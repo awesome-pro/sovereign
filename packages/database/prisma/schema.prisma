@@ -533,6 +533,7 @@ model Role {
   name              String             @unique
   description       String?            // Optional description for clarity
   users             UserRole[]         // Many-to-many relationship
+  permissions Permission[] @relation("RolePermissions")
 
   // System Fields
   createdAt         DateTime           @default(now())
@@ -553,6 +554,31 @@ model UserRole {
   
   @@unique([userId, roleId]) // Prevent duplicate roles for the same user
 }
+
+model Permission {
+  id          String    @id @default(cuid())
+  name        String    @unique  
+  code        String    @unique  // Machine-readable code
+  description String?
+  category    PermissionCategory
+  allowedRoles Role[] @relation("RolePermissions")
+  
+  // Audit fields
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("permissions")
+}
+
+enum PermissionCategory {
+  VIEW        // Reading permissions
+  EDIT        // Modification permissions
+  DELETE      // Deletion permissions
+  MANAGE      // Administrative permissions
+  SHARE       // Sharing permissions
+  COMMUNICATE // Communication permissions
+}
+
 
 model UserProfile {
   id              String    @id @default(cuid())
@@ -2136,37 +2162,12 @@ model LeadCollaborator {
   user            User           @relation("UserLeadCollaborator", fields: [userId], references: [id])
   userId          String
   role            CollaboratorRole
-  permissions     Permission[]
+  //permissions     Permission[]
   assignedAt      DateTime       @default(now())
 
   @@unique([leadId, userId])
 }
 
-model Permission {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  code        String    @unique  // Machine-readable code
-  description String?
-  category    PermissionCategory
-  
-  // Relations
-  collaborators LeadCollaborator[]
-  
-  // Audit fields
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@map("permissions")
-}
-
-enum PermissionCategory {
-  VIEW        // Reading permissions
-  EDIT        // Modification permissions
-  DELETE      // Deletion permissions
-  MANAGE      // Administrative permissions
-  SHARE       // Sharing permissions
-  COMMUNICATE // Communication permissions
-}
 
 enum DealStatus {
   DRAFT

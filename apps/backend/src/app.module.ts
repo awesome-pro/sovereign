@@ -9,6 +9,8 @@ import { AuthModule } from './auth/auth.module.js';
 import { PrismaService } from './prisma/prisma.service.js';
 import { LoggingModule } from './logging/logging.module.js';
 import { LoggerService } from './logging/logging.service.js';
+import { APP_GUARD } from '@nestjs/core';
+import { PermissionsGuard } from './auth/guards/permissions.guard.js';
 
 @Module({
   imports: [
@@ -45,6 +47,9 @@ import { LoggerService } from './logging/logging.service.js';
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService],
+  providers: [AppService, PrismaService, {
+    provide: APP_GUARD,
+    useClass: PermissionsGuard,
+  }],
 })
 export class AppModule {}
