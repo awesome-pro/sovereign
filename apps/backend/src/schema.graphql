@@ -2,10 +2,22 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AssignRoleInput {
+  roleId: ID!
+  userId: ID!
+}
+
 type AuthResponse {
   accessToken: String!
   refreshToken: String!
   user: User!
+}
+
+input CreatePermissionInput {
+  category: PermissionCategory!
+  code: String!
+  description: String
+  name: String!
 }
 
 """
@@ -15,13 +27,11 @@ scalar DateTime
 
 type LoginHistory {
   createdAt: DateTime!
-  device: String
+  description: String
   id: ID!
-  ip: String
-  location: String
-  reason: String
+  ip: String!
   success: Boolean!
-  userId: String!
+  userAgent: String!
 }
 
 input LoginHistoryInput {
@@ -35,28 +45,72 @@ input LoginInput {
 }
 
 type Mutation {
+  assignPermissionsToRole(permissionIds: [ID!]!, roleId: ID!): Boolean!
+  assignRole(input: AssignRoleInput!): Boolean!
+  createPermission(input: CreatePermissionInput!): Permission!
+  createRole(description: String, name: String!): Role!
+  deletePermission(id: ID!): Boolean!
+  deleteRole(id: ID!): Boolean!
   login(input: LoginInput!): AuthResponse!
   logout(refreshToken: String!): Boolean!
   refreshToken(input: RefreshTokenInput!): AuthResponse!
+  register(input: RegisterInput!): AuthResponse!
+  removePermissionsFromRole(permissionIds: [ID!]!, roleId: ID!): Boolean!
+  removeRole(roleId: String!, userId: String!): Boolean!
   requestPasswordReset(email: String!): VerificationResponse!
   resetPassword(input: ResetPasswordInput!): VerificationResponse!
   setupTwoFactor: TwoFactorResponse!
+  updatePermission(id: ID!, input: UpdatePermissionInput!): Permission!
+  updateRole(description: String, id: ID!, name: String): Role!
   verifyAndEnableTwoFactor(input: TwoFactorTokenInput!): Boolean!
   verifyEmail(token: String!): VerificationResponse!
 }
 
+type Permission {
+  allowedRoles: [Role!]!
+  category: PermissionCategory!
+  code: String!
+  createdAt: DateTime!
+  description: String
+  id: ID!
+  name: String!
+  updatedAt: DateTime!
+}
+
+"""Permission category"""
+enum PermissionCategory {
+  COMMUNICATE
+  DELETE
+  EDIT
+  MANAGE
+  SHARE
+  VIEW
+}
+
 type Query {
   getLoginHistory(input: LoginHistoryInput!): [LoginHistory!]!
+  getRolePermissions(roleId: ID!): [Permission!]!
   getSecurityLogs(input: SecurityLogsInput!): [SecurityLog!]!
   me: User!
+  permission(id: ID!): Permission!
+  permissions: [Permission!]!
 }
 
 input RefreshTokenInput {
   refreshToken: String!
 }
 
-input ResetPasswordInput {
+input RegisterInput {
+  companyId: String
+  email: String!
+  firstName: String!
+  lastName: String!
   password: String!
+  phone: String
+}
+
+input ResetPasswordInput {
+  newPassword: String!
   token: String!
 }
 
@@ -64,18 +118,15 @@ type Role {
   description: String
   id: ID!
   name: String!
-  users: [UserRole!]!
+  permissions: [Permission!]!
 }
 
 type SecurityLog {
-  action: String!
   createdAt: DateTime!
-  description: String
-  device: String
+  description: String!
   id: ID!
   ip: String
   userAgent: String
-  userId: String!
 }
 
 input SecurityLogsInput {
@@ -91,6 +142,14 @@ type TwoFactorResponse {
 
 input TwoFactorTokenInput {
   token: String!
+}
+
+input UpdatePermissionInput {
+  category: PermissionCategory
+  code: String
+  description: String
+  id: ID!
+  name: String
 }
 
 type User {
@@ -121,6 +180,6 @@ enum UserStatus {
 }
 
 type VerificationResponse {
-  message: String!
+  message: String
   success: Boolean!
 }

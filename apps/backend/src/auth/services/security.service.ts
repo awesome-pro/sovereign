@@ -127,8 +127,9 @@ export class SecurityService {
         device: entry.device || 'Unknown',
         ip: entry.ip || 'Unknown',
         location: geoip.lookup(entry.ip ?? '')?.country || 'Unknown',
+        userAgent: entry.userAgent || 'Unknown',
         success: entry.success,
-        reason: entry.reason || 'Unknown',
+        description: entry.reason || 'Unknown',
         createdAt: entry.createdAt,
         userEmail: entry.user.email,
       }));

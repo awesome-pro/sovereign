@@ -1,5 +1,5 @@
 import { User as PrismaUser, UserRole as PrismaUserRole, Role as PrismaRole } from '@sovereign/database';
-import { User, UserRole, Role } from '../types/auth.types.js';
+import { User, Role, UserRole } from '../types/auth.types.js';
 
 export function mapPrismaUserToGraphQL(prismaUser: PrismaUser & { roles?: (PrismaUserRole & { role: PrismaRole })[] }): User {
   return {
@@ -27,6 +27,7 @@ export function mapPrismaRoleToGraphQL(prismaRole: PrismaRole): Role {
     id: prismaRole.id,
     name: prismaRole.name,
     description: prismaRole.description || undefined,
-    users: [], // This is typically handled by GraphQL resolvers
+    permissions: [], // This is typically handled by GraphQL resolvers
+    // users: [], // This is typically handled by GraphQL resolvers
   };
 }

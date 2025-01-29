@@ -20,24 +20,25 @@ export class User {
   email!: string;
 
   @Field({ nullable: true })
+  emailVerified?: Date;
+
+  @Field({ nullable: true })
   phone?: string;
+
+  @Field({ nullable: true })
+  phoneVerified?: Date;
 
   @Field(() => UserStatus)
   status!: UserStatus;
 
-  @Field(() => [String])
-  roles!: string[];
-
-  @Field(() => [String])
-  permissions!: string[];
+  @Field(() => [UserRole])
+  roles!: UserRole[];
 
   @Field(() => Boolean)
   twoFactorEnabled!: boolean;
 }
 
-export class CompleteUser extends OmitType(User, ['permissions', 'roles']) {
-  @Field(() => [Role])
-  roles!: Role[];
+export class CompleteUser extends User {
 
   @Field(() => Date)
   createdAt!: Date;
@@ -60,8 +61,122 @@ export class Role {
   @Field({ nullable: true })
   description?: string;
 
+  // @Field(() => [UserRole])
+  // users!: UserRole[];
+
   @Field(() => [Permission])
   permissions!: Permission[];
+
+}
+
+
+@ObjectType()
+export class UserRole {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => Role)
+  role!: Role;
+
+  @Field()
+  assignedAt!: Date;
+}
+
+@ObjectType()
+export class UserProfile {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  userId!: string;
+
+  @Field()
+  firstName!: string;
+
+  @Field()
+  lastName!: string;
+
+  @Field({ nullable: true })
+  displayName?: string;
+
+  @Field({ nullable: true })
+  avatar?: string;
+
+  @Field({ nullable: true })
+  bio?: string;
+
+  @Field({ nullable: true })
+  coverImage?: string;
+
+  @Field(() => Date, { nullable: true })
+  dateOfBirth?: Date;
+
+  @Field({ nullable: true })
+  gender?: string;
+
+  @Field({ nullable: true })
+  nationality?: string;
+
+  @Field({ nullable: true })
+  secondaryEmail?: string;
+
+  @Field({ nullable: true })
+  secondaryPhone?: string;
+
+  @Field({ nullable: true })
+  whatsapp?: string;
+
+  // @Field(() => UserAddress, { nullable: true })
+  // address?: UserAddress;
+
+  @Field({ nullable: true })
+  title?: string;
+
+  @Field(() => [String])
+  specializations!: string[];
+
+  // @Field(() => [UserLicense])
+  // licenses!: UserLicense[];
+
+  // @Field(() => [UserCertification])
+  // certifications!: UserCertification[];
+
+  @Field({ nullable: true })
+  experience?: number;
+
+  @Field({ nullable: true })
+  activeListings?: number;
+
+  @Field({ nullable: true })
+  rating?: number;
+
+  @Field({ nullable: true })
+  reviewCount?: number;
+
+  // @Field(() => [Language])
+  // languages!: Language[];
+
+  @Field()
+  timeZone!: string;
+
+  @Field()
+  currency!: string;
+
+  // @Field(() => GraphQLJSON, { nullable: true })
+  // socialLinks?: any;
+
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
+}
+
+
+@ObjectType()
+export class CompleteRole extends Role {
+  @Field(() => [UserRole])
+  users!: UserRole[];
 
   @Field(() => Date)
   createdAt!: Date;
@@ -126,12 +241,6 @@ export class SecurityLog {
   @Field(() => ID)
   id!: string;
 
-  @Field(() => User)
-  user!: User;
-
-  @Field()
-  eventType!: string;
-
   @Field()
   description!: string;
 
@@ -150,9 +259,6 @@ export class LoginHistory {
   @Field(() => ID)
   id!: string;
 
-  @Field(() => User)
-  user!: User;
-
   @Field()
   ip!: string;
 
@@ -163,7 +269,7 @@ export class LoginHistory {
   success!: boolean;
 
   @Field({ nullable: true })
-  failureReason?: string;
+  description?: string;
 
   @Field(() => Date)
   createdAt!: Date;
