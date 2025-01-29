@@ -53,12 +53,7 @@ export class SecurityService {
           user: {
             select: {
               email: true,
-              profile: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                },
-              },
+              name: true,
             },
           },
         },
@@ -83,9 +78,7 @@ export class SecurityService {
         createdAt: log.createdAt,
         location: geoip.lookup(log.ip ?? '')?.country || 'Unknown',
         userEmail: log.user.email,
-        userName:
-          `${log.user.profile?.firstName || ''} ${log.user.profile?.lastName || ''}`.trim() ||
-          'Unknown',
+        userName: `${log.user.name}`.trim() || 'Unknown',
       }));
     } catch (error) {
       this.logger.error('Error fetching security logs', error, {

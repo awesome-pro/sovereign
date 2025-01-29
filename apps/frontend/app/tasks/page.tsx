@@ -10,7 +10,7 @@ import {
   DELETE_TASK_MUTATION,
   ADD_TASK_CHECKLIST_ITEM_MUTATION,
   ADD_TASK_COMMENT_MUTATION,
-} from '@/graphql/tasks.graphql';
+} from '@/graphql/tasks.mutations';
 import { Task, TaskStatus, Priority, TaskType } from '@/types/task.types';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskForm } from '@/components/tasks/TaskForm';
@@ -195,7 +195,7 @@ export default function TasksPage() {
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value={TaskStatus.TODO}>All Statuses</SelectItem>
             {Object.values(TaskStatus).map((status) => (
               <SelectItem key={status} value={status}>
                 {status.replace('_', ' ')}
@@ -212,7 +212,7 @@ export default function TasksPage() {
             <SelectValue placeholder="Filter by priority" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Priorities</SelectItem>
+            <SelectItem value={Priority.MEDIUM}>All Priorities</SelectItem>
             {Object.values(Priority).map((priority) => (
               <SelectItem key={priority} value={priority}>
                 {priority}

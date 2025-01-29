@@ -11,6 +11,7 @@ import { LoggingModule } from './logging/logging.module.js';
 import { LoggerService } from './logging/logging.service.js';
 import { APP_GUARD } from '@nestjs/core';
 import { PermissionsGuard } from './auth/guards/permissions.guard.js';
+import { TaskModule } from './tasks/task.module.js';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { PermissionsGuard } from './auth/guards/permissions.guard.js';
       },
     }),
     AuthModule,
+    TaskModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService, {

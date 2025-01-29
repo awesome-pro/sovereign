@@ -1,20 +1,18 @@
 import { Field, ID, InputType, registerEnumType } from '@nestjs/graphql';
-import { IsDate, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { TaskType, TaskStatus, Priority } from '@sovereign/database';
+import { TaskStatus, TaskType, Priority } from '@sovereign/database';
+import { IsString, IsOptional, IsEnum, IsArray, IsDate, IsUUID, IsNotEmpty } from 'class-validator';
+import { Type } from 'class-transformer';
 
 @InputType()
 export class CreateTaskInput {
-  @Field()
+  @Field(() => String)
   @IsString()
   @IsNotEmpty()
-  @MinLength(3)
-  @MaxLength(255)
   title!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
-  @MaxLength(2000)
   description?: string;
 
   @Field(() => TaskType)
@@ -23,47 +21,35 @@ export class CreateTaskInput {
 
   @Field(() => Priority)
   @IsEnum(Priority)
-  priority?: Priority;
+  priority!: Priority;
 
   @Field(() => Date, { nullable: true })
   @IsDate()
   @IsOptional()
+  @Type(() => Date)
   dueDate?: Date;
 
-  @Field(() => [ID], { nullable: true })
+  @Field(() => [String], { defaultValue: [] })
+  @IsArray()
+  @IsUUID("4", { each: true })
   @IsOptional()
   assignedToIds?: string[];
-
-  @Field(() => [ID], { nullable: true })
-  @IsOptional()
-  leadIds?: string[];
-
-  @Field(() => [ID], { nullable: true })
-  @IsOptional()
-  dealIds?: string[];
-
-  @Field(() => [ID], { nullable: true })
-  @IsOptional()
-  propertyIds?: string[];
 }
 
 @InputType()
 export class UpdateTaskInput {
   @Field(() => ID)
-  @IsNotEmpty()
+  @IsUUID("4")
   id!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
-  @MinLength(3)
-  @MaxLength(255)
   title?: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
-  @MaxLength(2000)
   description?: string;
 
   @Field(() => TaskType, { nullable: true })
@@ -84,74 +70,86 @@ export class UpdateTaskInput {
   @Field(() => Date, { nullable: true })
   @IsDate()
   @IsOptional()
+  @Type(() => Date)
   dueDate?: Date;
 
-  @Field(() => [ID], { nullable: true })
+  @Field(() => [String], { nullable: true })
+  @IsArray()
+  @IsUUID("4", { each: true })
   @IsOptional()
   assignedToIds?: string[];
 
   @Field(() => Date, { nullable: true })
   @IsDate()
   @IsOptional()
+  @Type(() => Date)
   startDate?: Date;
 
   @Field(() => Date, { nullable: true })
   @IsDate()
   @IsOptional()
+  @Type(() => Date)
   completedAt?: Date;
 }
 
 @InputType()
+export class TaskFilterInput {
+  @Field(() => [TaskStatus], { nullable: true })
+  @IsEnum(TaskStatus, { each: true })
+  @IsOptional()
+  status?: TaskStatus[];
+
+  @Field(() => [Priority], { nullable: true })
+  @IsEnum(Priority, { each: true })
+  @IsOptional()
+  priority?: Priority[];
+
+  @Field(() => [TaskType], { nullable: true })
+  @IsEnum(TaskType, { each: true })
+  @IsOptional()
+  type?: TaskType[];
+
+  @Field(() => Date, { nullable: true })
+  @IsDate()
+  @IsOptional()
+  @Type(() => Date)
+  dueDateFrom?: Date;
+
+  @Field(() => Date, { nullable: true })
+  @IsDate()
+  @IsOptional()
+  @Type(() => Date)
+  dueDateTo?: Date;
+
+  @Field(() => [String], { nullable: true })
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  assignedToIds?: string[];
+
+  @Field(() => [String], { nullable: true })
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  createdByIds?: string[];
+}
+
+@InputType()
 export class TaskChecklistInput {
-  @Field()
+  @Field(() => String)
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
   item!: string;
 }
 
 @InputType()
 export class TaskCommentInput {
   @Field(() => ID)
-  @IsNotEmpty()
+  @IsUUID("4")
   taskId!: string;
 
-  @Field()
+  @Field(() => String)
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(2000)
   content!: string;
-}
-
-@InputType()
-export class TaskFilterInput {
-  @Field(() => [TaskStatus], { nullable: true })
-  @IsOptional()
-  status?: TaskStatus[];
-
-  @Field(() => [Priority], { nullable: true })
-  @IsOptional()
-  priority?: Priority[];
-
-  @Field(() => [TaskType], { nullable: true })
-  @IsOptional()
-  type?: TaskType[];
-
-  @Field(() => Date, { nullable: true })
-  @IsOptional()
-  dueDateFrom?: Date;
-
-  @Field(() => Date, { nullable: true })
-  @IsOptional()
-  dueDateTo?: Date;
-
-  @Field(() => [ID], { nullable: true })
-  @IsOptional()
-  assignedToIds?: string[];
-
-  @Field(() => [ID], { nullable: true })
-  @IsOptional()
-  createdByIds?: string[];
 }
 
 registerEnumType(TaskType, {

@@ -3,7 +3,6 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreateTaskInput, UpdateTaskInput, TaskFilterInput, TaskChecklistInput, TaskCommentInput } from '../dto/task-input.dto.js';
 import { Task } from '../dto/task.dto.js';
 import { TaskStatus } from "@sovereign/database";
-import { transformPrismaNulls } from 'src/types/utils.js';
 
 
 @Injectable()
@@ -13,9 +12,6 @@ export class TaskService {
   async createTask(input: CreateTaskInput, userId: string): Promise<Task> {
     const {
       assignedToIds = [],
-      leadIds = [],
-      dealIds = [],
-      propertyIds = [],
       ...taskData
     } = input;
 
@@ -25,17 +21,6 @@ export class TaskService {
         createdBy: { connect: { id: userId } },
         assignedTo: {
           connect: assignedToIds.map(id => ({ id })),
-        },
-        leads: {
-          connect: leadIds.map(id => ({ id })),
-        },
-        deals: {
-          connect: dealIds.map(id => ({ id })),
-        },
-        propertyTasks: {
-          create: propertyIds.map(propertyId => ({
-            property: { connect: { id: propertyId } },
-          })),
         },
       },
       include: {

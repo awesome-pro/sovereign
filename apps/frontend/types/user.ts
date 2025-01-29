@@ -1,8 +1,15 @@
 import { Role } from "./auth";
 
+export interface RelatedUser{
+  id: string;
+  email: string;
+  name: string;
+}
+
 export interface User {
   id: string;
   email: string;
+  name: string;
   phone?: string;
   status: UserStatus;
   emailVerified?: Date;

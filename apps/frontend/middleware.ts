@@ -31,6 +31,9 @@ const roleProtectedRoutes = {
   '/company-settings': ['SUPER_ADMIN', 'COMPANY_ADMIN'],
 } as const;
 
+// Routes that only require authentication (no specific roles/permissions)
+const authOnlyRoutes = ['/tasks', '/profile'];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -83,6 +86,18 @@ export async function middleware(request: NextRequest) {
       const loginUrl = new URL(AUTH_CONFIG.logoutRedirectPath, request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Allow access to auth-only routes if user is authenticated
+    if (authOnlyRoutes.some(route => pathname.startsWith(route))) {
+      // Add user info to headers for backend
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-user-id', decoded.sub);
+      requestHeaders.set('x-user-roles', decoded.roles.join(','));
+      requestHeaders.set('x-user-permissions', decoded.permissions.join(','));
+      return NextResponse.next({
+        headers: requestHeaders,
+      });
     }
 
     // Check required permissions for the route

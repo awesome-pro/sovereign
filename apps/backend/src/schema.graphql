@@ -20,6 +20,15 @@ input CreatePermissionInput {
   name: String!
 }
 
+input CreateTaskInput {
+  assignedToIds: [String!]! = []
+  description: String
+  dueDate: DateTime
+  priority: Priority!
+  title: String!
+  type: TaskType!
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -45,12 +54,16 @@ input LoginInput {
 }
 
 type Mutation {
+  addTaskChecklistItem(input: TaskChecklistInput!, taskId: ID!): Task!
+  addTaskComment(input: TaskCommentInput!): Task!
   assignPermissionsToRole(permissionIds: [ID!]!, roleId: ID!): Boolean!
   assignRole(input: AssignRoleInput!): Boolean!
   createPermission(input: CreatePermissionInput!): Permission!
   createRole(description: String, name: String!): Role!
+  createTask(input: CreateTaskInput!): Task!
   deletePermission(id: ID!): Boolean!
   deleteRole(id: ID!): Boolean!
+  deleteTask(id: ID!): Boolean!
   login(input: LoginInput!): AuthResponse!
   logout(refreshToken: String!): Boolean!
   refreshToken(input: RefreshTokenInput!): AuthResponse!
@@ -62,6 +75,7 @@ type Mutation {
   setupTwoFactor: TwoFactorResponse!
   updatePermission(id: ID!, input: UpdatePermissionInput!): Permission!
   updateRole(description: String, id: ID!, name: String): Role!
+  updateTask(input: UpdateTaskInput!): Task!
   verifyAndEnableTwoFactor(input: TwoFactorTokenInput!): Boolean!
   verifyEmail(token: String!): VerificationResponse!
 }
@@ -87,6 +101,13 @@ enum PermissionCategory {
   VIEW
 }
 
+"""Priority of task"""
+enum Priority {
+  HIGH
+  LOW
+  MEDIUM
+}
+
 type Query {
   getLoginHistory(input: LoginHistoryInput!): [LoginHistory!]!
   getRolePermissions(roleId: ID!): [Permission!]!
@@ -94,6 +115,8 @@ type Query {
   me: User!
   permission(id: ID!): Permission!
   permissions: [Permission!]!
+  task(id: ID!): Task!
+  tasks(filter: TaskFilterInput): [Task!]!
 }
 
 input RefreshTokenInput {
@@ -107,6 +130,12 @@ input RegisterInput {
   lastName: String!
   password: String!
   phone: String
+}
+
+type RelatedUser {
+  email: String!
+  id: ID!
+  name: String!
 }
 
 input ResetPasswordInput {
@@ -135,6 +164,78 @@ input SecurityLogsInput {
   userId: String!
 }
 
+type Task {
+  assignedTo: [RelatedUser!]!
+  checklist: [TaskChecklist!]!
+  comments: [TaskComment!]!
+  completedAt: DateTime
+  createdAt: DateTime!
+  createdBy: RelatedUser!
+  description: String
+  dueDate: DateTime
+  id: ID!
+  priority: Priority!
+  startDate: DateTime
+  status: TaskStatus!
+  title: String!
+  type: TaskType!
+  updatedAt: DateTime!
+}
+
+type TaskChecklist {
+  completed: Boolean!
+  completedAt: DateTime
+  id: ID!
+  item: String!
+}
+
+input TaskChecklistInput {
+  item: String!
+}
+
+type TaskComment {
+  author: RelatedUser!
+  content: String!
+  createdAt: DateTime!
+  id: ID!
+  updatedAt: DateTime!
+}
+
+input TaskCommentInput {
+  content: String!
+  taskId: ID!
+}
+
+input TaskFilterInput {
+  assignedToIds: [String!]
+  createdByIds: [String!]
+  dueDateFrom: DateTime
+  dueDateTo: DateTime
+  priority: [Priority!]
+  status: [TaskStatus!]
+  type: [TaskType!]
+}
+
+"""Status of task"""
+enum TaskStatus {
+  BLOCKED
+  CANCELLED
+  COMPLETED
+  IN_PROGRESS
+  TODO
+}
+
+"""Type of task"""
+enum TaskType {
+  CALL
+  DOCUMENT_REVIEW
+  EMAIL
+  FOLLOW_UP
+  MEETING
+  OTHER
+  VIEWING
+}
+
 type TwoFactorResponse {
   qrCodeUrl: String!
   secret: String!
@@ -150,6 +251,19 @@ input UpdatePermissionInput {
   description: String
   id: ID!
   name: String
+}
+
+input UpdateTaskInput {
+  assignedToIds: [String!]
+  completedAt: DateTime
+  description: String
+  dueDate: DateTime
+  id: ID!
+  priority: Priority
+  startDate: DateTime
+  status: TaskStatus
+  title: String
+  type: TaskType
 }
 
 type User {

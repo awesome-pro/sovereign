@@ -1,3 +1,5 @@
+import { RelatedUser } from "./user";
+
 export enum TaskType {
   FOLLOW_UP = 'FOLLOW_UP',
   VIEWING = 'VIEWING',
@@ -7,6 +9,7 @@ export enum TaskType {
   EMAIL = 'EMAIL',
   OTHER = 'OTHER',
 }
+
 export enum TaskStatus {
   TODO = 'TODO',
   IN_PROGRESS = 'IN_PROGRESS',
@@ -22,48 +25,35 @@ export enum Priority {
   URGENT = 'URGENT',
 }
 
-export interface UserProfile {
-  firstName: string;
-  lastName: string;
-  avatar?: string;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  profile?: UserProfile;
-}
-
 export interface TaskChecklist {
   id: string;
   item: string;
   completed: boolean;
-  completedAt?: string;
-  order: number;
+  completedAt?: Date | null;
 }
 
 export interface TaskComment {
   id: string;
   content: string;
-  author: User;
-  createdAt: string;
-  updatedAt: string;
+  author: RelatedUser;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Task {
   id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   type: TaskType;
   status: TaskStatus;
   priority: Priority;
-  dueDate?: string;
-  startDate?: string;
-  completedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: User;
-  assignedTo: User[];
+  dueDate?: Date | null;
+  startDate?: Date | null;
+  completedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: RelatedUser;
+  assignedTo: RelatedUser[];
   checklist: TaskChecklist[];
   comments: TaskComment[];
 }
@@ -73,11 +63,8 @@ export interface CreateTaskInput {
   description?: string;
   type: TaskType;
   priority: Priority;
-  dueDate?: string;
-  assignedToIds?: string[];
-  leadIds?: string[];
-  dealIds?: string[];
-  propertyIds?: string[];
+  dueDate?: Date;
+  assignedToIds: string[];
 }
 
 export interface UpdateTaskInput {
@@ -87,18 +74,18 @@ export interface UpdateTaskInput {
   type?: TaskType;
   status?: TaskStatus;
   priority?: Priority;
-  dueDate?: string;
+  dueDate?: Date;
   assignedToIds?: string[];
-  startDate?: string;
-  completedAt?: string;
+  startDate?: Date;
+  completedAt?: Date;
 }
 
 export interface TaskFilterInput {
   status?: TaskStatus[];
   priority?: Priority[];
   type?: TaskType[];
-  dueDateFrom?: string;
-  dueDateTo?: string;
+  dueDateFrom?: Date;
+  dueDateTo?: Date;
   assignedToIds?: string[];
   createdByIds?: string[];
 }

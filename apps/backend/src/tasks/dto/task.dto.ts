@@ -1,5 +1,5 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
-import { RelatedUser, User } from '../../auth/types/auth.types.js';
+import { RelatedUser } from '../../auth/types/auth.types.js';
 import { TaskStatus, TaskType, Priority } from '@sovereign/database';
 
 @ObjectType()
@@ -7,7 +7,7 @@ export class TaskChecklist {
   @Field(() => ID)
   id!: string;
 
-  @Field()
+  @Field(() => String)
   item!: string;
 
   @Field(() => Date, { nullable: true })
@@ -22,7 +22,7 @@ export class TaskComment {
   @Field(() => ID)
   id!: string;
 
-  @Field()
+  @Field(() => String)
   content!: string;
 
   @Field(() => RelatedUser)
@@ -30,6 +30,9 @@ export class TaskComment {
 
   @Field(() => Date)
   createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
 }
 
 @ObjectType()
@@ -37,10 +40,10 @@ export class Task {
   @Field(() => ID)
   id!: string;
 
-  @Field()
+  @Field(() => String)
   title!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   description?: string | null;
 
   @Field(() => TaskType)
@@ -58,11 +61,11 @@ export class Task {
   @Field(() => RelatedUser)
   createdBy!: RelatedUser;
 
-  @Field(() => [TaskChecklist], { nullable: true })
-  checklist?: TaskChecklist[];
+  @Field(() => [TaskChecklist], { defaultValue: [] })
+  checklist!: TaskChecklist[];
 
-  @Field(() => [TaskComment], { nullable: true })
-  comments?: TaskComment[];
+  @Field(() => [TaskComment], { defaultValue: [] })
+  comments!: TaskComment[];
 
   @Field(() => Date, { nullable: true })
   startDate?: Date | null;
@@ -76,15 +79,6 @@ export class Task {
   @Field(() => Date)
   updatedAt!: Date;
 
-  @Field(() => [RelatedUser])
+  @Field(() => [RelatedUser], { defaultValue: [] })
   assignedTo!: RelatedUser[];
-
-  // @Field(() => [Lead], { nullable: true })
-  // leads?: Lead[];
-
-  // @Field(() => [Deal], { nullable: true })
-  // deals?: Deal[];
-
-  // @Field(() => [Property], { nullable: true })
-  // properties?: Property[];
 }
