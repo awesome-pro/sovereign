@@ -1,14 +1,6 @@
-import { Field, InputType, Int } from '@nestjs/graphql';
-import {
-  IsString,
-  IsEmail,
-  MinLength,
-  IsOptional,
-  IsPhoneNumber,
-  IsUUID,
-  Max,
-  IsDate,
-} from 'class-validator';
+import { InputType, Field, ID, Int } from '@nestjs/graphql';
+import { IsEmail, IsString, MinLength, IsOptional, IsEnum, IsUUID, IsDate, Max, IsPhoneNumber } from 'class-validator';
+import { PermissionCategory } from '@sovereign/database';
 
 @InputType()
 export class LoginInput {
@@ -45,12 +37,11 @@ export class RegisterInput {
 
   @Field()
   @IsString()
-  @IsOptional()
+  @MinLength(1)
   firstName!: string;
 
   @Field()
   @IsString()
-  @IsOptional()
   lastName!: string;
 
   @Field({ nullable: true })
@@ -104,5 +95,92 @@ export class ResetPasswordInput {
   @Field()
   @IsString()
   @MinLength(8)
-  password!: string;
+  newPassword!: string;
+}
+
+@InputType()
+export class AssignRoleInput {
+  @Field(() => ID)
+  @IsString()
+  userId!: string;
+
+  @Field(() => ID)
+  @IsString()
+  roleId!: string;
+}
+
+@InputType()
+export class CreateRoleInput {
+  @Field()
+  @IsString()
+  name!: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
+@InputType()
+export class UpdateRoleInput {
+  @Field(() => ID)
+  @IsString()
+  id!: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
+@InputType()
+export class CreatePermissionInput {
+  @Field()
+  @IsString()
+  name!: string;
+
+  @Field()
+  @IsString()
+  code!: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @Field(() => PermissionCategory)
+  @IsEnum(PermissionCategory)
+  category!: PermissionCategory;
+}
+
+@InputType()
+export class UpdatePermissionInput {
+  @Field(() => ID)
+  @IsString()
+  id!: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  code?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @Field(() => PermissionCategory, { nullable: true })
+  @IsEnum(PermissionCategory)
+  @IsOptional()
+  category?: PermissionCategory;
 }

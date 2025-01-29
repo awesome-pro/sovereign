@@ -1,21 +1,23 @@
-import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { User as PrismaUser, UserStatus } from '@sovereign/database';
+import { User as PrismaUser, UserStatus, PermissionCategory } from '@sovereign/database';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { LoggerService } from '../../logging/logging.service.js';
 import { RegisterInput } from '../dto/auth.input.js';
-import { AuthResponse, VerificationResponse, User } from '../types/auth.types.js';
+import { AuthResponse, VerificationResponse } from '../types/auth.types.js';
 import { mapPrismaUserToGraphQL } from '../utils/type-mappers.js';
 import { PermissionService } from './permission.service.js';
+import { RoleService } from './role.service.js';
 
 interface JwtPayload {
   sub: string;
   email: string;
   roles: string[];
+  permissions: string[];
 }
 
 interface DeviceInfo {
@@ -33,75 +35,102 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private permissionService: PermissionService,
+    private roleService: RoleService,
     loggerService: LoggerService,
   ) {
     this.logger = loggerService.setContext('AuthService');
   }
 
-  // async register(input: RegisterInput, deviceInfo: DeviceInfo): Promise<AuthResponse> {
-  //   try {
-  //     // Check if user already exists
-  //     const existingUser = await this.prisma.user.findUnique({
-  //       where: { email: input.email },
-  //     });
+  async register(input: RegisterInput, deviceInfo: DeviceInfo): Promise<AuthResponse> {
+    try {
+      // Check if user already exists
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: input.email },
+      });
 
-  //     if (existingUser) {
-  //       throw new ConflictException('Email already registered');
-  //     }
+      if (existingUser) {
+        throw new ConflictException('Email already registered');
+      }
 
-  //     // Hash password
-  //     const hashedPassword = await this.hashPassword(input.password);
+      // Hash password
+      const hashedPassword = await this.hashPassword(input.password);
 
-  //     // Create user with profile
-  //     const user = await this.prisma.user.create({
-  //       data: {
-  //         email: input.email,
-  //         password: hashedPassword,
-  //         phone: input.phone,
-  //         status: UserStatus.PENDING_VERIFICATION,
-  //         profile: {
-  //           create: {
-  //             firstName: input.firstName,
-  //             lastName: input.lastName,
-  //           },
-  //         },
-  //         ...(input.companyId && {
-  //           company: {
-  //             connect: { id: input.companyId },
-  //           },
-  //         }),
-  //       },
-  //       include: {
-  //         roles: {
-  //           include: {
-  //             role: true,
-  //           },
-  //         },
-  //         profile: true,
-  //         company: true,
-  //       },
-  //     });
+      // Start transaction
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // Create user with profile
+        const user = await prisma.user.create({
+          data: {
+            email: input.email,
+            password: hashedPassword,
+            phone: input.phone,
+            status: UserStatus.PENDING_VERIFICATION,
+            profile: {
+              create: {
+                firstName: input.firstName,
+                lastName: input.lastName,
+              },
+            },
+            ...(input.companyId && {
+              company: {
+                connect: { id: input.companyId },
+              },
+            }),
+          },
+          include: {
+            roles: {
+              include: {
+                role: {
+                  include: {
+                    permissions: true,
+                  },
+                },
+              },
+            },
+            profile: true,
+            company: true,
+          },
+        });
 
-  //     // Generate tokens
-  //     const accessToken = await this.createAccessToken(user);
-  //     const refreshToken = await this.createRefreshToken(user, deviceInfo);
+        // Assign default role based on registration type
+        const defaultRole = input.companyId ? 'AGENT' : 'USER';
+        const role = await prisma.role.findUnique({
+          where: { name: defaultRole },
+        });
 
-  //     // Log security event
-  //     await this.logSecurityEvent(user.id, 'REGISTER', {
-  //       description: 'User registration',
-  //       ...deviceInfo,
-  //     });
+        if (!role) {
+          throw new Error(`Default role ${defaultRole} not found`);
+        }
 
-  //     return {
-  //       accessToken,
-  //       refreshToken,
-  //       user,
-  //     };
-  //   } catch (error) {
-  //     this.logger.error('Registration failed', error);
-  //     throw error;
-  //   }
-  // }
+        await prisma.userRole.create({
+          data: {
+            userId: user.id,
+            roleId: role.id,
+          },
+        });
+
+        return user;
+      });
+
+      // Generate tokens
+      const accessToken = await this.createAccessToken(result);
+      const refreshToken = await this.createRefreshToken(result, deviceInfo);
+
+      // Log security event
+      await this.logSecurityEvent(result.id, 'REGISTER', {
+        description: 'User registration',
+        ...deviceInfo,
+      });
+
+      return {
+        accessToken,
+        refreshToken,
+        user: mapPrismaUserToGraphQL(result),
+      };
+    } catch (error) {
+      this.logger.error('Registration failed', error);
+      throw error;
+    }
+  }
 
   async login(user: PrismaUser, deviceInfo: DeviceInfo): Promise<AuthResponse> {
     try {
@@ -311,6 +340,9 @@ export class AuthService {
 
   async createAccessToken(user: PrismaUser): Promise<string> {
     try {
+      // Get user permissions
+      const permissions = await this.permissionService.getUserPermissions(user.id);
+      
       const roles = await this.prisma.userRole.findMany({
         where: { userId: user.id },
         include: { role: true },
@@ -320,6 +352,7 @@ export class AuthService {
         sub: user.id,
         email: user.email,
         roles: roles.map((r) => r.role.name),
+        permissions,
       };
 
       return this.jwtService.sign(payload);
@@ -409,6 +442,115 @@ export class AuthService {
       });
     } catch (error) {
       this.logger.error('Error logging security event', error);
+    }
+  }
+
+  async assignRoleToUser(userId: string, roleId: string, assignedBy: string): Promise<void> {
+    try {
+      // Check if user exists
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Check if role exists
+      const role = await this.prisma.role.findUnique({
+        where: { id: roleId },
+      });
+
+      if (!role) {
+        throw new NotFoundException('Role not found');
+      }
+
+      // Check if user already has this role
+      const existingRole = await this.prisma.userRole.findUnique({
+        where: {
+          userId_roleId: {
+            userId,
+            roleId,
+          },
+        },
+      });
+
+      if (existingRole) {
+        throw new ConflictException('User already has this role');
+      }
+
+      // Assign role
+      await this.prisma.userRole.create({
+        data: {
+          userId,
+          roleId,
+          assignedBy,
+        },
+      });
+
+      // Invalidate user's permission cache
+      await this.permissionService.invalidateUserPermissions(userId);
+
+      // Log the role assignment
+      await this.logSecurityEvent(userId, 'ROLE_ASSIGNED', {
+        description: `Role ${role.name} assigned to user`,
+        assignedBy,
+      });
+    } catch (error) {
+      this.logger.error('Error assigning role to user', error);
+      throw error;
+    }
+  }
+
+  async removeRoleFromUser(userId: string, roleId: string, removedBy: string): Promise<void> {
+    try {
+      // Check if the role assignment exists
+      const userRole = await this.prisma.userRole.findUnique({
+        where: {
+          userId_roleId: {
+            userId,
+            roleId,
+          },
+        },
+        include: {
+          role: true,
+        },
+      });
+
+      if (!userRole) {
+        throw new NotFoundException('User does not have this role');
+      }
+
+      // Prevent removing the last role
+      const userRoles = await this.prisma.userRole.count({
+        where: { userId },
+      });
+
+      if (userRoles === 1) {
+        throw new ForbiddenException('Cannot remove the last role from user');
+      }
+
+      // Remove role
+      await this.prisma.userRole.delete({
+        where: {
+          userId_roleId: {
+            userId,
+            roleId,
+          },
+        },
+      });
+
+      // Invalidate user's permission cache
+      await this.permissionService.invalidateUserPermissions(userId);
+
+      // Log the role removal
+      await this.logSecurityEvent(userId, 'ROLE_REMOVED', {
+        description: `Role ${userRole.role.name} removed from user`,
+        removedBy,
+      });
+    } catch (error) {
+      this.logger.error('Error removing role from user', error);
+      throw error;
     }
   }
 

@@ -12,6 +12,7 @@ import {
   SecurityLogsInput,
   LoginHistoryInput,
   ResetPasswordInput,
+  AssignRoleInput,
 } from '../dto/auth.input.js';
 import { GqlAuthGuard } from '../guards/gql-auth.guard.js';
 import { RolesGuard } from '../guards/roles.guard.js';
@@ -26,6 +27,8 @@ import {
   VerificationResponse,
   User,
 } from '../types/auth.types.js';
+import { RequirePermissions } from '../decorators/permissions.decorator.js';
+import { PermissionsGuard } from '../guards/permissions.guard.js';
 import { Roles } from '../decorators/roles.decorator.js';
 
 @Resolver()
@@ -47,27 +50,27 @@ export class AuthResolver {
     return user;
   }
 
-  // @Mutation(() => AuthResponse)
-  // async register(
-  //   @Args('input') input: RegisterInput,
-  //   @Context() context: any,
-  // ): Promise<AuthResponse> {
-  //   try {
-  //     const { req } = context;
-  //     const ip = req.ip;
-  //     const userAgent = req.headers['user-agent'];
+  @Mutation(() => AuthResponse)
+  async register(
+    @Args('input') input: RegisterInput,
+    @Context() context: any,
+  ): Promise<AuthResponse> {
+    try {
+      const { req } = context;
+      const ip = req.ip;
+      const userAgent = req.headers['user-agent'];
 
-  //     this.logger.debug('Registration attempt', { email: input.email, ip });
+      this.logger.debug('Registration attempt', { email: input.email, ip });
 
-  //     const result = await this.authService.register(input, { ip, userAgent });
-  //     this.logger.debug('Registration successful', { userId: result.user.id });
+      const result = await this.authService.register(input, { ip, userAgent });
+      this.logger.debug('Registration successful', { userId: result.user.id });
 
-  //     return result;
-  //   } catch (error) {
-  //     this.logger.error('Registration failed', error, { email: input.email });
-  //     throw error;
-  //   }
-  // }
+      return result;
+    } catch (error) {
+      this.logger.error('Registration failed', error, { email: input.email });
+      throw error;
+    }
+  }
 
   @Mutation(() => AuthResponse)
   async login(
@@ -182,8 +185,35 @@ export class AuthResolver {
   }
 
   @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean)
+  @RequirePermissions('MANAGE_USERS')
+  async assignRole(
+    @Args('input') input: AssignRoleInput,
+    @CurrentUser() currentUser: User,
+  ): Promise<boolean> {
+    await this.authService.assignRoleToUser(
+      input.userId,
+      input.roleId,
+      currentUser.id,
+    );
+    return true;
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean)
+  @RequirePermissions('MANAGE_USERS')
+  async removeRole(
+    @Args('userId') userId: string,
+    @Args('roleId') roleId: string,
+    @CurrentUser() currentUser: User,
+  ): Promise<boolean> {
+    await this.authService.removeRoleFromUser(userId, roleId, currentUser.id);
+    return true;
+  }
+
+  @UseGuards(GqlAuthGuard)
   @Query(() => [SecurityLog])
-  @Roles('ADMIN')
+  @RequirePermissions('VIEW_SECURITY_LOGS')
   async getSecurityLogs(
     @Args('input') input: SecurityLogsInput,
   ): Promise<SecurityLog[]> {
@@ -201,6 +231,7 @@ export class AuthResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [LoginHistory])
+  @Roles('ADMIN')
   async getLoginHistory(
     @CurrentUser() user: User,
     @Args('input') input: LoginHistoryInput,
@@ -242,7 +273,7 @@ export class AuthResolver {
     @Args('input') input: ResetPasswordInput,
   ): Promise<VerificationResponse> {
     try {
-      return await this.authService.resetPassword(input.token, input.password);
+      return await this.authService.resetPassword(input.token, input.newPassword);
     } catch (error) {
       this.logger.error('Password reset failed', error);
       throw error;

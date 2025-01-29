@@ -1,5 +1,5 @@
-import { ObjectType, Field, ID, Float, Int, registerEnumType } from '@nestjs/graphql';
-import { PermissionCategory, UserStatus } from '@sovereign/database';
+import { ObjectType, Field, ID, registerEnumType, OmitType } from '@nestjs/graphql';
+import { UserStatus, PermissionCategory } from '@sovereign/database';
 
 registerEnumType(UserStatus, {
   name: 'UserStatus',
@@ -8,25 +8,45 @@ registerEnumType(UserStatus, {
 
 registerEnumType(PermissionCategory, {
   name: 'PermissionCategory',
-  description: 'Category of permissions',
-})
+  description: 'Permission category',
+});
 
 @ObjectType()
-export class Permission {
+export class User {
   @Field(() => ID)
   id!: string;
 
-  @Field(() => PermissionCategory)
-  category!: PermissionCategory;
-
   @Field()
-  name!: string;
+  email!: string;
 
   @Field({ nullable: true })
-  description?: string;
+  phone?: string;
 
+  @Field(() => UserStatus)
+  status!: UserStatus;
+
+  @Field(() => [String])
+  roles!: string[];
+
+  @Field(() => [String])
+  permissions!: string[];
+
+  @Field(() => Boolean)
+  twoFactorEnabled!: boolean;
+}
+
+export class CompleteUser extends OmitType(User, ['permissions', 'roles']) {
   @Field(() => [Role])
-  allowedRoles!: Role[];
+  roles!: Role[];
+
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
+
+  @Field(() => Date, { nullable: true })
+  deletedAt?: Date;
 }
 
 @ObjectType()
@@ -40,15 +60,9 @@ export class Role {
   @Field({ nullable: true })
   description?: string;
 
-  @Field(() => [UserRole])
-  users!: UserRole[];
-
   @Field(() => [Permission])
   permissions!: Permission[];
-}
 
-@ObjectType()
-export class RoleWithMetadata extends Role {
   @Field(() => Date)
   createdAt!: Date;
 
@@ -60,109 +74,7 @@ export class RoleWithMetadata extends Role {
 }
 
 @ObjectType()
-export class UserRole {
-  @Field(() => ID)
-  id!: string;
-
-  @Field(() => Role)
-  role!: Role;
-
-  @Field()
-  assignedAt!: Date;
-}
-
-@ObjectType()
-export class UserProfile {
-  @Field(() => ID)
-  id!: string;
-
-  @Field()
-  userId!: string;
-
-  @Field()
-  firstName!: string;
-
-  @Field()
-  lastName!: string;
-
-  @Field({ nullable: true })
-  displayName?: string;
-
-  @Field({ nullable: true })
-  avatar?: string;
-
-  @Field({ nullable: true })
-  bio?: string;
-
-  @Field({ nullable: true })
-  coverImage?: string;
-
-  @Field(() => Date, { nullable: true })
-  dateOfBirth?: Date;
-
-  @Field({ nullable: true })
-  gender?: string;
-
-  @Field({ nullable: true })
-  nationality?: string;
-
-  @Field({ nullable: true })
-  secondaryEmail?: string;
-
-  @Field({ nullable: true })
-  secondaryPhone?: string;
-
-  @Field({ nullable: true })
-  whatsapp?: string;
-
-  // @Field(() => UserAddress, { nullable: true })
-  // address?: UserAddress;
-
-  @Field({ nullable: true })
-  title?: string;
-
-  @Field(() => [String])
-  specializations!: string[];
-
-  // @Field(() => [UserLicense])
-  // licenses!: UserLicense[];
-
-  // @Field(() => [UserCertification])
-  // certifications!: UserCertification[];
-
-  @Field({ nullable: true })
-  experience?: number;
-
-  @Field({ nullable: true })
-  activeListings?: number;
-
-  @Field({ nullable: true })
-  rating?: number;
-
-  @Field({ nullable: true })
-  reviewCount?: number;
-
-  // @Field(() => [Language])
-  // languages!: Language[];
-
-  @Field()
-  timeZone!: string;
-
-  @Field()
-  currency!: string;
-
-  // @Field(() => GraphQLJSON, { nullable: true })
-  // socialLinks?: any;
-
-  @Field(() => Date)
-  createdAt!: Date;
-
-  @Field(() => Date)
-  updatedAt!: Date;
-}
-
-@ObjectType()
-export class Company {
+export class Permission {
   @Field(() => ID)
   id!: string;
 
@@ -170,38 +82,22 @@ export class Company {
   name!: string;
 
   @Field()
-  type!: string;
-
-  @Field()
-  status!: string;
-}
-
-@ObjectType()
-export class User {
-  @Field(() => ID)
-  id!: string;
-
-  @Field()
-  email!: string;
+  code!: string;
 
   @Field({ nullable: true })
-  phone?: string;
+  description?: string;
 
-  @Field({ nullable: true })
-  emailVerified?: Date;
+  @Field(() => PermissionCategory)
+  category!: PermissionCategory;
 
-  @Field({ nullable: true })
-  phoneVerified?: Date;
+  @Field(() => [Role])
+  allowedRoles!: Role[];
 
-  @Field(() => UserStatus)
-  status!: UserStatus;
+  @Field(() => Date)  
+  createdAt!: Date;
 
-  @Field(() => [UserRole])
-  roles!: UserRole[];
-
-  @Field()
-  twoFactorEnabled!: boolean;
-
+  @Field(() => Date)
+  updatedAt!: Date;
 }
 
 @ObjectType()
@@ -219,10 +115,10 @@ export class AuthResponse {
 @ObjectType()
 export class TwoFactorResponse {
   @Field()
-  secret!: string;
+  qrCodeUrl!: string;
 
   @Field()
-  qrCodeUrl!: string;
+  secret!: string;
 }
 
 @ObjectType()
@@ -230,26 +126,23 @@ export class SecurityLog {
   @Field(() => ID)
   id!: string;
 
-  @Field()
-  userId!: string;
+  @Field(() => User)
+  user!: User;
 
   @Field()
-  action?: string;
+  eventType!: string;
 
-  @Field({ nullable: true })
-  description?: string;
+  @Field()
+  description!: string;
 
   @Field({ nullable: true })
   ip?: string;
 
   @Field({ nullable: true })
-  device?: string;
-
-  @Field({ nullable: true })
   userAgent?: string;
 
-  @Field()
-  createdAt?: Date;
+  @Field(() => Date)
+  createdAt!: Date;
 }
 
 @ObjectType()
@@ -257,26 +150,23 @@ export class LoginHistory {
   @Field(() => ID)
   id!: string;
 
+  @Field(() => User)
+  user!: User;
+
   @Field()
-  userId!: string;
+  ip!: string;
 
-  @Field({ nullable: true })
-  device?: string;
-
-  @Field({ nullable: true })
-  ip?: string;
-
-  @Field({ nullable: true })
-  location?: string;
+  @Field()
+  userAgent!: string;
 
   @Field()
   success!: boolean;
 
   @Field({ nullable: true })
-  reason?: string;
+  failureReason?: string;
 
-  @Field()
-  createdAt?: Date;
+  @Field(() => Date)
+  createdAt!: Date;
 }
 
 @ObjectType()
@@ -284,6 +174,6 @@ export class VerificationResponse {
   @Field()
   success!: boolean;
 
-  @Field()
-  message!: string;
+  @Field({ nullable: true })
+  message?: string;
 }

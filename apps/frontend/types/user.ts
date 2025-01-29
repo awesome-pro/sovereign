@@ -1,3 +1,5 @@
+import { Role } from "./auth";
+
 export interface User {
   id: string;
   email: string;
@@ -13,13 +15,6 @@ export interface UserRole {
   id: string;
   role: Role;
   assignedAt: Date;
-}
-
-export interface Role{
-  id: string;
-  name: string;
-  description?: string;
-  users: UserRole[];
 }
 
 export interface UserProfile {
