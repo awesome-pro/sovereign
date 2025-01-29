@@ -12,6 +12,18 @@ registerEnumType(PermissionCategory, {
 });
 
 @ObjectType()
+export class RelatedUser {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  email!: string;
+
+  @Field()
+  name!: string;
+}
+
+@ObjectType()
 export class User {
   @Field(() => ID)
   id!: string;
@@ -283,3 +295,5 @@ export class VerificationResponse {
   @Field({ nullable: true })
   message?: string;
 }
+
+

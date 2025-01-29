@@ -60,13 +60,13 @@ export class AuthService {
         // Create user with profile
         const user = await prisma.user.create({
           data: {
+            name: input.firstName,
             email: input.email,
             password: hashedPassword,
             phone: input.phone,
             status: UserStatus.PENDING_VERIFICATION,
             profile: {
               create: {
-                firstName: input.firstName,
                 lastName: input.lastName,
               },
             },

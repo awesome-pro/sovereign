@@ -462,6 +462,7 @@ enum TransactionPaymentStatus {
 model User {
   id                String              @id @default(cuid())
   email             String              @unique
+  name              String              @default("")
   phone             String?             @unique
   password          String              // Hashed password
   emailVerified     DateTime?
@@ -586,7 +587,6 @@ model UserProfile {
   user            User      @relation("UserToUserProfile", fields: [userId], references: [id])
 
   // Personal Information
-  firstName       String
   lastName        String
   displayName     String?
   avatar          String?
@@ -3554,7 +3554,7 @@ model Note {
   isPinned    Boolean    @default(false)
 
   // Rich Content Support
-  attachments NoteAttachment[]
+  attachments Attachment[]  @relation("NoteAttachments")
   // mentions    Mention[]
   
   // Relations to Different Entities
@@ -3626,22 +3626,13 @@ model Attachment {
   createdBy   User        @relation(fields: [createdById], references: [id])
   createdById String
   createdAt   DateTime    @default(now())
-  noteAttachments NoteAttachment[]
+  notes       Note[]       @relation("NoteAttachments")
+  tasks       Task[]       @relation("TaskAttachments")
 
   @@map("attachments")
-  TaskAttachment TaskAttachment[]
+  
 }
 
-model NoteAttachment {
-  id          String       @id @default(cuid())
-  note        Note         @relation(fields: [noteId], references: [id])
-  noteId      String
-  attachment  Attachment   @relation(fields: [attachmentId], references: [id])
-  attachmentId String
-  createdAt   DateTime    @default(now())
-
-  @@map("note_attachments")
-}
 
 model Mention {
   id          String    @id @default(cuid())
@@ -3978,7 +3969,7 @@ model Task {
   
   // Additional Fields
   checklist       TaskChecklist[]
-  attachments     TaskAttachment[]
+  attachments     Attachment[] @relation("TaskAttachments")
   comments        TaskComment[]
   
   // System Fields
@@ -4034,15 +4025,6 @@ model TaskChecklist {
   @@map("task_checklists")
 }
 
-model TaskAttachment {
-  id              String          @id @default(cuid())
-  task            Task            @relation(fields: [taskId], references: [id])
-  taskId          String
-  attachment      Attachment      @relation(fields: [attachmentId], references: [id])
-  attachmentId    String
-  
-  @@map("task_attachments")
-}
 
 model TaskComment {
   id              String          @id @default(cuid())
