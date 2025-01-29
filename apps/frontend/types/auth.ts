@@ -1,4 +1,4 @@
-import { UserRole } from "./user";
+import { User, UserRole } from "./user";
 
 enum PermissionCategory {
     VIEW = 'VIEW',        
@@ -25,4 +25,34 @@ export interface Role{
     description?: string;
     users: UserRole[];
     permissions: Permission[];
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  user: User | null;
+  roles: string[];
+  permissions: string[];
+  error?: string;
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
+  twoFactorToken?: string;
+}
+
+export interface RegisterInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  companyId?: string;
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
 }

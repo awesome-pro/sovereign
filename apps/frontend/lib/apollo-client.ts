@@ -5,7 +5,7 @@ import { setContext } from '@apollo/client/link/context';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
 import Cookies from 'js-cookie';
-import { REFRESH_TOKEN_MUTATION } from '@/graphql/auth.mutations';
+import { AUTH_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/config/auth.config';
 
 const httpLink = createHttpLink({
   uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:8000/graphql',
@@ -28,67 +28,13 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
       if (err.extensions?.code === 'UNAUTHENTICATED') {
         if (!isRefreshing) {
           isRefreshing = true;
-          const refreshToken = Cookies.get('refreshToken');
 
-          if (!refreshToken) {
-            handleLogout();
+          // Instead of handling refresh directly, redirect to refresh endpoint
+          if (typeof window !== 'undefined') {
+            const currentPath = window.location.pathname;
+            window.location.href = `/api/auth/refresh?redirect=${encodeURIComponent(currentPath)}`;
             return;
           }
-
-          // Return a new observable to handle the refresh token flow
-          return new Observable(observer => {
-            // Function to retry the failed operation
-            const retryOperation = async () => {
-              try {
-                const client = operation.getContext().client;
-                const { data } = await client.mutate({
-                  mutation: REFRESH_TOKEN_MUTATION,
-                  variables: {
-                    input: { refreshToken }
-                  }
-                });
-
-                console.log(data);
-
-                const { accessToken, refreshToken: newRefreshToken } = data;
-
-                // Update tokens
-                Cookies.set('accessToken', accessToken, {
-                  secure: process.env.NODE_ENV === 'production',
-                  sameSite: 'lax',
-                  path: '/',
-                });
-                Cookies.set('refreshToken', newRefreshToken, {
-                  secure: process.env.NODE_ENV === 'production',
-                  sameSite: 'lax',
-                  path: '/',
-                  expires: 7,
-                });
-
-                // Retry the failed operation
-                const subscriber = {
-                  next: observer.next.bind(observer),
-                  error: observer.error.bind(observer),
-                  complete: observer.complete.bind(observer)
-                };
-
-                forward(operation).subscribe(subscriber);
-                resolvePendingRequests();
-              } catch (error) {
-                handleLogout();
-                observer.error(error);
-              } finally {
-                isRefreshing = false;
-              }
-            };
-
-            if (isRefreshing) {
-              // Queue the retry if we're already refreshing
-              pendingRequests.push(retryOperation);
-            } else {
-              retryOperation();
-            }
-          });
         }
 
         // Queue the operation if we're already refreshing
@@ -109,7 +55,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 
 // Auth link for adding tokens to requests
 const authLink = setContext((_, { headers }) => {
-  const token = Cookies.get('accessToken');
+  const token = Cookies.get(AUTH_TOKEN_KEY);
   return {
     headers: {
       ...headers,
@@ -119,8 +65,8 @@ const authLink = setContext((_, { headers }) => {
 });
 
 function handleLogout() {
-  Cookies.remove('accessToken', { path: '/' });
-  Cookies.remove('refreshToken', { path: '/' });
+  Cookies.remove(AUTH_TOKEN_KEY, { path: '/' });
+  Cookies.remove(REFRESH_TOKEN_KEY, { path: '/' });
   window.location.href = '/auth/sign-in';
 }
 
@@ -131,7 +77,7 @@ if (typeof window !== 'undefined') {
     createClient({
       url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/graphql',
       connectionParams: () => ({
-        token: Cookies.get('accessToken'),
+        token: Cookies.get(AUTH_TOKEN_KEY),
       }),
     })
   );

@@ -1,3 +1,19 @@
+export const AUTH_TOKEN_KEY = 'accessToken';
+export const REFRESH_TOKEN_KEY = 'refreshToken';
+
+export const AUTH_CONFIG = {
+  tokenExpiration: '15m',
+  refreshTokenExpiration: '7d',
+  loginRedirectPath: '/dashboard',
+  logoutRedirectPath: '/auth/sign-in',
+  publicPaths: [
+    '/auth/sign-in',
+    '/auth/sign-up',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+  ],
+} as const;
+
 export const ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
@@ -45,6 +61,18 @@ export const PERMISSIONS = {
   
   // Settings
   MANAGE_SETTINGS: 'MANAGE_SETTINGS',
+
+  // User Management
+  MANAGE_USERS: 'MANAGE_USERS',
+  VIEW_USERS: 'VIEW_USERS',
+
+  // Role Management
+  MANAGE_ROLES: 'MANAGE_ROLES',
+  VIEW_ROLES: 'VIEW_ROLES',
+
+  // Permission Management
+  MANAGE_PERMISSIONS: 'MANAGE_PERMISSIONS',
+  VIEW_PERMISSIONS: 'VIEW_PERMISSIONS',
 } as const;
 
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -70,6 +98,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.VIEW_ANALYTICS,
     PERMISSIONS.GENERATE_REPORTS,
     PERMISSIONS.MANAGE_SETTINGS,
+    PERMISSIONS.MANAGE_USERS,
+    PERMISSIONS.VIEW_USERS,
+    PERMISSIONS.VIEW_ROLES,
   ],
   COMPANY_ADMIN: [
     PERMISSIONS.VIEW_PROPERTIES,
@@ -87,6 +118,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.VIEW_ANALYTICS,
     PERMISSIONS.GENERATE_REPORTS,
     PERMISSIONS.MANAGE_SETTINGS,
+    PERMISSIONS.VIEW_USERS,
   ],
   AGENT: [
     PERMISSIONS.VIEW_PROPERTIES,
@@ -125,4 +157,20 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.VIEW_DOCUMENTS,
     PERMISSIONS.VIEW_ANALYTICS,
   ],
-};
+} as const;
+
+// Type-safe role and permission types
+export type Role = keyof typeof ROLES;
+export type Permission = keyof typeof PERMISSIONS;
+
+// Helper function to check if a role has a permission
+export function roleHasPermission(role: Role, permission: Permission): boolean {
+  return ROLE_PERMISSIONS[role]?.includes(PERMISSIONS[permission]) ?? false;
+}
+
+// Helper function to get all permissions for a role
+export function getRolePermissions(role: Role): Permission[] {
+  return ROLE_PERMISSIONS[role]?.map(p => 
+    Object.entries(PERMISSIONS).find(([_, v]) => v === p)?.[0] as Permission
+  ) ?? [];
+}

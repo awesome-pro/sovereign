@@ -650,6 +650,7 @@ model LoginHistory {
   device    String?
   ip        String?
   location  String?
+  userAgent String?
   success   Boolean
   reason    String?
   createdAt DateTime  @default(now())

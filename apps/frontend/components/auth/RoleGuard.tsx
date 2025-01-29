@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/providers/auth-provider';
+import { toast } from 'sonner';
 
 interface RoleGuardProps {
   children: React.ReactNode;
@@ -17,12 +18,12 @@ export function RoleGuard({
   redirectTo = '/auth/sign-in',
   loadingComponent = <div className="flex items-center justify-center min-h-screen">Loading...</div>,
 }: RoleGuardProps) {
-  const { user, loading, checkAuth } = useAuthContext();
+  const { user, isLoading, checkAuth } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
     const verifyAuth = async () => {
-      if (!loading) {
+      if (!isLoading) {
         const isAuthenticated = await checkAuth();
         if (!isAuthenticated) {
           router.push(redirectTo);
@@ -34,6 +35,7 @@ export function RoleGuard({
           const hasAllowedRole = allowedRoles.some((role) => userRoles.includes(role));
 
           if (!hasAllowedRole) {
+            toast.error('You do not have permission to access this page');
             router.push('/unauthorized');
           }
         }
@@ -41,10 +43,10 @@ export function RoleGuard({
     };
 
     verifyAuth();
-  }, [user, loading, allowedRoles, redirectTo, router, checkAuth]);
+  }, [user, isLoading, allowedRoles, redirectTo, router, checkAuth]);
 
   // Show loading state
-  if (loading) {
+  if (isLoading) {
     return <>{loadingComponent}</>;
   }
 

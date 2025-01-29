@@ -9,6 +9,7 @@ import {
   GET_CURRENT_USER_QUERY,
 } from '@/graphql/auth.mutations';
 import type { User, LoginInput } from '@/types';
+import { AUTH_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/config/auth.config';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -19,13 +20,13 @@ export function useAuth() {
   const [loginMutation] = useMutation(LOGIN_MUTATION);
 
   const { data: userData, loading: userLoading } = useQuery(GET_CURRENT_USER_QUERY, {
-    skip: !Cookies.get('accessToken'),
+    skip: !Cookies.get(AUTH_TOKEN_KEY),
     fetchPolicy: 'network-only',
   });
 
   const clearTokens = useCallback(() => {
-    Cookies.remove('accessToken', { path: '/' });
-    Cookies.remove('refreshToken', { path: '/' });
+    Cookies.remove(AUTH_TOKEN_KEY, { path: '/' });
+    Cookies.remove(REFRESH_TOKEN_KEY, { path: '/' });
   }, []);
 
   const logout = useCallback(async () => {

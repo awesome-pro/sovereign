@@ -18,6 +18,11 @@ export const REGISTER_MUTATION = gql`
             id
             name
             description
+            permissions {
+              id
+              name
+              category
+            }
           }
           assignedAt
         }
@@ -44,6 +49,11 @@ export const LOGIN_MUTATION = gql`
             id
             name
             description
+            permissions {
+              id
+              name
+              category
+            }
           }
           assignedAt
         }
@@ -121,9 +131,20 @@ export const GET_CURRENT_USER_QUERY = gql`
           id
           name
           description
+          permissions {
+            id
+            name
+            category
+          }
         }
         assignedAt
       }
     }
+  }
+`;
+
+export const LOGOUT_MUTATION = gql`
+  mutation Logout {
+    logout
   }
 `;
