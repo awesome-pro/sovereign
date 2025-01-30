@@ -209,7 +209,7 @@ export class Permission {
   name!: string;
 
   @Field()
-  code!: string;
+  slug!: string;
 
   @Field({ nullable: true })
   description?: string;
@@ -296,4 +296,35 @@ export class VerificationResponse {
   message?: string;
 }
 
+@ObjectType()
+export class UserSession {
+  @Field(() => ID)
+  id!: string;
 
+  @Field()
+  userId!: string;
+
+  @Field(() => String, { nullable: true })
+  refreshToken?: string | null;
+
+  @Field(() => String, { nullable: true })
+  ip?: string | null;
+
+  @Field(() => String, { nullable: true })
+  device?: string | null;
+
+  @Field(() => Date)
+  expiresAt!: Date;
+
+  @Field(() => Date, { nullable: true })
+  revokedAt?: Date | null;
+
+  @Field(() => String, { nullable: true })
+  userAgent?: string | null;
+
+  @Field(() => Boolean)
+  revoked!: boolean;
+
+  @Field(() => Date)
+  createdAt!: Date;
+}

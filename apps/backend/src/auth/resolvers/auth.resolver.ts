@@ -30,6 +30,7 @@ import {
 import { RequirePermissions } from '../decorators/permissions.decorator.js';
 import { PermissionsGuard } from '../guards/permissions.guard.js';
 import { Roles } from '../decorators/roles.decorator.js';
+import { SessionService } from '../session/session.service.js';
 
 @Resolver()
 export class AuthResolver {
@@ -37,6 +38,7 @@ export class AuthResolver {
 
   constructor(
     private authService: AuthService,
+    private sessionService: SessionService,
     private twoFactorAuthService: TwoFactorAuthService,
     private securityService: SecurityService,
     loggerService: LoggerService,
@@ -78,7 +80,7 @@ export class AuthResolver {
     @Context() context: any,
   ): Promise<AuthResponse> {
     try {
-      const { req } = context;
+      const { req, res } = context;
       const ip = req.ip;
       const userAgent = req.headers['user-agent'];
 
@@ -108,7 +110,7 @@ export class AuthResolver {
       }
 
       // Generate tokens
-      const result = await this.authService.login(user, { ip, userAgent });
+      const result: AuthResponse = await this.authService.login(user, { ip, userAgent });
 
       this.logger.debug('Login successful', { userId: user.id });
 
@@ -125,7 +127,7 @@ export class AuthResolver {
     @Context() context: any,
   ): Promise<AuthResponse> {
     try {
-      const { req } = context;
+      const { req, res } = context;
       const ip = req.ip;
       const userAgent = req.headers['user-agent'];
 

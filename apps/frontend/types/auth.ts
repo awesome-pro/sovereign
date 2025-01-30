@@ -15,7 +15,7 @@ export interface Permission {
   category: PermissionCategory,
   name: String,
   description?: String,
-  code: String,
+  slug: String,
   allowedRoles: Role[],
 };
 
@@ -23,6 +23,7 @@ export interface Role{
     id: string;
     name: string;
     description?: string;
+    hierarchy: number;
     users: UserRole[];
     permissions: Permission[];
 }
@@ -34,25 +35,4 @@ export interface AuthState {
   roles: string[];
   permissions: string[];
   error?: string;
-}
-
-export interface LoginInput {
-  email: string;
-  password: string;
-  twoFactorToken?: string;
-}
-
-export interface RegisterInput {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  companyId?: string;
-}
-
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
 }

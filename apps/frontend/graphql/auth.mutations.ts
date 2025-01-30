@@ -21,6 +21,7 @@ export const REGISTER_MUTATION = gql`
             permissions {
               id
               name
+              slug
               category
             }
           }
@@ -52,6 +53,7 @@ export const LOGIN_MUTATION = gql`
             permissions {
               id
               name
+              slug
               category
             }
           }
@@ -134,6 +136,7 @@ export const GET_CURRENT_USER_QUERY = gql`
           permissions {
             id
             name
+            slug
             category
           }
         }

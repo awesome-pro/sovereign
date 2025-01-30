@@ -1,3 +1,5 @@
+import { PermissionService } from './permission.service.js';
+import { RoleService } from './role.service.js';
 import { Injectable, UnauthorizedException, ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -10,15 +12,7 @@ import { LoggerService } from '../../logging/logging.service.js';
 import { RegisterInput } from '../dto/auth.input.js';
 import { AuthResponse, VerificationResponse } from '../types/auth.types.js';
 import { mapPrismaUserToGraphQL } from '../utils/type-mappers.js';
-import { PermissionService } from './permission.service.js';
-import { RoleService } from './role.service.js';
-
-interface JwtPayload {
-  sub: string;
-  email: string;
-  roles: string[];
-  permissions: string[];
-}
+import { UltraSecureJwtPayload } from './auth.interfaces.js';
 
 interface DeviceInfo {
   ip?: string;
@@ -348,14 +342,35 @@ export class AuthService {
         include: { role: true },
       });
 
-      const payload: JwtPayload = {
+      const jti = uuidv4(); // Generate unique token ID
+
+      const payload: Omit<UltraSecureJwtPayload, 'iat' | 'exp'> = {
         sub: user.id,
-        email: user.email,
-        roles: roles.map((r) => r.role.name),
-        permissions,
+        rls: roles.map((r) => r.role.name),
+        brn: user.password || '', // Add proper brokerage ID if available
+        iss: this.configService.get<string>('JWT_ISSUER') || 'crm-uhnw',
+        sctx: {
+          iph: '',  // Add proper IP hash
+          dfp: '',  // Add proper device fingerprint
+          geo: '',  // Add proper geo location
+          uah: ''   // Add proper user agent hash
+        },
+        prv: permissions,
+        cnd: [],
+        sec: {
+          mfa: false,  // Update based on actual MFA status
+          bio: false,
+          dpl: 0,
+          rsk: 0
+        },
+        jti
       };
 
-      return this.jwtService.sign(payload);
+      // Sign the token with explicit expiration
+      return this.jwtService.sign(payload, {
+        expiresIn: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRES_IN') || '15m',
+        secret: this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET')
+      });
     } catch (error) {
       this.logger.error('Error creating access token', error);
       throw error;

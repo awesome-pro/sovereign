@@ -146,7 +146,7 @@ export class CreatePermissionInput {
 
   @Field()
   @IsString()
-  code!: string;
+  slug!: string;
 
   @Field({ nullable: true })
   @IsString()
@@ -172,7 +172,7 @@ export class UpdatePermissionInput {
   @Field({ nullable: true })
   @IsString()
   @IsOptional()
-  code?: string;
+  slug?: string;
 
   @Field({ nullable: true })
   @IsString()

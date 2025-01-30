@@ -12,11 +12,22 @@ import { LoggerService } from './logging/logging.service.js';
 import { APP_GUARD } from '@nestjs/core';
 import { PermissionsGuard } from './auth/guards/permissions.guard.js';
 import { TaskModule } from './tasks/task.module.js';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
+        signOptions: {
+          issuer: configService.get<string>('JWT_ISSUER') || 'crm-uhnw',
+        },
+      }),
+      inject: [ConfigService],
     }),
     LoggingModule,
     GraphQLModule.forRootAsync<ApolloDriverConfig>({

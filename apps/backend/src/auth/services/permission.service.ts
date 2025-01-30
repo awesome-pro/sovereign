@@ -48,7 +48,7 @@ export class PermissionService {
       const permissions = new Set<string>();
       user.roles.forEach(userRole => 
         userRole.role.permissions.forEach(permission => 
-          permissions.add(permission.code)
+          permissions.add(permission.slug)
         )
       );
 

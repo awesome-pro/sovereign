@@ -500,7 +500,7 @@ model User {
   notifications Notification[]
   verifiedAddress BaseAddress[] @relation("AddressVerifier")
   createdTasks Task[] @relation("TaskCreator")
-  
+  userSessions UserSession[] @relation("UserSessions")
   
   // System Fields
   createdAt           DateTime            @default(now())
@@ -535,6 +535,10 @@ model Role {
   description       String?            // Optional description for clarity
   users             UserRole[]         // Many-to-many relationship
   permissions Permission[] @relation("RolePermissions")
+  hierarchy   Int         @default(0) // 0=highest
+  parentRoleId String?  // New field for hierarchy (null = top-level)
+  parentRole   Role?    @relation("RoleHierarchy", fields: [parentRoleId], references: [id])
+  childRoles Role[] @relation("RoleHierarchy")
 
   // System Fields
   createdAt         DateTime           @default(now())
@@ -552,6 +556,9 @@ model UserRole {
   roleId      String
   assignedBy  String?   // Who assigned this role? (e.g., admin ID)
   assignedAt  DateTime  @default(now()) // When the role was assigned
+  validFrom  DateTime  @default(now())
+  validTo    DateTime? // For temporary roles
+  conditions Json?     // {"maxPropertyValue": 10000000}
   
   @@unique([userId, roleId]) // Prevent duplicate roles for the same user
 }
@@ -559,7 +566,7 @@ model UserRole {
 model Permission {
   id          String    @id @default(cuid())
   name        String    @unique  
-  code        String    @unique  // Machine-readable code
+  slug        String    @unique  // Machine-readable code
   description String?
   category    PermissionCategory
   allowedRoles Role[] @relation("RolePermissions")
@@ -670,6 +677,23 @@ model SecurityLog {
   createdAt   DateTime  @default(now())
 
   @@map("security_logs")
+}
+
+model UserSession{
+  id        String    @id @default(cuid())
+  user      User      @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  device    String?
+  ip        String?
+  location  String?
+  userAgent String?
+  refreshToken String?
+  revoked  Boolean  @default(false)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("user_sessions")
 }
 
 enum AdminType {

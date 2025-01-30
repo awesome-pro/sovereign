@@ -15,9 +15,9 @@ type AuthResponse {
 
 input CreatePermissionInput {
   category: PermissionCategory!
-  code: String!
   description: String
   name: String!
+  slug: String!
 }
 
 input CreateTaskInput {
@@ -83,11 +83,11 @@ type Mutation {
 type Permission {
   allowedRoles: [Role!]!
   category: PermissionCategory!
-  code: String!
   createdAt: DateTime!
   description: String
   id: ID!
   name: String!
+  slug: String!
   updatedAt: DateTime!
 }
 
@@ -247,10 +247,10 @@ input TwoFactorTokenInput {
 
 input UpdatePermissionInput {
   category: PermissionCategory
-  code: String
   description: String
   id: ID!
   name: String
+  slug: String
 }
 
 input UpdateTaskInput {

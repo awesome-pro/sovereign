@@ -7,7 +7,7 @@ interface RoleDefinition {
   description: string;
   permissions: {
     name: string;
-    code: string;
+    slug: string;
     category: PermissionCategory;
     description: string;
   }[];
@@ -20,19 +20,19 @@ const roleDefinitions: RoleDefinition[] = [
     permissions: [
       {
         name: 'Manage Roles',
-        code: 'MANAGE_ROLES',
+        slug: 'MANAGE_ROLES',
         category: PermissionCategory.MANAGE,
         description: 'Create, update, and delete roles',
       },
       {
         name: 'Manage Permissions',
-        code: 'MANAGE_PERMISSIONS',
+        slug: 'MANAGE_PERMISSIONS',
         category: PermissionCategory.MANAGE,
         description: 'Manage system permissions',
       },
       {
         name: 'Manage Users',
-        code: 'MANAGE_USERS',
+        slug: 'MANAGE_USERS',
         category: PermissionCategory.MANAGE,
         description: 'Create, update, and delete users',
       },
@@ -45,13 +45,13 @@ const roleDefinitions: RoleDefinition[] = [
     permissions: [
       {
         name: 'Manage Company Users',
-        code: 'MANAGE_COMPANY_USERS',
+        slug: 'MANAGE_COMPANY_USERS',
         category: PermissionCategory.MANAGE,
         description: 'Manage users within the company',
       },
       {
         name: 'View Company Reports',
-        code: 'VIEW_COMPANY_REPORTS',
+        slug: 'VIEW_COMPANY_REPORTS',
         category: PermissionCategory.VIEW,
         description: 'View company-wide reports',
       },
@@ -64,19 +64,19 @@ const roleDefinitions: RoleDefinition[] = [
     permissions: [
       {
         name: 'Manage Properties',
-        code: 'MANAGE_PROPERTIES',
+        slug: 'MANAGE_PROPERTIES',
         category: PermissionCategory.MANAGE,
         description: 'Create and manage property listings',
       },
       {
         name: 'Manage Leads',
-        code: 'MANAGE_LEADS',
+        slug: 'MANAGE_LEADS',
         category: PermissionCategory.MANAGE,
         description: 'Create and manage leads',
       },
       {
         name: 'View Properties',
-        code: 'VIEW_PROPERTIES',
+        slug: 'VIEW_PROPERTIES',
         category: PermissionCategory.VIEW,
         description: 'View property listings',
       },
@@ -89,13 +89,13 @@ const roleDefinitions: RoleDefinition[] = [
     permissions: [
       {
         name: 'View Properties',
-        code: 'VIEW_PROPERTIES',
+        slug: 'VIEW_PROPERTIES',
         category: PermissionCategory.VIEW,
         description: 'View property listings',
       },
       {
         name: 'View Public Content',
-        code: 'VIEW_PUBLIC_CONTENT',
+        slug: 'VIEW_PUBLIC_CONTENT',
         category: PermissionCategory.VIEW,
         description: 'View public content',
       },
@@ -124,7 +124,7 @@ async function seedRBAC() {
       // Create or update permissions
       for (const permDef of roleDef.permissions) {
         const permission = await prisma.permission.upsert({
-          where: { code: permDef.code },
+          where: { slug: permDef.slug },
           update: {
             name: permDef.name,
             description: permDef.description,
@@ -132,7 +132,7 @@ async function seedRBAC() {
           },
           create: {
             name: permDef.name,
-            code: permDef.code,
+            slug: permDef.slug,
             description: permDef.description,
             category: permDef.category,
           },

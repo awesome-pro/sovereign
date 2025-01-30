@@ -18,6 +18,8 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { GqlAuthGuard } from './guards/gql-auth.guard.js';
 import { RolesGuard } from './guards/roles.guard.js';
 import { PermissionsGuard } from './guards/permissions.guard.js';
+import { PasswordService } from './password/password.service.js';
+import { SessionService } from './session/session.service.js';
 
 @Module({
   imports: [
@@ -61,6 +63,8 @@ import { PermissionsGuard } from './guards/permissions.guard.js';
       },
       inject: [ConfigService],
     },
+    PasswordService,
+    SessionService,
   ],
   exports: [
     AuthService,

@@ -39,7 +39,7 @@ export class PermissionResolver {
     return this.prisma.permission.create({
       data: {
         name: input.name,
-        code: input.code,
+        slug: input.slug,
         description: input.description,
         category: input.category,
       },
@@ -59,7 +59,7 @@ export class PermissionResolver {
       where: { id },
       data: {
         name: input.name,
-        code: input.code,
+        slug: input.slug,
         description: input.description,
         category: input.category,
       },
