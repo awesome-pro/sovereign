@@ -5,14 +5,16 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { User as PrismaUser, UserStatus, PermissionCategory } from '@sovereign/database';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { LoggerService } from '../../logging/logging.service.js';
 import { RegisterInput } from '../dto/auth.input.js';
-import { AuthResponse, VerificationResponse } from '../types/auth.types.js';
+import { AuthResponse, User, UserSession, VerificationResponse } from '../types/auth.types.js';
 import { mapPrismaUserToGraphQL } from '../utils/type-mappers.js';
 import { UltraSecureJwtPayload } from './auth.interfaces.js';
+import { SessionService } from '../session/session.service.js';
 
 interface DeviceInfo {
   ip?: string;
@@ -30,6 +32,7 @@ export class AuthService {
     private configService: ConfigService,
     private permissionService: PermissionService,
     private roleService: RoleService,
+    private sessionService: SessionService, // Assuming SessionService is injected
     loggerService: LoggerService,
   ) {
     this.logger = loggerService.setContext('AuthService');
@@ -105,8 +108,10 @@ export class AuthService {
         return user;
       });
 
+      const newSession = await this.sessionService.createSession(result.id, deviceInfo);
+
       // Generate tokens
-      const accessToken = await this.createAccessToken(result);
+      const accessToken = await this.createAccessToken(result, newSession, deviceInfo);
       const refreshToken = await this.createRefreshToken(result, deviceInfo);
 
       // Log security event
@@ -128,8 +133,12 @@ export class AuthService {
 
   async login(user: PrismaUser, deviceInfo: DeviceInfo): Promise<AuthResponse> {
     try {
-      const accessToken = await this.createAccessToken(user);
-      const refreshToken = await this.createRefreshToken(user, deviceInfo);
+      // Create a new session
+      const session = await this.sessionService.createSession(user.id, deviceInfo);
+
+      // Create access token with session info
+      const accessToken = await this.createAccessToken(user, session, deviceInfo);
+      const refreshToken = session.refreshToken ?? uuidv4();
 
       // Log successful login
       await this.logLoginAttempt(user.id, true, deviceInfo);
@@ -182,8 +191,17 @@ export class AuthService {
       // Revoke the used refresh token (one-time use)
       await this.revokeRefreshToken(refreshTokenRecord.id);
 
+      // get the user session, having the refresh token
+      const session = await this.prisma.userSession.findFirst({
+        where: { refreshToken: token, userId: refreshTokenRecord.userId },
+      });
+
+      if (!session) {
+        throw new UnauthorizedException('Invalid or expired refresh token');
+      }
+
       // Generate new tokens
-      const accessToken = await this.createAccessToken(refreshTokenRecord.user);
+      const accessToken = await this.createAccessToken(refreshTokenRecord.user, session, deviceInfo);
       const newRefreshToken = await this.createRefreshToken(refreshTokenRecord.user, deviceInfo);
 
       // Log the token refresh
@@ -332,7 +350,11 @@ export class AuthService {
     }
   }
 
-  async createAccessToken(user: PrismaUser): Promise<string> {
+  async createAccessToken(
+    user: PrismaUser, 
+    session: UserSession,
+    deviceInfo: DeviceInfo
+  ): Promise<string> {
     try {
       // Get user permissions
       const permissions = await this.permissionService.getUserPermissions(user.id);
@@ -342,28 +364,26 @@ export class AuthService {
         include: { role: true },
       });
 
-      const jti = uuidv4(); // Generate unique token ID
-
       const payload: Omit<UltraSecureJwtPayload, 'iat' | 'exp'> = {
         sub: user.id,
         rls: roles.map((r) => r.role.name),
-        brn: user.password || '', // Add proper brokerage ID if available
-        iss: this.configService.get<string>('JWT_ISSUER') || 'crm-uhnw',
+        brn: user.companyId || '', // Use actual company/brokerage ID
+        iss: this.configService.get<string>('JWT_ISSUER') || 'sovereign-crm',
         sctx: {
-          iph: '',  // Add proper IP hash
-          dfp: '',  // Add proper device fingerprint
-          geo: '',  // Add proper geo location
-          uah: ''   // Add proper user agent hash
+          iph: session.ipHash || '',
+          dfp: session.deviceHash || '',
+          geo: session.location || '',
+          uah: crypto.createHash('sha256').update(deviceInfo.userAgent || '').digest('hex')
         },
         prv: permissions,
         cnd: [],
         sec: {
-          mfa: false,  // Update based on actual MFA status
-          bio: false,
-          dpl: 0,
+          mfa: user.twoFactorEnabled,
+          bio: false, // Update if biometric auth is implemented
+          dpl: 1,
           rsk: 0
         },
-        jti
+        jti: session.id // Use session ID as JWT ID
       };
 
       // Sign the token with explicit expiration
@@ -569,6 +589,22 @@ export class AuthService {
     }
   }
 
+  async logout(userId: string, sessionId?: string): Promise<boolean> {
+    try {
+      if (sessionId) {
+        // Revoke specific session
+        await this.sessionService.revokeSession(sessionId);
+      } else {
+        // Revoke all sessions
+        await this.sessionService.revokeAllUserSessions(userId);
+      }
+      return true;
+    } catch (error) {
+      this.logger.error('Logout failed', error);
+      throw error;
+    }
+  }
+
   private async hashPassword(password: string): Promise<string> {
     try {
       return await bcrypt.hash(password, 12);
@@ -611,5 +647,26 @@ export class AuthService {
     } catch (error) {
       this.logger.error('Error cleaning up old refresh tokens', error);
     }
+  }
+
+  private generateContextualConditions(user: User): string[] {
+    const conditions: string[] = [];
+    
+    // Add role-based conditions
+    if (user.roles.some(r => r.role.name === 'BROKER')) {
+      conditions.push('MAX_DEAL_VALUE:10000000');
+    }
+    
+    // Add status-based conditions
+    if (user.status === UserStatus.SUSPENDED) {
+      conditions.push('REQUIRES_APPROVAL');
+    }
+    
+    // Add security-based conditions
+    if (user.twoFactorEnabled) {
+      conditions.push('MFA_REQUIRED');
+    }
+    
+    return conditions;
   }
 }

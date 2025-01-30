@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/providers/auth-provider';
 import type { LoginInput } from '@/types';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function LoginPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuthContext();
+  const { signIn } = useAuthContext();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -29,20 +30,14 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const user = await login(formData);
-      
-      // Redirect based on user role
-      const primaryRole = user.roles[0]?.role.name;
-      if (primaryRole === 'SUPER_ADMIN' || primaryRole === 'ADMIN') {
-        router.push('/admin/dashboard');
-      } else if (primaryRole === 'COMPANY_ADMIN') {
-        router.push('/company/dashboard');
-      } else {
-        router.push('/dashboard');
-      }
+      const user = await signIn(formData);
+      toast.success(`${user.name} Signed in successfully`);
+      const params = new URLSearchParams(window.location.search);
+      const redirectTo = params.get('redirect') || '/';
+      router.push(redirectTo);
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred during login');
+      console.error('Sign in error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred during sign in');
     } finally {
       setLoading(false);
     }

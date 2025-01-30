@@ -683,17 +683,37 @@ model UserSession{
   id        String    @id @default(cuid())
   user      User      @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-  device    String?
-  ip        String?
-  location  String?
-  userAgent String?
-  refreshToken String?
+  deviceHash    String?   // Device fingerprint hash
+  ipHash        String?   // IP hash
+  location  String?   // Geographic location (ISO 3166-2)
+  userAgent String?   // User agent string
+  refreshToken String?   // Refresh token
   revoked  Boolean  @default(false)
-  expiresAt DateTime
   revokedAt DateTime?
+  expiresAt DateTime
+  lastActivityAt DateTime @default(now())
+  securityLevel Int       @default(1)  // 1-5: Security level of the session
+  riskScore     Float     @default(0)  // 0-100: Risk score
+  mfaVerified   Boolean   @default(false)
+  loginAttempts LoginAttempt[]
   createdAt DateTime  @default(now())
 
   @@map("user_sessions")
+}
+
+model LoginAttempt {
+  id        String      @id @default(cuid())
+  session   UserSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId String
+  ip        String?
+  userAgent String?
+  success   Boolean
+  reason    String?
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId])
+  @@index([ip])
+  @@map("login_attempts")
 }
 
 enum AdminType {
@@ -1609,7 +1629,7 @@ model Discount {
   updatedAt         DateTime        @updatedAt
 
   subscription Subscription[]
-
+  
   @@map("discounts")
   
 }
@@ -3236,23 +3256,298 @@ enum ViewingStatus {
   RESCHEDULED
 }
 
-// model PropertyViewing {
-//   id              String    @id @default(cuid())
-//   property        Property  @relation(fields: [propertyId], references: [id])
-//   propertyId      String
-//   contact         Contact   @relation(fields: [contactId], references: [id])
-//   contactId       String
-//   scheduledFor    DateTime
-//   status          ViewingStatus @default(SCHEDULED)
-//   notes           String?
-//   feedback        Json?     // Structured feedback about the viewing
-//   agent           User      @relation(fields: [agentId], references: [id])
-//   agentId         String
-//   createdAt       DateTime  @default(now())
-//   updatedAt       DateTime  @updatedAt
-
-//   @@map("property_viewings")
+// model PropertyView {
+//   id          String    @id @default(cuid())
+//   property    Property  @relation(fields: [propertyId], references: [id])
+//   propertyId  String
+//   user        User?     @relation(fields: [userId], references: [id])
+//   userId      String?
+//   ipAddress   String?
+//   userAgent   String?
+//   viewedAt    DateTime  @default(now())
+//   duration    Int?      // Duration in seconds
+//   source      String?   // Where the view came from
+  
+//   @@index([propertyId, viewedAt])
 // }
+
+// model PropertyReview {
+//   id          String    @id @default(cuid())
+//   property    Property  @relation(fields: [propertyId], references: [id])
+//   propertyId  String
+//   reviewer    User      @relation(fields: [reviewerId], references: [id])
+//   reviewerId  String
+//   rating      Int       @default(0)
+//   comment     String?
+//   status      ModerationStatus @default(PENDING)
+//   createdAt   DateTime  @default(now())
+//   updatedAt   DateTime  @updatedAt
+  
+//   @@index([propertyId, rating])
+// }
+
+// Activity & Communication Related Enums
+enum ActivityType {
+  CREATED
+  UPDATED
+  DELETED
+  VIEWED
+  COMMENTED
+  SHARED
+  STATUS_CHANGED
+  ASSIGNED
+  COMPLETED
+  CANCELLED
+}
+
+enum ActivityEntityType {
+  PROPERTY
+  LEAD
+  DEAL
+  CLIENT
+  DOCUMENT
+  TASK
+  MEETING
+  MESSAGE
+}
+
+enum MessageType {
+  TEXT
+  EMAIL
+  SMS
+  NOTIFICATION
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum TaskType {
+  FOLLOW_UP
+  VIEWING
+  MEETING
+  DOCUMENT_REVIEW
+  CALL
+  EMAIL
+  OTHER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  BLOCKED
+}
+
+// Activity Tracking Models
+model Activity {
+  id              String            @id @default(cuid())
+  type            ActivityType
+  entityType      ActivityEntityType
+  entityId        String
+  description     String
+  metadata        Json?             // Additional context
+  
+  // Relations
+  user            User              @relation(fields: [userId], references: [id])
+  userId          String
+  company         Company           @relation(fields: [companyId], references: [id])
+  companyId       String
+  leadActivities LeadActivity[]
+  
+  // System Fields
+  createdAt       DateTime          @default(now())
+  
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+  @@map("activities")
+  
+  DealActivity DealActivity[]
+  Deal Deal[]
+}
+
+model LeadActivity {
+  id              String            @id @default(cuid())
+  lead            Lead              @relation(fields: [leadId], references: [id])
+  leadId          String
+  activity        Activity           @relation(fields: [activityId], references: [id])
+  activityId      String
+  // System Fields
+  createdAt       DateTime          @default(now())
+  
+  @@index([leadId, createdAt])
+  @@map("lead_activities")
+}
+
+model DealActivity {
+  id              String            @id @default(cuid())
+  deal            Deal              @relation(fields: [dealId], references: [id])
+  dealId          String
+  activity        Activity           @relation(fields: [activityId], references: [id])
+  activityId      String
+  // System Fields
+  createdAt       DateTime          @default(now())
+  
+  @@index([dealId, createdAt])
+  @@map("deal_activities")
+}
+
+// Communication Models
+model Message {
+  id              String          @id @default(cuid())
+  type            MessageType
+  content         String
+  metadata        Json?           // Additional message data
+  status          MessageStatus   @default(SENT)
+  
+  // Relations
+  sender          User            @relation(fields: [senderId], references: [id])
+  senderId        String
+  conversation    Conversation    @relation(fields: [conversationId], references: [id])
+  conversationId  String
+  
+  // Tracking
+  readBy          MessageRead[]
+  deliveredTo     MessageDelivery[]
+  
+  // System Fields
+  sentAt          DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([conversationId, sentAt])
+  @@map("messages")
+}
+
+model Conversation {
+  id              String          @id @default(cuid())
+  title           String?
+  type            String          // DIRECT, GROUP, CHANNEL
+  
+  // Relations
+  //participants    User[]          @relation("Participants")
+  messages        Message[]
+  
+  // System Fields
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@map("conversations")
+}
+
+model MessageRead {
+  id              String          @id @default(cuid())
+  message         Message         @relation(fields: [messageId], references: [id])
+  messageId       String
+  user            User            @relation("ReadMessages", fields: [userId], references: [id])
+  userId          String
+  readAt          DateTime        @default(now())
+  
+  @@unique([messageId, userId])
+  @@map("message_reads")
+}
+
+model MessageDelivery {
+  id              String          @id @default(cuid())
+  message         Message         @relation(fields: [messageId], references: [id])
+  messageId       String
+  user            User            @relation("DeliveredMessages", fields: [userId], references: [id])
+  userId          String
+  deliveredAt     DateTime        @default(now())
+  
+  @@unique([messageId, userId])
+  @@map("message_deliveries")
+}
+
+// Task Management Models
+model Task {
+  id              String          @id @default(cuid())
+  title           String
+  description     String?
+  type            TaskType
+  status          TaskStatus      @default(TODO)
+  priority        Priority        @default(MEDIUM)
+  dueDate         DateTime?
+  
+  createdBy       User            @relation("TaskCreator", fields: [createdById], references: [id])
+  createdById     String
+  
+  
+  // Additional Fields
+  checklist       TaskChecklist[]
+  attachments     Attachment[] @relation("TaskAttachments")
+  comments        TaskComment[]
+  
+  // System Fields
+  startDate       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // relations
+  assignedTo User[]  @relation("AssignedTasks")
+  teamTasks TeamTask[]
+  leads Lead[]  @relation("LeadTasks")
+  deals Deal[]  @relation("DealTasks")
+  propertyTasks PropertyTask[]
+  
+  @@index([status, dueDate])
+  @@map("tasks")
+}
+
+model TeamTask {
+  id              String          @id @default(cuid())
+  task            Task            @relation(fields: [taskId], references: [id])
+  taskId          String
+  team            Team            @relation(fields: [teamId], references: [id])
+  teamId          String
+  assignedAt      DateTime        @default(now())
+  
+  @@unique([taskId, teamId])
+  @@map("team_tasks")
+}
+
+model PropertyTask {
+  id              String          @id @default(cuid())
+  task            Task            @relation(fields: [taskId], references: [id])
+  taskId          String
+  property        Property        @relation(fields: [propertyId], references: [id])
+  propertyId      String
+  assignedAt      DateTime        @default(now())
+  
+  @@unique([taskId, propertyId])
+  @@map("property_tasks")
+}
+
+model TaskChecklist {
+  id              String          @id @default(cuid())
+  task            Task            @relation(fields: [taskId], references: [id])
+  taskId          String
+  item            String
+  completed       Boolean         @default(false)
+  completedAt     DateTime?
+  order           Int             @default(0)
+  
+  @@map("task_checklists")
+}
+
+
+model TaskComment {
+  id              String          @id @default(cuid())
+  task            Task            @relation(fields: [taskId], references: [id])
+  taskId          String
+  content         String
+  author          User            @relation(fields: [authorId], references: [id])
+  authorId        String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@map("task_comments")
+}
 
 model Client {
   id                String          @id @default(cuid())
@@ -3726,7 +4021,7 @@ model FollowUp {
   status      FollowUpStatus @default(PENDING)
   dueDate     DateTime
   description String?
-  assignedTo  User?          @relation("AssignedFollowUps", fields: [assignedToId], references: [id])
+  assignedTo  User?         @relation("AssignedFollowUps", fields: [assignedToId], references: [id])
   assignedToId String?
   completedAt DateTime?
   createdAt   DateTime      @default(now())
@@ -3768,297 +4063,4 @@ model Reminder {
   updatedAt   DateTime       @updatedAt
 
   @@map("reminders")
-}
-
-// model PropertyView {
-//   id          String    @id @default(cuid())
-//   property    Property  @relation(fields: [propertyId], references: [id])
-//   propertyId  String
-//   user        User?     @relation(fields: [userId], references: [id])
-//   userId      String?
-//   ipAddress   String?
-//   userAgent   String?
-//   viewedAt    DateTime  @default(now())
-//   duration    Int?      // Duration in seconds
-//   source      String?   // Where the view came from
-  
-//   @@index([propertyId, viewedAt])
-// }
-
-// model PropertyReview {
-//   id          String    @id @default(cuid())
-//   property    Property  @relation(fields: [propertyId], references: [id])
-//   propertyId  String
-//   reviewer    User      @relation(fields: [reviewerId], references: [id])
-//   reviewerId  String
-//   rating      Int       @default(0)
-//   comment     String?
-//   status      ModerationStatus @default(PENDING)
-//   createdAt   DateTime  @default(now())
-//   updatedAt   DateTime  @updatedAt
-  
-//   @@index([propertyId, rating])
-// }
-
-// Activity & Communication Related Enums
-enum ActivityType {
-  CREATED
-  UPDATED
-  DELETED
-  VIEWED
-  COMMENTED
-  SHARED
-  STATUS_CHANGED
-  ASSIGNED
-  COMPLETED
-  CANCELLED
-}
-
-enum ActivityEntityType {
-  PROPERTY
-  LEAD
-  DEAL
-  CLIENT
-  DOCUMENT
-  TASK
-  MEETING
-  MESSAGE
-}
-
-enum MessageType {
-  TEXT
-  EMAIL
-  SMS
-  NOTIFICATION
-  SYSTEM
-}
-
-enum MessageStatus {
-  SENT
-  DELIVERED
-  READ
-  FAILED
-}
-
-enum TaskType {
-  FOLLOW_UP
-  VIEWING
-  MEETING
-  DOCUMENT_REVIEW
-  CALL
-  EMAIL
-  OTHER
-}
-
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-  BLOCKED
-}
-
-// Activity Tracking Models
-model Activity {
-  id              String            @id @default(cuid())
-  type            ActivityType
-  entityType      ActivityEntityType
-  entityId        String
-  description     String
-  metadata        Json?             // Additional context
-  
-  // Relations
-  user            User              @relation(fields: [userId], references: [id])
-  userId          String
-  company         Company           @relation(fields: [companyId], references: [id])
-  companyId       String
-  leadActivities LeadActivity[]
-  
-  // System Fields
-  createdAt       DateTime          @default(now())
-  
-  @@index([entityType, entityId])
-  @@index([userId, createdAt])
-  @@map("activities")
-  
-  DealActivity DealActivity[]
-  Deal Deal[]
-}
-
-model LeadActivity {
-  id              String            @id @default(cuid())
-  lead            Lead              @relation(fields: [leadId], references: [id])
-  leadId          String
-  activity        Activity           @relation(fields: [activityId], references: [id])
-  activityId      String
-  // System Fields
-  createdAt       DateTime          @default(now())
-  
-  @@index([leadId, createdAt])
-  @@map("lead_activities")
-}
-
-model DealActivity {
-  id              String            @id @default(cuid())
-  deal            Deal              @relation(fields: [dealId], references: [id])
-  dealId          String
-  activity        Activity           @relation(fields: [activityId], references: [id])
-  activityId      String
-  // System Fields
-  createdAt       DateTime          @default(now())
-  
-  @@index([dealId, createdAt])
-  @@map("deal_activities")
-}
-
-// Communication Models
-model Message {
-  id              String          @id @default(cuid())
-  type            MessageType
-  content         String
-  metadata        Json?           // Additional message data
-  status          MessageStatus   @default(SENT)
-  
-  // Relations
-  sender          User            @relation(fields: [senderId], references: [id])
-  senderId        String
-  conversation    Conversation    @relation(fields: [conversationId], references: [id])
-  conversationId  String
-  
-  // Tracking
-  readBy          MessageRead[]
-  deliveredTo     MessageDelivery[]
-  
-  // System Fields
-  sentAt          DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  @@index([conversationId, sentAt])
-  @@map("messages")
-}
-
-model Conversation {
-  id              String          @id @default(cuid())
-  title           String?
-  type            String          // DIRECT, GROUP, CHANNEL
-  
-  // Relations
-  //participants    User[]          @relation("Participants")
-  messages        Message[]
-  
-  // System Fields
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  @@map("conversations")
-}
-
-model MessageRead {
-  id              String          @id @default(cuid())
-  message         Message         @relation(fields: [messageId], references: [id])
-  messageId       String
-  user            User            @relation("ReadMessages", fields: [userId], references: [id])
-  userId          String
-  readAt          DateTime        @default(now())
-  
-  @@unique([messageId, userId])
-  @@map("message_reads")
-}
-
-model MessageDelivery {
-  id              String          @id @default(cuid())
-  message         Message         @relation(fields: [messageId], references: [id])
-  messageId       String
-  user            User            @relation("DeliveredMessages", fields: [userId], references: [id])
-  userId          String
-  deliveredAt     DateTime        @default(now())
-  
-  @@unique([messageId, userId])
-  @@map("message_deliveries")
-}
-
-// Task Management Models
-model Task {
-  id              String          @id @default(cuid())
-  title           String
-  description     String?
-  type            TaskType
-  status          TaskStatus      @default(TODO)
-  priority        Priority        @default(MEDIUM)
-  dueDate         DateTime?
-  
-  createdBy       User            @relation("TaskCreator", fields: [createdById], references: [id])
-  createdById     String
-  
-  
-  // Additional Fields
-  checklist       TaskChecklist[]
-  attachments     Attachment[] @relation("TaskAttachments")
-  comments        TaskComment[]
-  
-  // System Fields
-  startDate       DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-
-  // relations
-  assignedTo User[]  @relation("AssignedTasks")
-  teamTasks TeamTask[]
-  leads Lead[]  @relation("LeadTasks")
-  deals Deal[]  @relation("DealTasks")
-  propertyTasks PropertyTask[]
-  
-  @@index([status, dueDate])
-  @@map("tasks")
-}
-
-model TeamTask {
-  id              String          @id @default(cuid())
-  task            Task            @relation(fields: [taskId], references: [id])
-  taskId          String
-  team            Team            @relation(fields: [teamId], references: [id])
-  teamId          String
-  assignedAt      DateTime        @default(now())
-  
-  @@unique([taskId, teamId])
-  @@map("team_tasks")
-}
-
-model PropertyTask {
-  id              String          @id @default(cuid())
-  task            Task            @relation(fields: [taskId], references: [id])
-  taskId          String
-  property        Property        @relation(fields: [propertyId], references: [id])
-  propertyId      String
-  assignedAt      DateTime        @default(now())
-  
-  @@unique([taskId, propertyId])
-  @@map("property_tasks")
-}
-
-model TaskChecklist {
-  id              String          @id @default(cuid())
-  task            Task            @relation(fields: [taskId], references: [id])
-  taskId          String
-  item            String
-  completed       Boolean         @default(false)
-  completedAt     DateTime?
-  order           Int             @default(0)
-  
-  @@map("task_checklists")
-}
-
-
-model TaskComment {
-  id              String          @id @default(cuid())
-  task            Task            @relation(fields: [taskId], references: [id])
-  taskId          String
-  content         String
-  author          User            @relation(fields: [authorId], references: [id])
-  authorId        String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  @@map("task_comments")
 }

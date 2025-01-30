@@ -308,10 +308,16 @@ export class UserSession {
   refreshToken?: string | null;
 
   @Field(() => String, { nullable: true })
-  ip?: string | null;
+  ipHash?: string | null;
 
   @Field(() => String, { nullable: true })
-  device?: string | null;
+  deviceHash?: string | null;
+
+  @Field(() => String, { nullable: true })
+  location?: string | null;
+
+  @Field(() => Date, { nullable: true })
+  lastActivity?: Date | null;
 
   @Field(() => Date)
   expiresAt!: Date;

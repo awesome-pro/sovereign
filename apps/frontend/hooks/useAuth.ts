@@ -5,7 +5,7 @@ import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import {
-  LOGIN_MUTATION,
+  SIGN_IN_MUTATION,
   GET_CURRENT_USER_QUERY,
 } from '@/graphql/auth.mutations';
 import type { User, LoginInput } from '@/types';
@@ -17,7 +17,7 @@ export function useAuth() {
   const router = useRouter();
   const client = useApolloClient();
 
-  const [loginMutation] = useMutation(LOGIN_MUTATION);
+  const [loginMutation] = useMutation(SIGN_IN_MUTATION);
 
   const { data: userData, loading: userLoading } = useQuery(GET_CURRENT_USER_QUERY, {
     skip: !Cookies.get(AUTH_TOKEN_KEY),

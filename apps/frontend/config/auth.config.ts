@@ -2,16 +2,25 @@ export const AUTH_TOKEN_KEY = 'accessToken';
 export const REFRESH_TOKEN_KEY = 'refreshToken';
 
 export const AUTH_CONFIG = {
-  tokenExpiration: '15m',
-  refreshTokenExpiration: '7d',
-  loginRedirectPath: '/dashboard',
-  logoutRedirectPath: '/auth/sign-in',
   publicPaths: [
     '/auth/sign-in',
     '/auth/sign-up',
     '/auth/forgot-password',
     '/auth/reset-password',
+    '/auth/verify-email',
   ],
+  defaultRedirectPath: '/dashboard',
+  logoutRedirectPath: '/auth/sign-in',
+  unauthorizedPath: '/unauthorized',
+  cookieOptions: {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    path: '/',
+    httpOnly: true,
+  },
+  refreshTokenOptions: {
+    maxAge: 7 * 24 * 60 * 60, // 7 days
+  },
 } as const;
 
 export const ROLES = {

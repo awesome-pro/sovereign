@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
@@ -20,6 +20,7 @@ import { RolesGuard } from './guards/roles.guard.js';
 import { PermissionsGuard } from './guards/permissions.guard.js';
 import { PasswordService } from './password/password.service.js';
 import { SessionService } from './session/session.service.js';
+import { PrismaContextMiddleware } from './middleware/prisma-context.middleware.js';
 
 @Module({
   imports: [
@@ -77,4 +78,10 @@ import { SessionService } from './session/session.service.js';
     PermissionsGuard,
   ],
 })
-export class AuthModule {}
+export class AuthModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(PrismaContextMiddleware)
+      .forRoutes('*');
+  }
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, ReactNode, useCallback, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useCallback, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 import { jwtDecode } from 'jwt-decode';
@@ -8,12 +8,12 @@ import Cookies from 'js-cookie';
 
 import { AUTH_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/config/auth.config';
 import { AuthState, LoginInput, RegisterInput, User } from '@/types';
-import { GET_CURRENT_USER_QUERY, LOGIN_MUTATION, LOGOUT_MUTATION, REFRESH_TOKEN_MUTATION } from '@/graphql/auth.mutations';
+import { GET_CURRENT_USER_QUERY, SIGN_IN_MUTATION, LOGOUT_MUTATION, REFRESH_TOKEN_MUTATION } from '@/graphql/auth.mutations';
 
 interface AuthContextType extends AuthState {
-  login: (input: LoginInput) => Promise<User>;
-  //register: (input: RegisterInput) => Promise<User>;
-  logout: () => Promise<void>;
+  signIn: (input: LoginInput) => Promise<User>;
+  signUp: (input: RegisterInput) => Promise<User>;
+  signOut: () => Promise<void>;
   checkAuth: () => Promise<boolean>;
   hasRole: (role: string | string[]) => boolean;
   hasPermission: (permission: string | string[]) => boolean;
@@ -28,68 +28,108 @@ const initialState: AuthState = {
   user: null,
   roles: [],
   permissions: [],
+  error: null
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<AuthState>(initialState);
   const router = useRouter();
   const client = useApolloClient();
   
-  const [login] = useMutation(LOGIN_MUTATION);
-  const [logout] = useMutation(LOGOUT_MUTATION);
+  const [loginMutation] = useMutation(SIGN_IN_MUTATION);
+  const [logoutMutation] = useMutation(LOGOUT_MUTATION);
   const [refreshTokenMutation] = useMutation(REFRESH_TOKEN_MUTATION);
-  
-  const { data: userData, loading: userLoading } = useQuery(GET_CURRENT_USER_QUERY, {
+
+  const { data: userData, loading: userLoading, refetch: refetchUser } = useQuery(GET_CURRENT_USER_QUERY, {
     skip: !Cookies.get(AUTH_TOKEN_KEY),
+    fetchPolicy: 'network-only',
   });
 
-  const state: AuthState = {
-    isAuthenticated: !!userData?.me,
-    isLoading: userLoading,
-    user: userData?.me || null,
-    roles: userData?.me?.roles.map((r: any) => r.name) || [],
-    permissions: userData?.me?.permissions || [],
-  };
-
-  const handleLogin = async (input: LoginInput): Promise<User> => {
-    const { data } = await login({
-      variables: {
-        input: {
-          email: input.email,
-          password: input.password,
-          twoFactorToken: input.twoFactorToken
-        }
-      }
-    });
-
-    const { accessToken, refreshToken, user } = data.login;
-
-    // Store tokens
-    Cookies.set(AUTH_TOKEN_KEY, accessToken, { 
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-    });
-    
-    Cookies.set(REFRESH_TOKEN_KEY, refreshToken, { 
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      expires: 7, // 7 days
-    });
-
-    return user;
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } finally {
-      // Clear tokens and cache
-      Cookies.remove(AUTH_TOKEN_KEY);
-      Cookies.remove(REFRESH_TOKEN_KEY);
-      await client.clearStore();
-      router.push('/login');
+  useEffect(() => {
+    if (!userLoading) {
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        isAuthenticated: !!userData?.me,
+        user: userData?.me || null,
+        roles: userData?.me?.roles.map((r: any) => r.role.name) || [],
+        permissions: userData?.me?.roles.flatMap((r: any) => 
+          r.role.permissions.map((p: any) => p.slug)
+        ) || [],
+      }));
     }
+  }, [userData, userLoading]);
+
+  const signIn = async (input: LoginInput): Promise<User> => {
+    try {
+      const { data } = await loginMutation({
+        variables: { input }
+      });
+
+      const { accessToken, refreshToken, user } = data.login;
+
+      // Set httpOnly cookies via API
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accessToken, refreshToken }),
+        credentials: 'include',
+      });
+
+      // Update local state
+      setState(prev => ({
+        ...prev,
+        isAuthenticated: true,
+        isLoading: false,
+        user,
+        roles: user.roles.map((r: any) => r.role.name),
+        permissions: user.roles.flatMap((r: any) => 
+          r.role.permissions.map((p: any) => p.slug)
+        ),
+        error: null,
+      }));
+
+      // Refetch user data to ensure everything is in sync
+      await refetchUser();
+
+      return user;
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : 'An error occurred during sign in',
+      }));
+      throw error;
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await logoutMutation();
+      
+      // Clear cookies through API
+      await fetch('/api/auth/session', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      // Clear local state
+      setState(initialState);
+
+      // Clear Apollo cache
+      await client.clearStore();
+      
+      router.push('/auth/sign-in');
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  };
+
+  const signUp = async (input: RegisterInput): Promise<User> => {
+    // Implement signup logic here
+    throw new Error('Not implemented');
   };
 
   const checkAuth = useCallback(async (): Promise<boolean> => {
@@ -111,40 +151,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshToken = async () => {
-    const currentRefreshToken = Cookies.get(REFRESH_TOKEN_KEY);
-    if (!currentRefreshToken) {
-      throw new Error('No refresh token available');
-    }
-
     try {
-      const { data } = await refreshTokenMutation({
-        variables: { refreshToken: currentRefreshToken },
-      });
-
+      const { data } = await refreshTokenMutation();
       const { accessToken, refreshToken } = data.refreshToken;
 
-      Cookies.set(AUTH_TOKEN_KEY, accessToken, { secure: true, sameSite: 'strict' });
-      Cookies.set(REFRESH_TOKEN_KEY, refreshToken, { secure: true, sameSite: 'strict' });
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accessToken, refreshToken }),
+        credentials: 'include',
+      });
+
+      await refetchUser();
     } catch (error) {
-      // If refresh fails, logout user
-      await handleLogout();
+      await signOut();
       throw error;
     }
   };
 
-  const hasRole = (roleOrRoles: string | string[]): boolean => {
+  const hasRole = useCallback((roleOrRoles: string | string[]): boolean => {
     const roles = Array.isArray(roleOrRoles) ? roleOrRoles : [roleOrRoles];
     return roles.some(role => state.roles.includes(role));
-  };
+  }, [state.roles]);
 
-  const hasPermission = (permissionOrPermissions: string | string[]): boolean => {
+  const hasPermission = useCallback((permissionOrPermissions: string | string[]): boolean => {
     const permissions = Array.isArray(permissionOrPermissions) 
       ? permissionOrPermissions 
       : [permissionOrPermissions];
     return permissions.some(permission => state.permissions.includes(permission));
-  };
+  }, [state.permissions]);
 
-  // Set up token refresh interval
   useEffect(() => {
     if (state.isAuthenticated) {
       const token = Cookies.get(AUTH_TOKEN_KEY);
@@ -153,29 +191,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const expiresIn = ((decoded as any).exp * 1000) - Date.now();
         const refreshTime = Math.max(expiresIn - 60000, 0); // Refresh 1 minute before expiry
 
-        const refreshInterval = setInterval(() => {
-          refreshToken().catch(console.error);
-        }, refreshTime);
-
+        const refreshInterval = setInterval(refreshToken, refreshTime);
         return () => clearInterval(refreshInterval);
       }
     }
   }, [state.isAuthenticated]);
 
-  // Initial auth check
-  useEffect(() => {
-    checkAuth().catch(console.error);
-  }, []);
-
-  const contextValue: AuthContextType = {
+  const contextValue = useMemo<AuthContextType>(() => ({
     ...state,
-    login: handleLogin,
-    logout: handleLogout,
+    signIn,
+    signUp,
+    signOut,
     checkAuth,
     hasRole,
     hasPermission,
     refreshToken,
-  };
+  }), [state, hasRole, hasPermission, checkAuth]);
 
   return (
     <AuthContext.Provider value={contextValue}>

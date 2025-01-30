@@ -32,7 +32,7 @@ export const REGISTER_MUTATION = gql`
   }
 `;
 
-export const LOGIN_MUTATION = gql`
+export const SIGN_IN_MUTATION = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
       accessToken

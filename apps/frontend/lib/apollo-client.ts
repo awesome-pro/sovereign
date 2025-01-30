@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { ApolloClient, InMemoryCache, createHttpLink, from, Observable } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
 import { onError } from '@apollo/client/link/error';
 import { setContext } from '@apollo/client/link/context';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
@@ -12,37 +12,16 @@ const httpLink = createHttpLink({
   credentials: 'include',
 });
 
-let isRefreshing = false;
-let pendingRequests: Function[] = [];
-
-// Function to process pending requests
-const resolvePendingRequests = () => {
-  pendingRequests.forEach((callback) => callback());
-  pendingRequests = [];
-};
-
 // Error handling link with token refresh logic
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
   if (graphQLErrors) {
     for (const err of graphQLErrors) {
       if (err.extensions?.code === 'UNAUTHENTICATED') {
-        if (!isRefreshing) {
-          isRefreshing = true;
-
-          // Instead of handling refresh directly, redirect to refresh endpoint
-          if (typeof window !== 'undefined') {
-            const currentPath = window.location.pathname;
-            window.location.href = `/api/auth/refresh?redirect=${encodeURIComponent(currentPath)}`;
-            return;
-          }
+        // Instead of handling refresh directly, let the middleware handle it
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/sign-in';
         }
-
-        // Queue the operation if we're already refreshing
-        return new Observable(observer => {
-          pendingRequests.push(() => {
-            forward(operation).subscribe(observer);
-          });
-        });
+        return;
       }
     }
   }
@@ -84,7 +63,7 @@ if (typeof window !== 'undefined') {
 }
 
 export function createApolloClient() {
-  const client = new ApolloClient({
+  return new ApolloClient({
     link: from([errorLink, authLink, httpLink]),
     cache: new InMemoryCache({
       typePolicies: {
@@ -111,6 +90,4 @@ export function createApolloClient() {
       },
     },
   });
-
-  return client;
 }

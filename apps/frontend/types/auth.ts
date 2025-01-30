@@ -34,5 +34,5 @@ export interface AuthState {
   user: User | null;
   roles: string[];
   permissions: string[];
-  error?: string;
+  error: string | null;
 }
