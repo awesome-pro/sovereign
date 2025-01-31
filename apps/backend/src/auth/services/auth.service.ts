@@ -25,6 +25,8 @@ interface DeviceInfo {
 @Injectable()
 export class AuthService {
   private readonly logger: LoggerService;
+  private readonly ENCRYPTION_KEY = process.env.TOKEN_COUNT_ENCRYPTION_KEY || 'your-fallback-encryption-key';
+  private readonly ENCRYPTION_IV = crypto.randomBytes(16);
 
   constructor(
     private prisma: PrismaService,
@@ -638,6 +640,71 @@ export class AuthService {
       }
     } catch (error) {
       this.logger.error('Error cleaning up old refresh tokens', error);
+    }
+  }
+
+  async encryptTokenCount(count: number): Promise<string> {
+    try {
+      const key = crypto.scryptSync(
+        process.env.TOKEN_COUNT_ENCRYPTION_KEY || 'your-fallback-encryption-key',
+        'salt',
+        32
+      );
+      const iv = crypto.randomBytes(16);
+      const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+      
+      const timestamp = Date.now().toString();
+      const data = `${count}:${timestamp}`;
+      
+      let encrypted = cipher.update(data, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
+      
+      const authTag = cipher.getAuthTag();
+      
+      // Combine IV, encrypted data, and auth tag
+      return Buffer.concat([
+        iv,
+        Buffer.from(encrypted, 'hex'),
+        authTag
+      ]).toString('base64');
+    } catch (error) {
+      this.logger.error('Token count encryption failed', error);
+      throw new Error('Failed to encrypt token count');
+    }
+  }
+
+  async decryptTokenCount(encrypted: string): Promise<number> {
+    try {
+      const key = crypto.scryptSync(
+        process.env.TOKEN_COUNT_ENCRYPTION_KEY || 'your-fallback-encryption-key',
+        'salt',
+        32
+      );
+      const buffer = Buffer.from(encrypted, 'base64');
+      
+      // Extract IV, encrypted data, and auth tag
+      const iv = buffer.slice(0, 16);
+      const authTag = buffer.slice(-16);
+      const encryptedData = buffer.slice(16, -16);
+      
+      const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+      decipher.setAuthTag(authTag);
+      
+      let decrypted = decipher.update(encryptedData);
+      decrypted = Buffer.concat([decrypted, decipher.final()]);
+      
+      const [count, timestamp] = decrypted.toString().split(':');
+      
+      // Validate timestamp (optional: implement expiry check)
+      const tokenCount = parseInt(count, 10);
+      if (isNaN(tokenCount)) {
+        throw new Error('Invalid token count');
+      }
+      
+      return tokenCount;
+    } catch (error) {
+      this.logger.error('Token count decryption failed', error);
+      throw new Error('Failed to decrypt token count');
     }
   }
 

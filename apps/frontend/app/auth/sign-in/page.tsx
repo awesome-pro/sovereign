@@ -18,7 +18,7 @@ export default function LoginPage() {
   const { signIn } = useAuthContext();
 
   const searchParams = useSearchParams();
-  const redirectTo = searchParams?.get('redirect') || '/';
+  const redirectTo = searchParams?.get('redirect') || '/dashboard';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

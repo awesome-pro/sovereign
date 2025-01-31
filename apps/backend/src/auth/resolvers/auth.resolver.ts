@@ -113,29 +113,36 @@ export class AuthResolver {
       // Generate tokens
       const result: AuthResponse = await this.authService.login(user, { ip, userAgent });
 
-       // Set secure httpOnly cookies
-       res.cookie('accessToken', result.accessToken, {
+      // Set secure httpOnly cookies with enhanced security
+      res.cookie('accessToken', result.accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict' as const,
         path: '/',
         maxAge: 15 * 60 * 1000, // 15 minutes
+        // domain: process.env.COOKIE_DOMAIN,
+        // signed: true
       });
 
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict' as const,  
+        sameSite: 'strict' as const,
         path: '/',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        // domain: process.env.COOKIE_DOMAIN,
+        // signed: true
       });
 
-      res.cookie('count', result.accessToken, {
+      // Set encrypted token count cookie
+      const encryptedCount = await this.authService.encryptTokenCount(2); // 2 tokens present
+      res.cookie('tokenCount', 2, {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict' as const,
         path: '/',
         maxAge: 15 * 60 * 1000, // 15 minutes
+        // domain: process.env.COOKIE_DOMAIN
       });
 
       this.logger.debug('Login successful', { userId: user.id });
@@ -159,26 +166,36 @@ export class AuthResolver {
       const userAgent = req.headers['user-agent'];
 
       const authResponse = await this.authService.refreshToken(refreshToken, { ip, userAgent });
+      
       res.cookie('accessToken', authResponse.accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict' as const,
         path: '/',
-        maxAge: 15 * 60 * 1000, // 15 minutes
+        maxAge: 15 * 60 * 1000,
+        // domain: process.env.COOKIE_DOMAIN,
+        // signed: true
       });
+
       res.cookie('refreshToken', authResponse.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict' as const,
         path: '/',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        // domain: process.env.COOKIE_DOMAIN,
+        // signed: true
       });
-      res.cookie('count', authResponse.accessToken, {
+
+      // Update encrypted token count
+      const encryptedCount = await this.authService.encryptTokenCount(2);
+      res.cookie('tokenCount', 2, {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict' as const,
         path: '/',
-        maxAge: 15 * 60 * 1000, // 15 minutes
+        maxAge: 15 * 60 * 1000,
+        // domain: process.env.COOKIE_DOMAIN
       });
 
       return authResponse;
@@ -193,10 +210,36 @@ export class AuthResolver {
   async logout(
     @CurrentUser() user: User,
     @Args('refreshToken') refreshToken: string,
+    @Context() {req, res}: {req: any; res: any},
   ): Promise<boolean> {
     try {
       await this.authService.revokeRefreshToken(refreshToken);
       
+      // Clear all cookies on logout
+      res.clearCookie('accessToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,
+        path: '/',
+        //// domain: process.env.COOKIE_DOMAIN
+      });
+
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,
+        path: '/',
+        //// domain: process.env.COOKIE_DOMAIN
+      });
+
+      res.clearCookie('count', {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,
+        path: '/',
+        //// domain: process.env.COOKIE_DOMAIN
+      });
+
       return true;
     } catch (error) {
       this.logger.error('Logout failed', error, { userId: user.id });

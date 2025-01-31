@@ -1,9 +1,14 @@
 'use client';
 
+import EstateLoading from '@/components/loading';
 import { useAuthContext } from '@/providers/auth-provider';
 
 export default function DashboardPage() {
-  const { user } = useAuthContext()
+  const { user, isLoading } = useAuthContext();
+
+  if (isLoading) {
+    return <EstateLoading />;
+  }
 
   return (
       <div className="p-8">

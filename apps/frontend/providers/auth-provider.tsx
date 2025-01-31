@@ -6,6 +6,7 @@ import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 import { toast } from 'sonner';
 import { LoginInput, RegisterInput, User } from '@/types';
 import { GET_CURRENT_USER_QUERY, LOGOUT_MUTATION, REFRESH_TOKEN_MUTATION, SIGN_IN_MUTATION } from '@/graphql/auth.mutations';
+import Cookies from 'js-cookie';
 
 // Types for better type safety
 interface SessionState {
@@ -49,9 +50,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [logoutMutation] = useMutation(LOGOUT_MUTATION);
   const [refreshTokenMutation] = useMutation(REFRESH_TOKEN_MUTATION);
 
+  const count = Cookies.get('count') as number;
+
+
   // Query for current user
   const { refetch: refetchUser } = useQuery(GET_CURRENT_USER_QUERY, {
-    skip: true, // Don't run automatically
+    skip: !(count === 2), // Don't run automatically
     fetchPolicy: 'network-only',
     onError: handleAuthError
   });
@@ -77,6 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check authentication status
   async function checkAuthStatus() {
     try {
+      
+
+      // Only proceed if we have both tokens (count should be 2)
       const { data } = await refetchUser();
       if (data?.me) {
         setState(prev => ({
@@ -149,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await logoutMutation();
       
-      // Clear session
+      // Clear session and cookies
       const response = await fetch('/api/auth/session', {
         method: 'DELETE',
         credentials: 'include',
@@ -158,6 +165,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error('Failed to clear session');
       }
+      
+      // Clear all cookies
+      document.cookie = 'accessToken=; Max-Age=0; path=/; domain=' + window.location.hostname;
+      document.cookie = 'refreshToken=; Max-Age=0; path=/; domain=' + window.location.hostname;
+      document.cookie = 'tokenCount=; Max-Age=0; path=/; domain=' + window.location.hostname;
       
       // Reset state and cache
       setState(initialState);
