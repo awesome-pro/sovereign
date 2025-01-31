@@ -32,14 +32,8 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ApolloWrapper>
           <AuthProvider>
-          {/* <SidebarProvider >
-            <AppSidebar />
-            <main className="bg-black text-white w-screen">
-              <SidebarTrigger /> */}
               {children}
               <Sonner />
-            {/* </main>
-          </SidebarProvider> */}
           </AuthProvider>
         </ApolloWrapper>
       </body>
