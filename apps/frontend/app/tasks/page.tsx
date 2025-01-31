@@ -40,6 +40,7 @@ import { Input } from '@/components/ui/input';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { PlusIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthContext } from '@/providers/auth-provider';
 
 export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -50,6 +51,7 @@ export default function TasksPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const { toast } = useToast();
+  const { user} = useAuthContext();
 
   const { data, loading, refetch } = useQuery(TASKS_QUERY, {
     variables: {
@@ -163,6 +165,9 @@ export default function TasksPage() {
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Tasks</h1>
+        <div>
+          <p className="text-white">Hello, {user?.email}</p>
+        </div>
         <Dialog>
           <DialogTrigger asChild>
             <Button>

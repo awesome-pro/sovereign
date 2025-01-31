@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/providers/auth-provider';
 import type { LoginInput } from '@/types';
 import { toast } from 'sonner';
+import { useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +16,9 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuthContext();
+
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams?.get('redirect') || '/';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -32,8 +36,6 @@ export default function LoginPage() {
     try {
       const user = await signIn(formData);
       toast.success(`${user.name} Signed in successfully`);
-      const params = new URLSearchParams(window.location.search);
-      const redirectTo = params.get('redirect') || '/';
       router.push(redirectTo);
     } catch (err) {
       console.error('Sign in error:', err);
@@ -44,10 +46,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 size-full">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-100">
             Sign in to your account
           </h2>
         </div>

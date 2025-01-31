@@ -14,9 +14,11 @@ export const AUTH_CONFIG = {
   unauthorizedPath: '/unauthorized',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
+    sameSite: 'strict' as const,
     path: '/',
     httpOnly: true,
+    partitioned: true,
+    priority: 'high',
   },
   refreshTokenOptions: {
     maxAge: 7 * 24 * 60 * 60, // 7 days

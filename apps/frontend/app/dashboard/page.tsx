@@ -1,9 +1,9 @@
 'use client';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/providers/auth-provider';
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user } = useAuthContext()
 
   return (
       <div className="p-8">

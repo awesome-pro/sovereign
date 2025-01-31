@@ -1,176 +1,177 @@
-"use client"
+"use client";
 
 import { createContext, useContext, ReactNode, useCallback, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useApolloClient } from '@apollo/client';
-import { jwtDecode } from 'jwt-decode';
-import Cookies from 'js-cookie';
+import { toast } from 'sonner';
+import { LoginInput, RegisterInput, User } from '@/types';
+import { GET_CURRENT_USER_QUERY, LOGOUT_MUTATION, REFRESH_TOKEN_MUTATION, SIGN_IN_MUTATION } from '@/graphql/auth.mutations';
 
-import { AUTH_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/config/auth.config';
-import { AuthState, LoginInput, RegisterInput, User } from '@/types';
-import { GET_CURRENT_USER_QUERY, SIGN_IN_MUTATION, LOGOUT_MUTATION, REFRESH_TOKEN_MUTATION } from '@/graphql/auth.mutations';
+// Types for better type safety
+interface SessionState {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  isInitialized: boolean;  // New flag to track initial authentication check
+  user: User | null;
+  roles: string[];
+  permissions: string[];
+  error: string | null;
+}
 
-interface AuthContextType extends AuthState {
+interface AuthContextType extends SessionState {
   signIn: (input: LoginInput) => Promise<User>;
   signUp: (input: RegisterInput) => Promise<User>;
   signOut: () => Promise<void>;
-  checkAuth: () => Promise<boolean>;
-  hasRole: (role: string | string[]) => boolean;
-  hasPermission: (permission: string | string[]) => boolean;
-  refreshToken: () => Promise<void>;
+  refreshSession: () => Promise<void>;
+  hasPermission: (permissions: string | string[]) => boolean;
+  hasRole: (roles: string | string[]) => boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const initialState: AuthState = {
+const initialState: SessionState = {
   isAuthenticated: false,
   isLoading: true,
+  isInitialized: false,
   user: null,
   roles: [],
   permissions: [],
   error: null
 };
 
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>(initialState);
+  const [state, setState] = useState<SessionState>(initialState);
   const router = useRouter();
   const client = useApolloClient();
-  
+
+  // GraphQL mutations
   const [loginMutation] = useMutation(SIGN_IN_MUTATION);
   const [logoutMutation] = useMutation(LOGOUT_MUTATION);
   const [refreshTokenMutation] = useMutation(REFRESH_TOKEN_MUTATION);
 
-  const { data: userData, loading: userLoading, refetch: refetchUser } = useQuery(GET_CURRENT_USER_QUERY, {
-    skip: !Cookies.get(AUTH_TOKEN_KEY),
+  // Query for current user
+  const { refetch: refetchUser } = useQuery(GET_CURRENT_USER_QUERY, {
+    skip: true, // Don't run automatically
     fetchPolicy: 'network-only',
+    onError: handleAuthError
   });
 
+  // Initialize authentication state
   useEffect(() => {
-    if (!userLoading) {
+    checkAuthStatus();
+  }, []);
+
+  // Handle authentication errors
+  function handleAuthError(error: any) {
+    console.error('Auth error:', error);
+    if (error.message.includes('UNAUTHENTICATED')) {
       setState(prev => ({
-        ...prev,
+        ...initialState,
         isLoading: false,
-        isAuthenticated: !!userData?.me,
-        user: userData?.me || null,
-        roles: userData?.me?.roles.map((r: any) => r.role.name) || [],
-        permissions: userData?.me?.roles.flatMap((r: any) => 
-          r.role.permissions.map((p: any) => p.slug)
-        ) || [],
+        isInitialized: true
       }));
     }
-  }, [userData, userLoading]);
+    toast.error(error.message);
+  }
 
+  // Check authentication status
+  async function checkAuthStatus() {
+    try {
+      const { data } = await refetchUser();
+      if (data?.me) {
+        setState(prev => ({
+          ...prev,
+          isAuthenticated: true,
+          isLoading: false,
+          isInitialized: true,
+          user: data.me,
+          roles: extractRoles(data.me),
+          permissions: extractPermissions(data.me),
+          error: null
+        }));
+      }
+    } catch (error) {
+      handleAuthError(error);
+    }
+  }
+
+  // Refresh session
+  const refreshSession = async () => {
+    try {
+      const { data } = await refreshTokenMutation();
+      if (data?.refreshToken) {
+        await checkAuthStatus();
+        return;
+      }
+      throw new Error('Failed to refresh session');
+    } catch (error) {
+      handleAuthError(error);
+      router.push('/auth/sign-in');
+    }
+  };
+
+  // Sign in implementation
   const signIn = async (input: LoginInput): Promise<User> => {
     try {
       const { data } = await loginMutation({
         variables: { input }
       });
 
-      const { accessToken, refreshToken, user } = data.login;
-
-      // Set httpOnly cookies via API
-      await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ accessToken, refreshToken }),
-        credentials: 'include',
-      });
-
-      // Update local state
+      const { user, accessToken, refreshToken } = data.login;
+      console.log('user : ', user);
+      console.log('accessToken : ', accessToken);
+      console.log('refreshToken : ', refreshToken);
+      
+      // Update state with user data
       setState(prev => ({
         ...prev,
         isAuthenticated: true,
         isLoading: false,
+        isInitialized: true,
         user,
-        roles: user.roles.map((r: any) => r.role.name),
-        permissions: user.roles.flatMap((r: any) => 
-          r.role.permissions.map((p: any) => p.slug)
-        ),
-        error: null,
+        roles: extractRoles(user),
+        permissions: extractPermissions(user),
+        error: null
       }));
 
-      // Refetch user data to ensure everything is in sync
-      await refetchUser();
-
+      await checkAuthStatus(); // Verify the session
       return user;
     } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'An error occurred during sign in',
-      }));
+      const message = error instanceof Error ? error.message : 'Authentication failed';
+      toast.error(message);
+      setState(prev => ({ ...prev, error: message }));
       throw error;
     }
   };
 
+  // Sign out implementation
   const signOut = async () => {
     try {
       await logoutMutation();
       
-      // Clear cookies through API
-      await fetch('/api/auth/session', {
+      // Clear session
+      const response = await fetch('/api/auth/session', {
         method: 'DELETE',
         credentials: 'include',
       });
-      
-      // Clear local state
-      setState(initialState);
 
-      // Clear Apollo cache
+      if (!response.ok) {
+        throw new Error('Failed to clear session');
+      }
+      
+      // Reset state and cache
+      setState(initialState);
       await client.clearStore();
       
       router.push('/auth/sign-in');
     } catch (error) {
       console.error('Logout error:', error);
+      toast.error('Failed to sign out');
       throw error;
     }
   };
 
-  const signUp = async (input: RegisterInput): Promise<User> => {
-    // Implement signup logic here
-    throw new Error('Not implemented');
-  };
-
-  const checkAuth = useCallback(async (): Promise<boolean> => {
-    const token = Cookies.get(AUTH_TOKEN_KEY);
-    if (!token) return false;
-
-    try {
-      const decoded = jwtDecode(token);
-      const currentTime = Date.now() / 1000;
-      
-      if ((decoded as any).exp < currentTime) {
-        await refreshToken();
-      }
-      
-      return true;
-    } catch {
-      return false;
-    }
-  }, []);
-
-  const refreshToken = async () => {
-    try {
-      const { data } = await refreshTokenMutation();
-      const { accessToken, refreshToken } = data.refreshToken;
-
-      await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ accessToken, refreshToken }),
-        credentials: 'include',
-      });
-
-      await refetchUser();
-    } catch (error) {
-      await signOut();
-      throw error;
-    }
-  };
-
+  // Helper functions for role and permission checking
   const hasRole = useCallback((roleOrRoles: string | string[]): boolean => {
     const roles = Array.isArray(roleOrRoles) ? roleOrRoles : [roleOrRoles];
     return roles.some(role => state.roles.includes(role));
@@ -183,30 +184,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return permissions.some(permission => state.permissions.includes(permission));
   }, [state.permissions]);
 
-  useEffect(() => {
-    if (state.isAuthenticated) {
-      const token = Cookies.get(AUTH_TOKEN_KEY);
-      if (token) {
-        const decoded = jwtDecode(token);
-        const expiresIn = ((decoded as any).exp * 1000) - Date.now();
-        const refreshTime = Math.max(expiresIn - 60000, 0); // Refresh 1 minute before expiry
+  // Helper functions to extract roles and permissions
+  function extractRoles(user: User): string[] {
+    return user.roles.map(r => r.role.name);
+  }
 
-        const refreshInterval = setInterval(refreshToken, refreshTime);
-        return () => clearInterval(refreshInterval);
-      }
-    }
-  }, [state.isAuthenticated]);
+  function extractPermissions(user: User): string[] {
+    return user.roles.flatMap(r => r.role.permissions.map(p => p.slug));
+  }
 
   const contextValue = useMemo<AuthContextType>(() => ({
     ...state,
     signIn,
-    signUp,
+    signUp: async () => { throw new Error('Not implemented'); },
     signOut,
-    checkAuth,
+    refreshSession,
     hasRole,
     hasPermission,
-    refreshToken,
-  }), [state, hasRole, hasPermission, checkAuth]);
+  }), [state, hasRole, hasPermission]);
 
   return (
     <AuthContext.Provider value={contextValue}>

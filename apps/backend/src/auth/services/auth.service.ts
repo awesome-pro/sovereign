@@ -191,16 +191,8 @@ export class AuthService {
       // Revoke the used refresh token (one-time use)
       await this.revokeRefreshToken(refreshTokenRecord.id);
 
-      // get the user session, having the refresh token
-      const session = await this.prisma.userSession.findFirst({
-        where: { refreshToken: token, userId: refreshTokenRecord.userId },
-      });
-
-      if (!session) {
-        throw new UnauthorizedException('Invalid or expired refresh token');
-      }
-
       // Generate new tokens
+      const session = await this.sessionService.createSession(refreshTokenRecord.user.id, deviceInfo);
       const accessToken = await this.createAccessToken(refreshTokenRecord.user, session, deviceInfo);
       const newRefreshToken = await this.createRefreshToken(refreshTokenRecord.user, deviceInfo);
 

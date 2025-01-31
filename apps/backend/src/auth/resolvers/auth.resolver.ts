@@ -31,6 +31,7 @@ import { RequirePermissions } from '../decorators/permissions.decorator.js';
 import { PermissionsGuard } from '../guards/permissions.guard.js';
 import { Roles } from '../decorators/roles.decorator.js';
 import { SessionService } from '../session/session.service.js';
+import { Public } from '../decorators/public.decorator.js';
 
 @Resolver()
 export class AuthResolver {
@@ -112,6 +113,31 @@ export class AuthResolver {
       // Generate tokens
       const result: AuthResponse = await this.authService.login(user, { ip, userAgent });
 
+       // Set secure httpOnly cookies
+       res.cookie('accessToken', result.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,
+        path: '/',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,  
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.cookie('count', result.accessToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,
+        path: '/',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
       this.logger.debug('Login successful', { userId: user.id });
 
       return result;
@@ -121,9 +147,10 @@ export class AuthResolver {
     }
   }
 
+  @Public()
   @Mutation(() => AuthResponse)
   async refreshToken(
-    @Args('input') input: RefreshTokenInput,
+    @Args('refreshToken') refreshToken: string,
     @Context() context: any,
   ): Promise<AuthResponse> {
     try {
@@ -131,7 +158,30 @@ export class AuthResolver {
       const ip = req.ip;
       const userAgent = req.headers['user-agent'];
 
-      return await this.authService.refreshToken(input.refreshToken, { ip, userAgent });
+      const authResponse = await this.authService.refreshToken(refreshToken, { ip, userAgent });
+      res.cookie('accessToken', authResponse.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,
+        path: '/',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+      res.cookie('refreshToken', authResponse.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+      res.cookie('count', authResponse.accessToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const,
+        path: '/',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      return authResponse;
     } catch (error) {
       this.logger.error('Token refresh failed', error);
       throw error;
@@ -146,6 +196,7 @@ export class AuthResolver {
   ): Promise<boolean> {
     try {
       await this.authService.revokeRefreshToken(refreshToken);
+      
       return true;
     } catch (error) {
       this.logger.error('Logout failed', error, { userId: user.id });

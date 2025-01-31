@@ -32,7 +32,5 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: User | null;
-  roles: string[];
-  permissions: string[];
   error: string | null;
 }

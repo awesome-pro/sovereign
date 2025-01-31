@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, Context } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { TaskService } from '../services/task.service.js';
 import { Task } from '../dto/task.dto.js';
@@ -23,42 +23,42 @@ export class TaskResolver {
   @Query(() => [Task])
   async tasks(
     @Args('filter', { nullable: true }) filter: TaskFilterInput,
-    @CurrentUser() user: User,
+    @Context() { req, res }: { req: any; res: any },
   ): Promise<Task[]> {
-    return this.taskService.getTasks(filter, user.id);
+    return this.taskService.getTasks(filter, req.user.sub);
   }
 
   @Mutation(() => Task)
   async createTask(
     @Args('input') input: CreateTaskInput,
-    @CurrentUser() user: User,
+    @Context() {req, res}: {req: any; res: any},
   ): Promise<Task> {
-    return this.taskService.createTask(input, user.id);
+    return this.taskService.createTask(input, req.user.sub);
   }
 
   @Mutation(() => Task)
   async updateTask(
     @Args('input') input: UpdateTaskInput,
-    @CurrentUser() user: User,
+    @Context() {req, res}: {req: any; res: any},
   ): Promise<Task> {
-    return this.taskService.updateTask(input, user.id);
+    return this.taskService.updateTask(input, req.user.sub);
   }
 
   @Mutation(() => Boolean)
   async deleteTask(
     @Args('id', { type: () => ID }) id: string,
-    @CurrentUser() user: User,
+    @Context() {req, res}: {req: any; res: any},
   ): Promise<boolean> {
-    return this.taskService.deleteTask(id, user.id);
+    return this.taskService.deleteTask(id, req.user.sub);
   }
 
   @Mutation(() => Task)
   async addTaskChecklistItem(
     @Args('taskId', { type: () => ID }) taskId: string,
     @Args('input') input: TaskChecklistInput,
-    @CurrentUser() user: User,
+    @Context() {req, res}: {req: any; res: any},
   ): Promise<Task> {
-    return this.taskService.addChecklistItem(taskId, input, user.id);
+    return this.taskService.addChecklistItem(taskId, input, req.user.sub);
   }
 
   @Mutation(() => Task)
