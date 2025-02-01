@@ -472,6 +472,7 @@ model User {
   twoFactorEnabled  Boolean             @default(false)
   twoFactorSecret   String?
   profile           UserProfile?        @relation("UserToUserProfile")
+  avatar          String?
 
   // Business & Team Relations
   company              Company?            @relation("CompanyAgent",fields: [companyId], references: [id])
@@ -570,6 +571,7 @@ model Permission {
   slug        String    @unique  // Machine-readable code
   description String?
   category    PermissionCategory
+  actionLevel  Int       @default(0) // 0=lowest, no action allowed
   allowedRoles Role[] @relation("RolePermissions")
   
   // Audit fields
@@ -580,12 +582,14 @@ model Permission {
 }
 
 enum PermissionCategory {
-  VIEW        // Reading permissions
-  EDIT        // Modification permissions
-  DELETE      // Deletion permissions
-  MANAGE      // Administrative permissions
-  SHARE       // Sharing permissions
-  COMMUNICATE // Communication permissions
+  VIEW        // Reading permissions - 001
+  CREATE      // Creation permissions - 002
+  EDIT        // Modification permissions - 003
+  DELETE      // Deletion permissions - 004
+  CREATE_EDIT  // Combined create and edit permissions - 023
+  EDIT_DELETE  // Combined edit and delete permissions - 034
+  MANAGE      // Administrative permissions - 007
+  ADMIN_VIEW  // View-only administrative permissions - 008
 }
 
 
@@ -597,7 +601,6 @@ model UserProfile {
   // Personal Information
   lastName        String
   displayName     String?
-  avatar          String?
   bio             String?
   coverImage      String?
   dateOfBirth     DateTime?

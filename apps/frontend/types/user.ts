@@ -6,20 +6,29 @@ export interface RelatedUser{
   name: string;
 }
 
+export interface JWTRole {
+  roleHash: string;
+  hierarchy: number;
+  parentRoleHash: string | null;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
+  avatar?: string;
   phone?: string;
   status: UserStatus;
   emailVerified?: Date;
   phoneVerified?: Date;
   twoFactorEnabled: boolean;
-  roles: UserRole[];
+  roles: JWTRole[];
+  permissions: string[];
 }
 
 export interface UserRole {
   id: string;
+  userId: string;
   role: Role;
   assignedAt: Date;
 }

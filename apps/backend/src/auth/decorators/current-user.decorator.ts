@@ -104,9 +104,7 @@ export function hasPermission(user: User | CompleteUser, requiredPermission: str
   }
 
   // Check role-based permissions
-  return user.roles.some(userRole => 
-    userRole.role.permissions.some(permission => permission.name === requiredPermission)
-  );
+  return user.permissions.includes(requiredPermission);
 }
 
 /**

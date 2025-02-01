@@ -3,30 +3,20 @@ import { gql } from '@apollo/client';
 export const REGISTER_MUTATION = gql`
   mutation Register($input: RegisterInput!) {
     register(input: $input) {
-      accessToken
-      refreshToken
       user {
         id
         email
         status
+        avatar
         emailVerified
         phoneVerified
         twoFactorEnabled
         roles {
-          id
-          role {
-            id
-            name
-            description
-            permissions {
-              id
-              name
-              slug
-              category
-            }
-          }
-          assignedAt
+          roleHash
+          hierarchy
+          parentRoleHash
         }
+        permissions
       }
     }
   }
@@ -35,30 +25,20 @@ export const REGISTER_MUTATION = gql`
 export const SIGN_IN_MUTATION = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
-      accessToken
-      refreshToken
       user {
         id
         email
         status
+        avatar
         emailVerified
         phoneVerified
-        twoFactorEnabled
         roles {
-          id
-          role {
-            id
-            name
-            description
-            permissions {
-              id
-              name
-              slug
-              category
-            }
-          }
-          assignedAt
+          roleHash
+          hierarchy
+          parentRoleHash
         }
+        permissions
+        twoFactorEnabled
       }
     }
   }

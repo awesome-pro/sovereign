@@ -24,6 +24,18 @@ export class RelatedUser {
 }
 
 @ObjectType()
+export class JWTRole {
+  @Field()
+  roleHash!: string;
+
+  @Field()
+  hierarchy!: number;
+
+  @Field({ nullable: true })
+  parentRoleHash!: string | null;
+}
+
+@ObjectType()
 export class User {
   @Field(() => ID)
   id!: string;
@@ -31,22 +43,31 @@ export class User {
   @Field()
   email!: string;
 
-  @Field({ nullable: true })
-  emailVerified?: Date;
+  @Field()
+  name!: string;
 
   @Field({ nullable: true })
-  phone?: string;
+  avatar?: string | null;
 
   @Field({ nullable: true })
-  phoneVerified?: Date;
+  emailVerified?: Date | null;
+
+  @Field({ nullable: true })
+  phone?: string | null;
+
+  @Field({ nullable: true })
+  phoneVerified?: Date | null;
 
   @Field(() => UserStatus)
   status!: UserStatus;
 
-  @Field(() => [UserRole])
-  roles!: UserRole[];
+  @Field(() => [JWTRole])
+  roles!: JWTRole[];
 
-  @Field(() => Boolean)
+  @Field(() => [String])
+  permissions!: string[];
+
+  @Field({ nullable: true })
   twoFactorEnabled!: boolean;
 }
 

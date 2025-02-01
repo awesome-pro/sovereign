@@ -12,7 +12,6 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { LoggerService } from '../../logging/logging.service.js';
 import { RegisterInput } from '../dto/auth.input.js';
 import { AuthResponse, AuthServiceResponse, User, UserSession, VerificationResponse } from '../types/auth.types.js';
-import { mapPrismaUserToGraphQL } from '../utils/type-mappers.js';
 import { UltraSecureJwtPayload } from './auth.interfaces.js';
 import { SessionService } from '../session/session.service.js';
 
@@ -55,7 +54,7 @@ export class AuthService {
       const hashedPassword = await this.hashPassword(input.password);
 
       // Start transaction
-      const result = await this.prisma.$transaction(async (prisma) => {
+      let result = await this.prisma.$transaction(async (prisma) => {
         // Create user with profile
         const user = await prisma.user.create({
           data: {
@@ -125,7 +124,7 @@ export class AuthService {
       return {
         accessToken,
         refreshToken,
-        user: mapPrismaUserToGraphQL(result),
+        user: await this.transformPrismaUserToGraphQL(result),
       };
     } catch (error) {
       this.logger.error('Registration failed', error);
@@ -133,13 +132,29 @@ export class AuthService {
     }
   }
 
-  async login(user: PrismaUser, deviceInfo: DeviceInfo): Promise<AuthServiceResponse> {
+  async login(user: User, deviceInfo: DeviceInfo): Promise<AuthServiceResponse> {
     try {
       // Create a new session
       const session = await this.sessionService.createSession(user.id, deviceInfo);
 
+      // Get the full Prisma user for access token creation
+      const prismaUser = await this.prisma.user.findUnique({
+        where: { id: user.id },
+        include: {
+          roles: {
+            include: {
+              role: true
+            }
+          }
+        }
+      });
+
+      if (!prismaUser) {
+        throw new Error('User not found');
+      }
+
       // Create access token with session info
-      const accessToken = await this.createAccessToken(user, session, deviceInfo);
+      const accessToken = await this.createAccessToken(prismaUser, session, deviceInfo);
       const refreshToken = session.refreshToken ?? uuidv4();
 
       // Log successful login
@@ -148,7 +163,7 @@ export class AuthService {
       return {
         accessToken,
         refreshToken,
-        user: mapPrismaUserToGraphQL(user),
+        user: user,
       };
     } catch (error) {
       this.logger.error('Login failed', error);
@@ -207,7 +222,7 @@ export class AuthService {
       return {
         accessToken,
         refreshToken: newRefreshToken,
-        user: mapPrismaUserToGraphQL(refreshTokenRecord.user),
+        user: await this.transformPrismaUserToGraphQL(refreshTokenRecord.user),
       };
     } catch (error) {
       this.logger.error('Token refresh failed', error);
@@ -215,7 +230,7 @@ export class AuthService {
     }
   }
 
-  async validateUser(email: string, password: string): Promise<PrismaUser> {
+  async validateUser(email: string, password: string): Promise<User> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email },
@@ -237,7 +252,7 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-      return user;
+      return this.transformPrismaUserToGraphQL(user);
     } catch (error) {
       this.logger.error('User validation failed', error);
       throw error;
@@ -686,6 +701,55 @@ export class AuthService {
     }
   }
 
+  private async transformPrismaUserToGraphQL(prismaUser: PrismaUser): Promise<User> {
+    // Get user roles with their permissions
+    const userWithRoles = await this.prisma.user.findUnique({
+      where: { id: prismaUser.id },
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: true,
+                parentRole: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!userWithRoles) {
+      throw new Error('User not found');
+    }
+
+    // Transform roles to JWTRole format
+    const jwtRoles = userWithRoles.roles.map(userRole => ({
+      roleHash: userRole.role.roleHash,
+      hierarchy: userRole.role.hierarchy,
+      parentRoleHash: userRole.role.parentRole?.roleHash || null
+    }));
+
+    // Get all permissions from all roles
+    const permissions = userWithRoles.roles.flatMap(userRole => 
+      userRole.role.permissions.map(permission => permission.slug)
+    );
+
+    // Return transformed user
+    return {
+      id: prismaUser.id,
+      email: prismaUser.email,
+      name: prismaUser.name,
+      phone: prismaUser.phone,
+      emailVerified: prismaUser.emailVerified,
+      phoneVerified: prismaUser.phoneVerified,
+      status: prismaUser.status,
+      twoFactorEnabled: prismaUser.twoFactorEnabled,
+      roles: jwtRoles,
+      permissions: [...new Set(permissions)], // Remove duplicates
+    };
+  }
+
   async encryptTokenCount(count: number): Promise<string> {
     try {
       const key = crypto.scryptSync(
@@ -751,24 +815,24 @@ export class AuthService {
     }
   }
 
-  private generateContextualConditions(user: User): string[] {
-    const conditions: string[] = [];
+  // private generateContextualConditions(user: User): string[] {
+  //   const conditions: string[] = [];
     
-    // Add role-based conditions
-    if (user.roles.some(r => r.role.name === 'BROKER')) {
-      conditions.push('MAX_DEAL_VALUE:10000000');
-    }
+  //   // Add role-based conditions
+  //   if (user.roles.some(r => r.role.name === 'BROKER')) {
+  //     conditions.push('MAX_DEAL_VALUE:10000000');
+  //   }
     
-    // Add status-based conditions
-    if (user.status === UserStatus.SUSPENDED) {
-      conditions.push('REQUIRES_APPROVAL');
-    }
+  //   // Add status-based conditions
+  //   if (user.status === UserStatus.SUSPENDED) {
+  //     conditions.push('REQUIRES_APPROVAL');
+  //   }
     
-    // Add security-based conditions
-    if (user.twoFactorEnabled) {
-      conditions.push('MFA_REQUIRED');
-    }
+  //   // Add security-based conditions
+  //   if (user.twoFactorEnabled) {
+  //     conditions.push('MFA_REQUIRED');
+  //   }
     
-    return conditions;
-  }
+  //   return conditions;
+  // }
 }

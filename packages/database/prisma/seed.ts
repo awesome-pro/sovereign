@@ -1,103 +1,425 @@
-import { PermissionCategory, PrismaClient } from "@prisma/client";
+// prisma/seed.ts
 
+import { PrismaClient, PermissionCategory, UserStatus } from '@prisma/client';
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log("🌱 Seeding database...");
+async function seedDatabase() {
+  try {
+    console.log("🌱 Seeding database with roles and permissions for UHNW Real Estate...");
 
-  // Create Roles
-  const superAdmin = await prisma.role.create({
-    data: { name: "Super Admin", description: "Full system access" },
-  });
+    // ------------------------------------------
+    // 1. Seed Permissions
+    // ------------------------------------------
+    // Define permission data for multiple entities.
+    const permissionsData = [
+      // --- Property Permissions ---
+      {
+        name: "View Properties",
+        slug: "property.001",
+        description: "Can view property listings",
+        category: PermissionCategory.VIEW,
+        actionLevel: 1,
+      },
+      {
+        name: "Create Property",
+        slug: "property.002",
+        description: "Can create new property listings",
+        category: PermissionCategory.CREATE,
+        actionLevel: 2,
+      },
+      {
+        name: "Edit Property",
+        slug: "property.003",
+        description: "Can edit property details",
+        category: PermissionCategory.EDIT,
+        actionLevel: 2,
+      },
+      {
+        name: "Delete Property",
+        slug: "property.004",
+        description: "Can delete or archive property listings",
+        category: PermissionCategory.DELETE,
+        actionLevel: 2,
+      },
+      {
+        name: "Manage Properties",
+        slug: "property.007",
+        description: "Full control over property listings",
+        category: PermissionCategory.MANAGE,
+        actionLevel: 3,
+      },
+      // --- Lead Permissions ---
+      {
+        name: "View Leads",
+        slug: "lead.001",
+        description: "Can view lead information",
+        category: PermissionCategory.VIEW,
+        actionLevel: 1,
+      },
+      {
+        name: "Create Lead",
+        slug: "lead.002",
+        description: "Can create new leads",
+        category: PermissionCategory.CREATE,
+        actionLevel: 2,
+      },
+      {
+        name: "Edit Lead",
+        slug: "lead.003",
+        description: "Can update lead details",
+        category: PermissionCategory.EDIT,
+        actionLevel: 2,
+      },
+      {
+        name: "Delete Lead",
+        slug: "lead.004",
+        description: "Can delete or archive leads",
+        category: PermissionCategory.DELETE,
+        actionLevel: 2,
+      },
+      {
+        name: "Manage Leads",
+        slug: "lead.007",
+        description: "Full control over leads",
+        category: PermissionCategory.MANAGE,
+        actionLevel: 3,
+      },
+      // --- Deal Permissions ---
+      {
+        name: "View Deals",
+        slug: "deal.001",
+        description: "Can view deal details",
+        category: PermissionCategory.VIEW,
+        actionLevel: 1,
+      },
+      {
+        name: "Create Deal",
+        slug: "deal.002",
+        description: "Can create new deals",
+        category: PermissionCategory.CREATE,
+        actionLevel: 2,
+      },
+      {
+        name: "Edit Deal",
+        slug: "deal.003",
+        description: "Can update deal information",
+        category: PermissionCategory.EDIT,
+        actionLevel: 2,
+      },
+      {
+        name: "Delete Deal",
+        slug: "deal.004",
+        description: "Can delete or archive deals",
+        category: PermissionCategory.DELETE,
+        actionLevel: 2,
+      },
+      {
+        name: "Manage Deals",
+        slug: "deal.007",
+        description: "Full control over deals",
+        category: PermissionCategory.MANAGE,
+        actionLevel: 3,
+      },
+      // --- Transaction Permissions ---
+      {
+        name: "View Transactions",
+        slug: "transaction.001",
+        description: "Can view transaction details",
+        category: PermissionCategory.VIEW,
+        actionLevel: 1,
+      },
+      {
+        name: "Create Transaction",
+        slug: "transaction.002",
+        description: "Can create new transactions",
+        category: PermissionCategory.CREATE,
+        actionLevel: 2,
+      },
+      {
+        name: "Edit Transaction",
+        slug: "transaction.003",
+        description: "Can modify transactions",
+        category: PermissionCategory.EDIT,
+        actionLevel: 2,
+      },
+      {
+        name: "Delete Transaction",
+        slug: "transaction.004",
+        description: "Can delete transactions",
+        category: PermissionCategory.DELETE,
+        actionLevel: 2,
+      },
+      {
+        name: "Manage Transactions",
+        slug: "transaction.007",
+        description: "Full control over transactions",
+        category: PermissionCategory.MANAGE,
+        actionLevel: 3,
+      },
+      // --- Message Permissions ---
+      {
+        name: "View Messages",
+        slug: "message.001",
+        description: "Can view messages",
+        category: PermissionCategory.VIEW,
+        actionLevel: 1,
+      },
+      {
+        name: "Create Message",
+        slug: "message.002",
+        description: "Can send messages",
+        category: PermissionCategory.CREATE,
+        actionLevel: 2,
+      },
+      {
+        name: "Edit Message",
+        slug: "message.003",
+        description: "Can edit messages",
+        category: PermissionCategory.EDIT,
+        actionLevel: 2,
+      },
+      {
+        name: "Delete Message",
+        slug: "message.004",
+        description: "Can delete messages",
+        category: PermissionCategory.DELETE,
+        actionLevel: 2,
+      },
+      {
+        name: "Manage Messages",
+        slug: "message.007",
+        description: "Full control over messaging",
+        category: PermissionCategory.MANAGE,
+        actionLevel: 3,
+      },
+      // --- Report Permissions ---
+      {
+        name: "View Reports",
+        slug: "report.001",
+        description: "Can view reports and analytics",
+        category: PermissionCategory.VIEW,
+        actionLevel: 1,
+      },
+      {
+        name: "Manage Reports",
+        slug: "report.007",
+        description: "Full control over reports",
+        category: PermissionCategory.MANAGE,
+        actionLevel: 3,
+      },
+      // --- User Management Permissions ---
+      {
+        name: "View Users",
+        slug: "user.001",
+        description: "Can view user information",
+        category: PermissionCategory.VIEW,
+        actionLevel: 1,
+      },
+      {
+        name: "Create User",
+        slug: "user.002",
+        description: "Can create new users",
+        category: PermissionCategory.CREATE,
+        actionLevel: 2,
+      },
+      {
+        name: "Edit User",
+        slug: "user.003",
+        description: "Can modify user details",
+        category: PermissionCategory.EDIT,
+        actionLevel: 2,
+      },
+      {
+        name: "Delete User",
+        slug: "user.004",
+        description: "Can delete or deactivate users",
+        category: PermissionCategory.DELETE,
+        actionLevel: 2,
+      },
+      {
+        name: "Manage Users",
+        slug: "user.007",
+        description: "Full control over user management",
+        category: PermissionCategory.MANAGE,
+        actionLevel: 3,
+      },
+    ];
 
-  const ceo = await prisma.role.create({
-    data: { name: "CEO / Owner", description: "Business owner", parentRoleId: superAdmin.id },
-  });
+    // Create or update permissions (skip duplicates)
+    await prisma.permission.createMany({
+      data: permissionsData,
+      skipDuplicates: true,
+    });
 
-  const seniorBroker = await prisma.role.create({
-    data: { name: "Senior Broker", description: "High-value deal closer", parentRoleId: ceo.id },
-  });
+    // Fetch all permissions from the database for later use.
+    const allPermissions = await prisma.permission.findMany();
 
-  const broker = await prisma.role.create({
-    data: { name: "Broker", description: "Regular property broker", parentRoleId: seniorBroker.id },
-  });
+    // ------------------------------------------
+    // 2. Seed Roles
+    // ------------------------------------------
+    // Define roles along with the subset of permissions (by slug) they should have.
+    // For simplicity, we assume the following:
+    // - Super Admin: All permissions.
+    // - Admin: All except some super-privileged ones (if needed).
+    // - Agent: Focused on property and lead actions.
+    // - Investor: Mostly view and limited creation/editing of deals.
+    // - Broker: Limited view/edit of deals and transactions.
+    // - Customer: Only view permissions.
+    interface RoleSeedData {
+      name: string;
+      roleHash: string;
+      description: string;
+      hierarchy: number;
+      permissionSlugs: string[]; // List of permission slugs to assign
+    }
 
-  const agent = await prisma.role.create({
-    data: { name: "Agent", description: "Property listing & client handling", parentRoleId: broker.id },
-  });
+    const rolesData: RoleSeedData[] = [
+      {
+        name: "Super Admin",
+        roleHash: "s001",
+        description: "Full system access. All permissions granted.",
+        hierarchy: 0,
+        permissionSlugs: allPermissions.map((p) => p.slug),
+      },
+      {
+        name: "Admin",
+        roleHash: "admin",
+        description: "Administrative access to manage users, properties, and transactions.",
+        hierarchy: 1,
+        permissionSlugs: allPermissions
+          .filter((p) => p.slug !== "report.007") // Example: exclude some super privileged ones if desired
+          .map((p) => p.slug),
+      },
+      {
+        name: "Real Estate Agent",
+        roleHash: "agent",
+        description: "Manages property listings and leads.",
+        hierarchy: 2,
+        permissionSlugs: [
+          "property.001", // View Propertie
+          "property.023", // Edit Property
+          "lead.001",     // View Leads
+          "lead.002",     // Create Lead
+          "lead.003",     // Edit Lead
+          "message.001",  // View Messages
+          "message.002",  // Create Message
+        ],
+      },
+      {
+        name: "Investor",
+        roleHash: "investor",
+        description: "Views property and deal information, with limited deal actions.",
+        hierarchy: 3,
+        permissionSlugs: [
+          "property.001", // View Properties
+          "deal.002",     // Create Deal
+          "deal.003",     // Edit Deal
+          "transaction.001", // View Transactions
+          "report.001",   // View Reports
+        ],
+      },
+      {
+        name: "Broker",
+        roleHash: "broker",
+        description: "Facilitates deals with limited control over transactions.",
+        hierarchy: 4,
+        permissionSlugs: [
+          "property.001", // View Properties
+          "deal.003",     // Edit Deal
+          "transaction.003", // Edit Transaction
+          "message.002",  // Create Message
+        ],
+      },
+      {
+        name: "Customer",
+        roleHash: "customer",
+        description: "Limited access; can only view properties and leads.",
+        hierarchy: 5,
+        permissionSlugs: [
+          "property.001",   // View Properties
+          "lead.001",       // View Leads
+          "deal.001",       // View Deals
+          "transaction.001", // View Transactions
+          "message.001",    // View Messages
+          "report.001",     // View Reports
+        ],
+      },
+    ];
 
-  const complianceOfficer = await prisma.role.create({
-    data: { name: "Compliance Officer", description: "Legal & risk management", parentRoleId: ceo.id },
-  });
+    // Upsert roles with their permissions
+    for (const role of rolesData) {
+      // Get permission IDs for the given permission slugs
+      const permissionConnect = allPermissions
+        .filter((perm) => role.permissionSlugs.includes(perm.slug))
+        .map((perm) => ({ id: perm.id }));
 
-  const investor = await prisma.role.create({
-    data: { name: "Investor", description: "High-net-worth investor" },
-  });
+      await prisma.role.upsert({
+        where: { roleHash: role.roleHash },
+        update: {
+          // Update allowed permissions if needed.
+          permissions: {
+            set: permissionConnect,
+          },
+        },
+        create: {
+          name: role.name,
+          roleHash: role.roleHash,
+          description: role.description,
+          hierarchy: role.hierarchy,
+          permissions: {
+            connect: permissionConnect,
+          },
+        },
+      });
+    }
 
-  const client = await prisma.role.create({
-    data: { name: "Client (Buyer / Seller)", description: "Regular user" },
-  });
+    // ------------------------------------------
+    // 3. Seed a Super Admin User
+    // ------------------------------------------
+    // Create or update a sample super admin user.
+    // Adjust email, name, avatar, etc. as needed.
+    const superAdminUser = await prisma.user.upsert({
+      where: { email: "superadmin@estatecrm.com" },
+      update: {},
+      create: {
+        email: "superadmin@estatecrm.com",
+        name: "Super Admin",
+        status: UserStatus.ACTIVE,
+        twoFactorEnabled: true,
+        password: "$2a$12$gRJEVatS42BQ0IftHx9skuX3RcJa.IccyZ7ZEGwMbViY3uBkKzZSW"
+      },
+    });
 
-  console.log("✅ Roles seeded!");
+    // ------------------------------------------
+    // 4. Assign the Super Admin Role to the Super Admin User
+    // ------------------------------------------
+    // Assuming a UserRole join table exists to link users to roles.
+    // Use upsert to avoid duplicates.
+    const superAdminRole = await prisma.role.findUnique({
+      where: { roleHash: "s001" },
+    });
+    if (superAdminRole) {
+      await prisma.userRole.upsert({
+        where: {
+          // Composite unique key: userId and roleId
+          userId_roleId: { userId: superAdminUser.id, roleId: superAdminRole.id },
+        },
+        update: {},
+        create: {
+          userId: superAdminUser.id,
+          roleId: superAdminRole.id,
+          assignedBy: "system",
+          // validFrom defaults to now
+        },
+      });
+    }
 
-  // Create Permissions
-  const permissions = [
-    { name: "View All Properties", slug: "property.view.all", category: PermissionCategory.VIEW },
-    { name: "View Own Properties", slug: "property.view.own", category: PermissionCategory.VIEW },
-    { name: "Edit Property", slug: "property.edit", category: PermissionCategory.EDIT },
-    { name: "Delete Property", slug: "property.delete", category: PermissionCategory.DELETE },
-    { name: "Manage Transactions", slug: "transaction.manage", category: PermissionCategory.MANAGE },
-    { name: "Approve High-Value Deals", slug: "deal.approve.vip", category: PermissionCategory.MANAGE },
-    { name: "View Compliance Reports", slug: "compliance.view", category: PermissionCategory.VIEW },
-    { name: "Manage Users", slug: "user.manage", category: PermissionCategory.MANAGE },
-  ];  
-
-  for (const perm of permissions) {
-    await prisma.permission.create({ data: perm });
+    console.log("✅ Database seeding completed successfully!");
+  } catch (error) {
+    console.error("❌ Error seeding database:", error);
+  } finally {
+    await prisma.$disconnect();
   }
-
-  console.log("✅ Permissions seeded!");
-
-  // Assign Permissions to Roles
-  await prisma.role.update({
-    where: { id: superAdmin.id },
-    data: { permissions: { connect: permissions.map((p) => ({ slug: p.slug })) } },
-  });
-
-  await prisma.role.update({
-    where: { id: ceo.id },
-    data: { permissions: { connect: permissions.filter((p) => p.slug.includes("manage")).map((p) => ({ slug: p.slug })) } },
-  });
-
-  await prisma.role.update({
-    where: { id: seniorBroker.id },
-    data: { permissions: { connect: [{ slug: "deal.approve.vip" }] } },
-  });
-
-  await prisma.role.update({
-    where: { id: broker.id },
-    data: { permissions: { connect: [{ slug: "property.view.all" }, { slug: "property.edit" }] } },
-  });
-
-  await prisma.role.update({
-    where: { id: agent.id },
-    data: { permissions: { connect: [{ slug: "property.view.own" }] } },
-  });
-
-  await prisma.role.update({
-    where: { id: complianceOfficer.id },
-    data: { permissions: { connect: [{ slug: "compliance.view" }] } },
-  });
-
-  console.log("✅ Role-Permission Mapping Done!");
-
-  console.log("🎉 Database seeding completed successfully!");
 }
 
-main()
-  .catch((error) => {
-    console.error("Error while seeding:", error);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+seedDatabase();
