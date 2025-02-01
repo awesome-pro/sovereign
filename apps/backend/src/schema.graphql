@@ -8,8 +8,7 @@ input AssignRoleInput {
 }
 
 type AuthResponse {
-  accessToken: String!
-  refreshToken: String!
+  accessTokenExpiry: Float
   user: User!
 }
 
@@ -33,6 +32,12 @@ input CreateTaskInput {
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+type JWTRole {
+  hierarchy: Float!
+  parentRoleHash: String
+  roleHash: String!
+}
 
 type LoginHistory {
   createdAt: DateTime!
@@ -59,7 +64,7 @@ type Mutation {
   assignPermissionsToRole(permissionIds: [ID!]!, roleId: ID!): Boolean!
   assignRole(input: AssignRoleInput!): Boolean!
   createPermission(input: CreatePermissionInput!): Permission!
-  createRole(description: String, name: String!): Role!
+  createRole(description: String, name: String!, roleHash: String!): Role!
   createTask(input: CreateTaskInput!): Task!
   deletePermission(id: ID!): Boolean!
   deleteRole(id: ID!): Boolean!
@@ -93,11 +98,13 @@ type Permission {
 
 """Permission category"""
 enum PermissionCategory {
-  COMMUNICATE
+  ADMIN_VIEW
+  CREATE
+  CREATE_EDIT
   DELETE
   EDIT
+  EDIT_DELETE
   MANAGE
-  SHARE
   VIEW
 }
 
@@ -263,14 +270,17 @@ input UpdateTaskInput {
 }
 
 type User {
+  avatar: String
   email: String!
   emailVerified: DateTime
   id: ID!
+  name: String!
+  permissions: [String!]!
   phone: String
   phoneVerified: DateTime
-  roles: [UserRole!]!
+  roles: [JWTRole!]!
   status: UserStatus!
-  twoFactorEnabled: Boolean!
+  twoFactorEnabled: Boolean
 }
 
 type UserRole {

@@ -104,24 +104,16 @@ export const GET_CURRENT_USER_QUERY = gql`
       id
       email
       status
+      avatar
       emailVerified
       phoneVerified
       twoFactorEnabled
       roles {
-        id
-        role {
-          id
-          name
-          description
-          permissions {
-            id
-            name
-            slug
-            category
-          }
-        }
-        assignedAt
+        roleHash
+        hierarchy
+        parentRoleHash
       }
+      permissions
     }
   }
 `;

@@ -31,7 +31,7 @@ export class JWTRole {
   @Field()
   hierarchy!: number;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   parentRoleHash!: string | null;
 }
 
@@ -46,16 +46,16 @@ export class User {
   @Field()
   name!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   avatar?: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   emailVerified?: Date | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   phone?: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   phoneVerified?: Date | null;
 
   @Field(() => UserStatus)
@@ -67,8 +67,8 @@ export class User {
   @Field(() => [String])
   permissions!: string[];
 
-  @Field({ nullable: true })
-  twoFactorEnabled!: boolean;
+  @Field(() => Boolean, { nullable: true })
+  twoFactorEnabled!: boolean | null;
 }
 
 export class CompleteUser extends User {

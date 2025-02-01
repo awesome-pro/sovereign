@@ -32,8 +32,8 @@ const ROLE_PROTECTED_ROUTES: Record<string, {
   };
 }> = {
   '/app/(protected)/admin/:path*': {
-    roles: ['ADMIN'],
-    permissions: ['users.*', 'roles.edit', 'properties.*'],
+    roles: ['s001', 'admin'],
+    permissions: ['user.001', 'user.003', 'user.007', 'roles.edit', 'property.001', 'property.003', 'property.007'],
     securityLevel: {
       mfa: true,
       minDataProtectionLevel: 4,
@@ -41,17 +41,46 @@ const ROLE_PROTECTED_ROUTES: Record<string, {
     }
   },
   '/app/(protected)/settings/:path*': {
-    roles: ['ADMIN', 'MANAGER'],
-    permissions: ['MANAGE_SETTINGS'],
+    roles: ['s001', 'admin', 'agent', 'broker'],
+    permissions: ['user.003', 'property.003', 'deal.003', 'transaction.003'],
     securityLevel: {
       mfa: true,
       minDataProtectionLevel: 3
     }
   },
   '/app/(protected)/dashboard/:path*': {
-    roles: ['ADMIN', 'MANAGER', 'AGENT', 'USER'],
+    roles: ['s001', 'admin', 'agent', 'investor', 'broker', 'customer'],
+    permissions: ['property.001', 'lead.001', 'deal.001', 'transaction.001', 'report.001'],
     securityLevel: {
       minDataProtectionLevel: 2
+    }
+  },
+  '/app/(protected)/deals/:path*': {
+    roles: ['s001', 'admin', 'agent', 'investor', 'broker'],
+    permissions: ['deal.001', 'deal.002', 'deal.003'],
+    securityLevel: {
+      minDataProtectionLevel: 2
+    }
+  },
+  '/app/(protected)/properties/:path*': {
+    roles: ['s001', 'admin', 'agent', 'investor'],
+    permissions: ['property.001', 'property.002', 'property.003'],
+    securityLevel: {
+      minDataProtectionLevel: 2
+    }
+  },
+  '/app/(protected)/transactions/:path*': {
+    roles: ['s001', 'admin', 'broker', 'investor'],
+    permissions: ['transaction.001', 'transaction.002', 'transaction.003'],
+    securityLevel: {
+      minDataProtectionLevel: 3
+    }
+  },
+  '/app/(protected)/messages/:path*': {
+    roles: ['s001', 'admin', 'agent', 'broker', 'customer'],
+    permissions: ['message.001', 'message.002'],
+    securityLevel: {
+      minDataProtectionLevel: 1
     }
   }
 };

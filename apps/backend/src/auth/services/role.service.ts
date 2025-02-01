@@ -11,7 +11,7 @@ export class RoleService {
     private permissionService: PermissionService,
   ) {}
 
-  async createRole(name: string, description?: string) {
+  async createRole(name: string, roleHash: string, description?: string) {
     try {
       const existingRole = await this.prisma.role.findUnique({
         where: { name },
@@ -25,6 +25,7 @@ export class RoleService {
         data: {
           name,
           description,
+          roleHash,
         },
         include: {
           permissions: true,

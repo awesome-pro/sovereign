@@ -49,67 +49,93 @@ async function refreshSession(request: NextRequest, res: NextResponse) {
     return handleAuthError(res, 'No refresh token found');
   }
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_GRAPHQL_URL}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({
-      query: `
-        mutation RefreshToken($refreshToken: String!) {
-          refreshToken(refreshToken: $refreshToken) {
-            accessToken
-            refreshToken
-            user {
-              id
-              name
-              email
-              roles {
-                role {
-                  name
-                  permissions {
-                    slug
-                  }
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_GRAPHQL_URL}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': `${REFRESH_TOKEN_KEY}=${refreshToken}`
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        query: `
+          mutation RefreshToken($refreshToken: String!) {
+            refreshToken(refreshToken: $refreshToken) {
+              user {
+                id
+                name
+                email
+                status
+                avatar
+                emailVerified
+                phoneVerified
+                twoFactorEnabled
+                roles {
+                  roleHash
+                  hierarchy
+                  parentRoleHash
                 }
+                permissions
               }
             }
           }
-        }
-      `,
-      variables: { refreshToken },
-    }),
-  });
+        `,
+        variables: { refreshToken },
+      }),
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  if (!response.ok || data.errors) {
-    const error = data.errors?.[0]?.message || 'Token refresh failed';
-    return handleAuthError(res, error);
+    if (!response.ok || data.errors) {
+      const error = data.errors?.[0]?.message || 'Token refresh failed';
+      return handleAuthError(res, error);
+    }
+
+    const { accessToken, refreshToken: newRefreshToken, user } = data.data.refreshToken;
+
+    if (!accessToken) {
+      return handleAuthError(res, 'No access token returned');
+    }
+
+    const jsonResponse = NextResponse.json({ 
+      success: true,
+      user 
+    }, { 
+      status: 200 
+    });
+
+    // Set the new tokens in cookies
+    jsonResponse.cookies.set(AUTH_TOKEN_KEY, accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    if (newRefreshToken) {
+      jsonResponse.cookies.set(REFRESH_TOKEN_KEY, newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+      });
+    }
+
+    // Update the token count cookie
+    const tokenCount = (newRefreshToken ? 2 : 1);
+    jsonResponse.cookies.set('count', String(tokenCount), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    return jsonResponse;
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    return handleAuthError(res, 'Failed to refresh token');
   }
-
-  const { accessToken, refreshToken: newRefreshToken } = data.data.refreshToken;
-
-  const jsonResponse = NextResponse.json({ success: true }, { status: 200 });
-
-  jsonResponse.cookies.set(AUTH_TOKEN_KEY, accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-  });
-
-  jsonResponse.cookies.set(REFRESH_TOKEN_KEY, newRefreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-  });
-
-  // jsonResponse.cookies.set('')
-
-  return jsonResponse;
 }
 
 export async function POST(request: NextRequest, response: NextResponse) {

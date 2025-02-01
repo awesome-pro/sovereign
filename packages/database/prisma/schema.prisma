@@ -645,8 +645,8 @@ model RefreshToken {
   hashedToken   String    @unique
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-  device    String?
-  ip        String?
+  deviceHash    String?
+  ipHash        String?
   expiresAt DateTime
   revokedAt DateTime?
   createdAt DateTime  @default(now())

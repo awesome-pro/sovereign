@@ -1,6 +1,6 @@
 'use client';
 
-import { ApolloProvider } from '@apollo/client';
+import { ApolloClient, ApolloProvider, NormalizedCacheObject } from '@apollo/client';
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
 import { createApolloClient } from './apollo-client';
 
@@ -9,7 +9,7 @@ if (process.env.NODE_ENV === 'development') {
   loadErrorMessages();
 }
 
-let clientInstance: ReturnType<typeof createApolloClient>;
+let clientInstance: ApolloClient<NormalizedCacheObject>;
 
 function getClient() {
   if (!clientInstance) {

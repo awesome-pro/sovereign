@@ -1,4 +1,4 @@
-import { ApolloClient, InMemoryCache, createHttpLink, from, Observable, FetchResult } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, from, Observable, NormalizedCacheObject } from '@apollo/client';
 import { onError } from '@apollo/client/link/error';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
@@ -42,77 +42,76 @@ class TokenRefreshManager {
   }
 }
 
-const tokenManager = new TokenRefreshManager();
+export function createApolloClient(): ApolloClient<NormalizedCacheObject> {
+  const tokenManager = new TokenRefreshManager();
 
-const httpLink = createHttpLink({
-  uri: process.env.NEXT_PUBLIC_GRAPHQL_URL,
-  credentials: 'include',
-  fetchOptions: {
+  const httpLink = createHttpLink({
+    uri: process.env.NEXT_PUBLIC_GRAPHQL_URL,
     credentials: 'include',
-  },
-});
+    fetchOptions: {
+      credentials: 'include',
+    },
+  });
 
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
-  if (graphQLErrors) {
-    for (const err of graphQLErrors) {
-      if (err.extensions?.code === 'UNAUTHENTICATED' || 
-          err.message.toLowerCase().includes('unauthorized')) {
-
-            // redirect to sign-in
-            console.log(err);
-            toast.error(err.message);
-            //window.location.href = '/auth/sign-in'
-        
-        // return new Observable<FetchResult>((observer) => {
-        //   tokenManager.handleTokenRefresh().then(success => {
-        //     if (success) {
-        //       // Retry the failed operation
-        //       const subscriber = forward(operation).subscribe({
-        //         next: (result) => observer.next(result),
-        //         error: (error) => observer.error(error),
-        //         complete: () => observer.complete(),
-        //       });
-
-        //       return () => subscriber.unsubscribe();
-        //     } else {
-        //       observer.error(new Error('Token refresh failed'));
-        //     }
-        //   });
-        // });
+  const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+    if (graphQLErrors) {
+      for (const err of graphQLErrors) {
+        switch (err.extensions?.code) {
+          case 'UNAUTHENTICATED':
+          // return new Observable(observer => {
+          //   tokenManager.handleTokenRefresh()
+          //     .then(success => {
+          //       if (success) {
+          //         // Retry the failed request
+          //         const subscriber = forward(operation);
+          //         subscriber.subscribe(observer);
+          //       } else {
+          //         window.location.href = '/auth/sign-in?reason=session_expired';
+          //       }
+          //     })
+          //     .catch(() => {
+          //       window.location.href = '/auth/sign-in?reason=refresh_failed';
+          //     });
+          // });
+            window.location.href = '/auth/sign-in?reason=session_expired';
+            break;
+          case 'FORBIDDEN':
+            window.location.href = '/auth/unauthorized';
+            break;
+          case 'SECURITY_LEVEL_INSUFFICIENT':
+            window.location.href = '/auth/mfa';
+            break;
+        }
       }
-      
-      // Show error message for other GraphQL errors
-      toast.error(err.message);
     }
-  }
 
-  if (networkError) {
-    console.error('[Network error]:', networkError);
-    toast.error('Network error occurred. Please check your connection.');
-  }
-});
+    if (networkError) {
+      console.error('Network error:', networkError);
+      toast.error('Network error occurred. Please try again.');
+    }
+  });
 
-// WebSocket link with automatic reconnection
-let wsLink: GraphQLWsLink | null = null;
-if (typeof window !== 'undefined') {
-  wsLink = new GraphQLWsLink(
-    createClient({
-      url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/graphql',
-      connectionParams: async () => {
-        // Cookies will be sent automatically
-        return {};
-      },
-      retryAttempts: 5,
-      shouldRetry: (error) => {
-        console.log('WS error, attempting reconnect:', error);
-        return true;
-      },
-      connectionAckWaitTimeout: 5000,
-    })
-  );
-}
+  const wsLink = typeof window !== 'undefined'
+    ? new GraphQLWsLink(
+        createClient({
+          url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/graphql',
+          connectionParams: async () => {
+            const dfp = localStorage.getItem('dfp');
+            return {
+              'X-Device-Fingerprint': dfp,
+              'X-Request-Security-Level': '3'
+            };
+          },
+          retryAttempts: 5,
+          shouldRetry: (error) => {
+            console.log('WS error, attempting reconnect:', error);
+            return true;
+          },
+          connectionAckWaitTimeout: 5000,
+        })
+      )
+    : null;
 
-export function createApolloClient() {
   return new ApolloClient({
     link: from([errorLink, httpLink]),
     cache: new InMemoryCache({

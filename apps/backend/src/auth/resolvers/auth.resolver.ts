@@ -28,11 +28,10 @@ import {
   User,
   AuthServiceResponse,
 } from '../types/auth.types.js';
-import { RequirePermissions } from '../decorators/permissions.decorator.js';
 import { PermissionsGuard } from '../guards/permissions.guard.js';
-import { Roles } from '../decorators/roles.decorator.js';
 import { SessionService } from '../session/session.service.js';
 import { Public } from '../decorators/public.decorator.js';
+import { Permissions, Roles } from '../decorators/rbac.decorator.js';
 
 @Resolver()
 export class AuthResolver {
@@ -200,7 +199,11 @@ export class AuthResolver {
         // domain: process.env.COOKIE_DOMAIN
       });
 
-      return authResponse;
+
+      return {
+        accessTokenExpiry: Date.now() + 15 * 60 * 1000,
+        user: authResponse.user
+      }
     } catch (error) {
       this.logger.error('Token refresh failed', error);
       throw error;
@@ -284,7 +287,7 @@ export class AuthResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)
-  @RequirePermissions('MANAGE_USERS')
+  @Permissions('user.007')
   async assignRole(
     @Args('input') input: AssignRoleInput,
     @CurrentUser() currentUser: User,
@@ -299,7 +302,7 @@ export class AuthResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)
-  @RequirePermissions('MANAGE_USERS')
+  @Permissions('user.007')
   async removeRole(
     @Args('userId') userId: string,
     @Args('roleId') roleId: string,
@@ -311,7 +314,7 @@ export class AuthResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [SecurityLog])
-  @RequirePermissions('VIEW_SECURITY_LOGS')
+  @Permissions('logs.001')
   async getSecurityLogs(
     @Args('input') input: SecurityLogsInput,
   ): Promise<SecurityLog[]> {
@@ -329,7 +332,8 @@ export class AuthResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [LoginHistory])
-  @Roles('ADMIN')
+  @Roles('admin')
+  // @Permissions('logs.002')
   async getLoginHistory(
     @CurrentUser() user: User,
     @Args('input') input: LoginHistoryInput,

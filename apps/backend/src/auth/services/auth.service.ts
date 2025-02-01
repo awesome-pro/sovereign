@@ -155,7 +155,7 @@ export class AuthService {
 
       // Create access token with session info
       const accessToken = await this.createAccessToken(prismaUser, session, deviceInfo);
-      const refreshToken = session.refreshToken ?? uuidv4();
+      const refreshToken = await this.createRefreshToken(prismaUser, deviceInfo);
 
       // Log successful login
       await this.logLoginAttempt(user.id, true, deviceInfo);
@@ -176,7 +176,7 @@ export class AuthService {
       // Find the refresh token in the database
       const refreshTokenRecord = await this.prisma.refreshToken.findFirst({
         where: {
-          hashedToken: await bcrypt.hash(token, 10),
+          hashedToken: token,
           revokedAt: null,
           expiresAt: {
             gt: new Date(),
@@ -435,7 +435,7 @@ export class AuthService {
         jti: session.id, // Use session ID as JWT ID
         
         // Optional token timing (will be added by jwt service)
-        nbf: undefined
+        nbf: new Date().getTime() / 1000
       };
 
       // Sign the token with explicit expiration
@@ -451,8 +451,8 @@ export class AuthService {
 
   async createRefreshToken(user: PrismaUser, deviceInfo?: DeviceInfo): Promise<string> {
     try {
-      const token = uuidv4();
-      const hashedToken = await bcrypt.hash(token, 10);
+      const hashedToken = uuidv4();
+      //const hashedToken = await bcrypt.hash(token, 10);
       const expiresIn = this.configService.get<number>('REFRESH_TOKEN_EXPIRES_IN') || 7 * 24 * 60 * 60 * 1000; // 7 days default
 
       // Cleanup old refresh tokens
@@ -462,13 +462,13 @@ export class AuthService {
         data: {
           hashedToken,
           userId: user.id,
-          device: deviceInfo?.device,
-          ip: deviceInfo?.ip,
+          deviceHash: deviceInfo?.device,
+          ipHash: deviceInfo?.ip,
           expiresAt: new Date(Date.now() + expiresIn),
         },
       });
 
-      return token;
+      return hashedToken;
     } catch (error) {
       this.logger.error('Error creating refresh token', error);
       throw error;

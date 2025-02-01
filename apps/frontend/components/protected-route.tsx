@@ -1,118 +1,132 @@
 "use client";
 
+import { useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { useRBAC } from '@/providers/rbac-provider';
 import { useAuthContext } from '@/providers/auth-provider';
-import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredRole?: string;
+  children: ReactNode;
+  requiredRoles?: string[];
   requiredPermissions?: string[];
-  hierarchyCheck?: boolean;
-  fallbackUrl?: string;
-  showLoading?: boolean;
-  LoadingComponent?: React.ComponentType;
-  UnauthorizedComponent?: React.ComponentType;
+  requireAllRoles?: boolean;
+  requireAllPermissions?: boolean;
+  minSecurityLevel?: number;
+  requireMfa?: boolean;
+  maxRiskScore?: number;
+  loadingComponent?: ReactNode;
+  unauthorizedComponent?: ReactNode;
 }
 
-export const ProtectedRoute = ({
+export default function ProtectedRoute({
   children,
-  requiredRole,
-  requiredPermissions,
-  hierarchyCheck = true,
-  fallbackUrl = '/unauthorized',
-  showLoading = true,
-  LoadingComponent,
-  UnauthorizedComponent,
-}: ProtectedRouteProps) => {
-  const { checkHierarchicalRole, hasAllPermissions, isLoading: isRbacLoading } = useRBAC();
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuthContext();
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  requiredRoles = [],
+  requiredPermissions = [],
+  requireAllRoles = false,
+  requireAllPermissions = true,
+  minSecurityLevel,
+  requireMfa,
+  maxRiskScore,
+  loadingComponent,
+  unauthorizedComponent,
+}: ProtectedRouteProps) {
   const router = useRouter();
-  const pathname = usePathname();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuthContext();
+  const { 
+    checkRole, 
+    checkPermission,
+    isLoading: isRbacLoading 
+  } = useRBAC();
 
   useEffect(() => {
-    let mounted = true;
-
     const validateAccess = async () => {
-      if (!isAuthenticated) {
-        if (mounted) setIsAuthorized(false);
-        const returnUrl = encodeURIComponent(pathname || '/');
-        router.push(`/login?returnUrl=${returnUrl}`);
+      if (!isAuthenticated || !user) {
+        toast.error('Please sign in to access this page');
+        router.push('/auth/sign-in');
         return;
       }
 
       try {
-        let hasAccess = true;
+        // Check security requirements from JWT
+        // if (minSecurityLevel && user.sec?.dpl < minSecurityLevel) {
+        //   toast.error('Additional security verification required');
+        //   router.push('/auth/security-verification');
+        //   return;
+        // }
 
-        // Role-based check
-        if (requiredRole) {
-          hasAccess = await checkHierarchicalRole(requiredRole, { 
-            checkValidityPeriod: hierarchyCheck 
-          });
-        }
+        // if (requireMfa && !user.ss?.mfa) {
+        //   toast.error('Two-factor authentication required');
+        //   router.push('/auth/mfa');
+        //   return;
+        // }
 
-        // Permission-based check
-        if (hasAccess && requiredPermissions?.length) {
-          hasAccess = await hasAllPermissions(requiredPermissions);
-        }
+        // if (maxRiskScore && user.sec?.rsk > maxRiskScore) {
+        //   toast.error('Access denied: Risk score too high');
+        //   router.push('/unauthorized?reason=high_risk_score');
+        //   return;
+        // }
 
-        if (mounted) {
-          setIsAuthorized(hasAccess);
-          if (!hasAccess) {
-            toast.error('You do not have permission to access this page');
-            router.push(`${fallbackUrl}?reason=insufficient_privileges&from=${pathname}`);
+        // Check roles
+        if (requiredRoles.length > 0) {
+          const hasRoles = requireAllRoles
+            ? await checkRole(requiredRoles)
+            : (await Promise.all(requiredRoles.map(role => checkRole(role)))).some(Boolean);
+
+          if (!hasRoles) {
+            toast.error('Insufficient role permissions');
+            router.push('/unauthorized?reason=insufficient_role');
+            return;
           }
         }
+
+        // Check permissions
+        if (requiredPermissions.length > 0) {
+          const hasPermissions = requireAllPermissions
+            ? await checkPermission(requiredPermissions)
+            : (await Promise.all(requiredPermissions.map(perm => checkPermission(perm)))).some(Boolean);
+
+          if (!hasPermissions) {
+            toast.error('Insufficient permissions');
+            router.push('/unauthorized?reason=insufficient_permissions');
+            return;
+          }
+        }
+
       } catch (error) {
         console.error('Access validation error:', error);
-        if (mounted) {
-          setIsAuthorized(false);
-          toast.error('Failed to validate access permissions');
-          router.push(`${fallbackUrl}?reason=validation_error&from=${pathname}`);
-        }
+        toast.error('Failed to validate access permissions');
+        router.push('/unauthorized?reason=validation_error');
       }
     };
 
     validateAccess();
-
-    return () => {
-      mounted = false;
-    };
   }, [
     isAuthenticated,
-    requiredRole,
+    user,
+    checkRole,
+    checkPermission,
+    requiredRoles,
     requiredPermissions,
-    checkHierarchicalRole,
-    hasAllPermissions,
-    pathname,
-    router,
-    fallbackUrl,
-    hierarchyCheck
+    requireAllRoles,
+    requireAllPermissions,
+    minSecurityLevel,
+    requireMfa,
+    maxRiskScore,
+    router
   ]);
 
-  // Show loading state
-  if ((isAuthLoading || isRbacLoading || isAuthorized === null) && showLoading) {
-    if (LoadingComponent) {
-      return <LoadingComponent />;
-    }
-    return (
+  if (isAuthLoading || isRbacLoading) {
+    return loadingComponent || (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  // Show unauthorized state
-  if (isAuthorized === false) {
-    if (UnauthorizedComponent) {
-      return <UnauthorizedComponent />;
-    }
-    return null;
+  if (!isAuthenticated || !user) {
+    return unauthorizedComponent || null;
   }
 
-  // Show authorized content
   return <>{children}</>;
-};
+}
