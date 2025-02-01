@@ -22,8 +22,8 @@ export default function DashboardPage() {
             <h2 className="text-lg font-semibold mb-4">Profile Summary</h2>
             <div className="space-y-2">
               <p>Email: {user?.email}</p>
-              <p>Role: {user?.roles[0]?.role.name}</p>
-              {user?.status}
+              {/* <p>Role: {user?.roles[0]?.roleHash}</p> */}
+              <p>Status: {user?.status}</p>
             </div>
           </div>
 

@@ -1,18 +1,33 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useCallback, useEffect, useReducer, useMemo } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { useMutation, useQuery, useApolloClient } from '@apollo/client';
-import { toast } from 'sonner';
-import { JWTRole, LoginInput, RegisterInput, User } from '@/types';
-import { GET_CURRENT_USER_QUERY, LOGOUT_MUTATION, REFRESH_TOKEN_MUTATION, SIGN_IN_MUTATION } from '@/graphql/auth.mutations';
-import EstateLoading from '@/components/loading';
+import React, {
+  createContext,
+  useContext,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useReducer,
+  useMemo,
+} from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useMutation, useApolloClient } from "@apollo/client";
+import { toast } from "sonner";
+import { JWTRole, LoginInput, RegisterInput, User } from "@/types";
+import {
+  GET_CURRENT_USER_QUERY,
+  LOGOUT_MUTATION,
+  REFRESH_TOKEN_MUTATION,
+  SIGN_IN_MUTATION,
+} from "@/graphql/auth.mutations";
+import EstateLoading from "@/components/loading";
 
-// Types for better type safety
+// --------------------
+// Types & Interfaces
+// --------------------
 interface SessionState {
   isAuthenticated: boolean;
   isLoading: boolean;
-  isInitialized: boolean;  // New flag to track initial authentication check
+  isInitialized: boolean; // Track initial auth check
   user: User | null;
   roles: string[];
   permissions: string[];
@@ -33,12 +48,12 @@ interface AuthState extends SessionState {
   deviceFingerprint: string | null;
 }
 
-type AuthAction = 
-  | { type: 'INITIALIZE'; payload: AuthState }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'UPDATE_SESSION'; payload: Partial<AuthState> }
-  | { type: 'SIGN_OUT' };
+type AuthAction =
+  | { type: "INITIALIZE"; payload: AuthState }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "UPDATE_SESSION"; payload: Partial<AuthState> }
+  | { type: "SIGN_OUT" };
 
 interface AuthContextType extends AuthState {
   signIn: (input: LoginInput) => Promise<User>;
@@ -49,6 +64,9 @@ interface AuthContextType extends AuthState {
   hasPermission: (permissions: string | string[]) => boolean;
 }
 
+// --------------------
+// Initial State & Reducer
+// --------------------
 const initialState: AuthState = {
   isAuthenticated: false,
   isLoading: true,
@@ -62,60 +80,79 @@ const initialState: AuthState = {
     mfa: false,
     bio: false,
     dpl: 0,
-    rsk: 0
+    rsk: 0,
   },
   deviceFingerprint: null,
-  error: null
+  error: null,
 };
 
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
-    case 'INITIALIZE':
+    case "INITIALIZE":
       return { ...action.payload, isInitialized: true, isLoading: false };
-    case 'SET_LOADING':
+    case "SET_LOADING":
       return { ...state, isLoading: action.payload };
-    case 'SET_ERROR':
+    case "SET_ERROR":
       return { ...state, error: action.payload };
-    case 'UPDATE_SESSION':
+    case "UPDATE_SESSION":
       return { ...state, ...action.payload };
-    case 'SIGN_OUT':
+    case "SIGN_OUT":
       return { ...initialState, isInitialized: true };
     default:
       return state;
   }
 };
 
-const calculateEffectivePermissions = (roles: JWTRole[], permissions: string[]): string[] => {
+// --------------------
+// Helper Functions
+// --------------------
+/**
+ * Calculate effective permissions by merging direct user permissions
+ * with those granted by roles (sorted by hierarchy).
+ */
+const calculateEffectivePermissions = (
+  roles: JWTRole[],
+  permissions: string[]
+): string[] => {
   const effectivePerms = new Set<string>();
-  
-  // Add direct permissions
-  permissions.forEach(p => effectivePerms.add(p));
-  
-  // Add role-based permissions based on hierarchy
-  roles.sort((a, b) => a.hierarchy - b.hierarchy); // Sort by hierarchy (0 is highest)
-  roles.forEach(role => {
-    // Add role-specific permissions based on your permission structure
-    const rolePerms = getRolePermissions(role.roleHash);
-    rolePerms.forEach(p => effectivePerms.add(p));
-  });
-  
+  permissions.forEach((p) => effectivePerms.add(p));
+  roles
+    .sort((a, b) => a.hierarchy - b.hierarchy) // Lower hierarchy value = higher privileges
+    .forEach((role) => {
+      const rolePerms = getRolePermissions(role.roleHash);
+      rolePerms.forEach((p) => effectivePerms.add(p));
+    });
   return Array.from(effectivePerms);
 };
 
+/**
+ * Calculate effective roles from the provided role objects.
+ */
 const calculateEffectiveRoles = (roles: JWTRole[]): string[] => {
-  return roles.map(role => role.roleHash);
+  return roles.map((role) => role.roleHash);
 };
 
-const getRolePermissions = (role: string) => {
-  // Implement your role permission logic here
+/**
+ * Placeholder for a function to derive role-based permissions.
+ * Extend this to incorporate your permission structure.
+ */
+const getRolePermissions = (role: string): string[] => {
+  // TODO: Implement your permission lookup logic here.
   return [];
 };
 
-const generateDeviceFingerprint = async () => {
-  // Implement your device fingerprint generation logic here
-  return null;
+/**
+ * Generate a device fingerprint for security. Consider using a library
+ * such as FingerprintJS.
+ */
+const generateDeviceFingerprint = async (): Promise<string | null> => {
+  // Placeholder: implement or plug in third-party library logic.
+  return "generated-device-fingerprint";
 };
 
+// --------------------
+// Context & Provider
+// --------------------
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -124,125 +161,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const client = useApolloClient();
 
-  // GraphQL mutations
+  // Apollo GraphQL mutations for auth
   const [loginMutation] = useMutation(SIGN_IN_MUTATION);
   const [logoutMutation] = useMutation(LOGOUT_MUTATION);
   const [refreshTokenMutation] = useMutation(REFRESH_TOKEN_MUTATION);
 
-  // Check if we're on an auth page
-  const isAuthPage = pathname?.startsWith('/auth/');
+  const isAuthPage = pathname?.startsWith("/auth/");
 
-  // Initialize auth state
+  // --------------------
+  // Initial Session Check / Refresh
+  // --------------------
   useEffect(() => {
     const initAuth = async () => {
       try {
-        debugger;
-        
-        // Try to refresh the session first
-        const checkSessionResponse = await fetch('/api/auth/session', {
-          method: 'GET',
-          credentials: 'include',
+        // Attempt to refresh session from server (cookie-based, HttpOnly)
+        const sessionResponse = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include",
         });
 
-        // Handle redirects
-        if (checkSessionResponse.redirected) {
-          router.push(checkSessionResponse.url);
+        // Handle any redirect response (if session endpoint redirects on error)
+        if (sessionResponse.redirected) {
+          router.push(sessionResponse.url);
           return;
         }
 
-        const session = await checkSessionResponse.json();
+        const session = await sessionResponse.json();
 
-        if (checkSessionResponse.ok && session.isSignedIn) {
-          // Update state with user data if available
-          if (session.user) {
-            const effectiveRoles = calculateEffectiveRoles(session.user.roles);
-            const effectivePermissions = calculateEffectivePermissions(session.user.roles, session.user.permissions);
-
-            dispatch({
-              type: 'INITIALIZE',
-              payload: {
-                ...initialState,
-                isAuthenticated: true,
-                user: session.user,
-                roles: session.user.roles.map((r: { roleHash: any; }) => r.roleHash),
-                effectiveRoles,
-                permissions: session.user.permissions,
-                effectivePermissions,
-                isLoading: false,
-                error: null
-              }
+        // If session exists and is valid
+        if (session?.isSignedIn) {
+          let userData = session.user;
+          if (!userData) {
+            // Fallback: query current user data via GraphQL
+            const { data } = await client.query({
+              query: GET_CURRENT_USER_QUERY,
+              fetchPolicy: "network-only", // Ensure we always get the latest data
             });
-
-            // Only redirect if we're on an auth page
-            if (isAuthPage) {
-              router.push('/dashboard');
-            }
-            return;
+            userData = data?.me;
           }
 
-          // If no user data in session, fetch from API
-          const { data } = await client.query({
-            query: GET_CURRENT_USER_QUERY,
-            fetchPolicy: 'network-only',
-          });
-
-          if (data?.me) {
-            const { roles, permissions, ...user } = data.me;
-            const effectiveRoles = calculateEffectiveRoles(roles);
-            const effectivePermissions = calculateEffectivePermissions(roles, permissions);
-            
+          if (userData) {
+            const effectiveRoles = calculateEffectiveRoles(userData.roles);
+            const effectivePermissions = calculateEffectivePermissions(
+              userData.roles,
+              userData.permissions
+            );
             dispatch({
-              type: 'INITIALIZE',
+              type: "INITIALIZE",
               payload: {
                 ...initialState,
                 isAuthenticated: true,
-                user,
-                roles: roles.map((r: { roleHash: any; }) => r.roleHash),
+                user: userData,
+                roles: userData.roles.map((r: { roleHash: string }) => r.roleHash),
                 effectiveRoles,
-                permissions,
+                permissions: userData.permissions,
                 effectivePermissions,
                 deviceFingerprint: await generateDeviceFingerprint(),
                 error: null,
-                isLoading: false
-              }
+                isLoading: false,
+              },
             });
-  
-            // Only redirect if we're on an auth page
-            if (isAuthPage) {
-              router.push('/dashboard');
-            }
+            if (isAuthPage) router.push("/dashboard");
             return;
           }
         }
 
-        // If we get here, we're not authenticated
+        // If session not valid, reset state and redirect to sign-in if not already there.
         dispatch({
-          type: 'INITIALIZE',
+          type: "INITIALIZE",
           payload: {
             ...initialState,
             isLoading: false,
-            error: session.error || 'Session expired. Please sign in again.'
-          }
+            error: session?.error || "Session expired. Please sign in again.",
+          },
         });
-
-        if (!isAuthPage) {
-          router.push('/auth/sign-in');
-        }
+        if (!isAuthPage) router.push("/auth/sign-in");
       } catch (error: any) {
-        console.error('Auth initialization error:', error);
-        
-        dispatch({ 
-          type: 'INITIALIZE', 
-          payload: { 
-            ...initialState,
-            isLoading: false,
-            error: error.message 
-          }
+        console.error("Auth initialization error:", error);
+        dispatch({
+          type: "INITIALIZE",
+          payload: { ...initialState, isLoading: false, error: error.message },
         });
-        
-        if (!isAuthPage) {
-          router.push('/auth/sign-in');
-        }
+        if (!isAuthPage) router.push("/auth/sign-in");
       }
     };
 
@@ -251,128 +251,140 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [client, router, isAuthPage, state.isInitialized]);
 
-  const signIn = async (input: LoginInput): Promise<User> => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    
-    try {
-      debugger;
-
-      const { data } = await loginMutation({ 
-        variables: { 
-          input
-        }
-      });
-      
-      if (data?.login?.user) {
-        const { roles, permissions, ...user } = data.login.user;
-        
-        dispatch({
-          type: 'UPDATE_SESSION',
-          payload: {
-            isAuthenticated: true,
-            user,
-            roles: roles.map((r: { roleHash: any; }) => r.roleHash),
-            effectiveRoles: calculateEffectiveRoles(roles),
-            permissions,
-            effectivePermissions: calculateEffectivePermissions(roles, permissions),
-            error: null
-          }
+  // --------------------
+  // Auth Actions
+  // --------------------
+  const signIn = useCallback(
+    async (input: LoginInput): Promise<User> => {
+      dispatch({ type: "SET_LOADING", payload: true });
+      try {
+        const { data } = await loginMutation({
+          variables: { input },
+          fetchPolicy: "no-cache", // Always hit the server
         });
-        
-        return user;
-      }
-      
-      throw new Error('Sign in failed');
-    } catch (error: any) {
-      toast.error(error.message);
-      dispatch({ type: 'SET_ERROR', payload: error.message });
-      throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  };
 
-  const signOut = async () => {
+        if (data?.login?.user) {
+          const { roles, permissions, ...user } = data.login.user;
+          dispatch({
+            type: "UPDATE_SESSION",
+            payload: {
+              isAuthenticated: true,
+              user,
+              roles: roles.map((r: { roleHash: string }) => r.roleHash),
+              effectiveRoles: calculateEffectiveRoles(roles),
+              permissions,
+              effectivePermissions: calculateEffectivePermissions(roles, permissions),
+              error: null,
+            },
+          });
+          return user;
+        }
+        throw new Error("Sign in failed");
+      } catch (error: any) {
+        toast.error(error.message);
+        dispatch({ type: "SET_ERROR", payload: error.message });
+        throw error;
+      } finally {
+        dispatch({ type: "SET_LOADING", payload: false });
+      }
+    },
+    [loginMutation]
+  );
+
+  const signOut = useCallback(async () => {
     try {
       await logoutMutation();
+      // Clear Apollo store to remove cached sensitive data
       await client.clearStore();
-      dispatch({ type: 'SIGN_OUT' });
-      router.push('/auth/sign-in');
+      dispatch({ type: "SIGN_OUT" });
+      router.push("/auth/sign-in");
     } catch (error: any) {
       toast.error(error.message);
-      console.error('Logout error:', error);
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to sign out' });
+      console.error("Logout error:", error);
+      dispatch({ type: "SET_ERROR", payload: "Failed to sign out" });
     }
-  };
+  }, [logoutMutation, client, router]);
 
-  const hasRole = useCallback((requiredRoles: string | string[]): boolean => {
-    const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
-    return roles.some(role => state.effectiveRoles.includes(role));
-  }, [state.effectiveRoles]);
+  // Placeholder for signUp – implement similarly when needed.
+  const signUp = useCallback(async (input: RegisterInput): Promise<User> => {
+    throw new Error("Not implemented");
+  }, []);
 
-  const hasPermission = useCallback((requiredPermissions: string | string[]): boolean => {
-    const permissions = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
-    
-    return permissions.some(permission => {
-      // Handle wildcard permissions
-      if (permission.endsWith('.*')) {
-        const domain = permission.slice(0, -2);
-        return state.effectivePermissions.some(p => p.startsWith(domain));
-      }
-      return state.effectivePermissions.includes(permission);
-    });
-  }, [state.effectivePermissions]);
-
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     try {
-      const { data } = await refreshTokenMutation();
+      const { data } = await refreshTokenMutation({
+        fetchPolicy: "no-cache",
+      });
       if (data?.refreshToken) {
         const { roles, permissions, ...user } = data.refreshToken;
         dispatch({
-          type: 'UPDATE_SESSION',
+          type: "UPDATE_SESSION",
           payload: {
             user,
-            roles: roles.map((r: { roleHash: any; }) => r.roleHash),
+            roles: roles.map((r: { roleHash: string }) => r.roleHash),
             effectiveRoles: calculateEffectiveRoles(roles),
             permissions,
-            effectivePermissions: calculateEffectivePermissions(roles, permissions)
-          }
+            effectivePermissions: calculateEffectivePermissions(roles, permissions),
+          },
         });
       }
     } catch (error: any) {
       toast.error(error.message);
-      console.error('Session refresh error:', error);
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to refresh session' });
-      signOut();
+      console.error("Session refresh error:", error);
+      dispatch({ type: "SET_ERROR", payload: "Failed to refresh session" });
+      await signOut();
     }
-  };
+  }, [refreshTokenMutation, signOut]);
 
-  const value = {
-    ...state,
-    signIn,
-    signUp: async () => { throw new Error('Not implemented'); },
-    signOut,
-    refreshSession,
-    hasRole,
-    hasPermission
-  };
+  const hasRole = useCallback(
+    (requiredRoles: string | string[]): boolean => {
+      const rolesArray = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
+      return rolesArray.some((role) => state.effectiveRoles.includes(role));
+    },
+    [state.effectiveRoles]
+  );
 
-  // Only show loading on protected routes
+  const hasPermission = useCallback(
+    (requiredPermissions: string | string[]): boolean => {
+      const permsArray = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
+      return permsArray.some((permission) => {
+        // Support wildcard permissions (e.g., "admin.*")
+        if (permission.endsWith(".*")) {
+          const domain = permission.slice(0, -2);
+          return state.effectivePermissions.some((p) => p.startsWith(domain));
+        }
+        return state.effectivePermissions.includes(permission);
+      });
+    },
+    [state.effectivePermissions]
+  );
+
+  // Memoize the context value to avoid unnecessary re-renders.
+  const value = useMemo(
+    () => ({
+      ...state,
+      signIn,
+      signUp,
+      signOut,
+      refreshSession,
+      hasRole,
+      hasPermission,
+    }),
+    [state, signIn, signUp, signOut, refreshSession, hasRole, hasPermission]
+  );
+
+  // Render a loading indicator on protected routes if not yet initialized.
   if (!state.isInitialized && !isAuthPage) {
     return <EstateLoading />;
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuthContext() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuthContext must be used within an AuthProvider');
+  if (!context) {
+    throw new Error("useAuthContext must be used within an AuthProvider");
   }
   return context;
 }

@@ -101,7 +101,6 @@ export async function middleware(request: NextRequest) {
   // Get tokens from cookies
   const accessToken = request.cookies.get('accessToken')?.value;
   const refreshToken = request.cookies.get('refreshToken')?.value;
-  const tokenCount = request.cookies.get('tokenCount')?.value;
 
   // If no tokens present, redirect to login
   if (!accessToken && !refreshToken) {
@@ -129,42 +128,42 @@ export async function middleware(request: NextRequest) {
       // }
 
       // Check route-specific security requirements
-      for (const [route, config] of Object.entries(ROLE_PROTECTED_ROUTES)) {
-        if (pathname.match(new RegExp(route.replace('*', '.*')))) {
-          // Check roles
-          const hasRequiredRole = config.roles.some(role => decoded.r.some(r => r[0] === role));
-          if (!hasRequiredRole) {
-            return redirectToUnauthorized(request, 'insufficient_role');
-          }
+    //   for (const [route, config] of Object.entries(ROLE_PROTECTED_ROUTES)) {
+    //     if (pathname.match(new RegExp(route.replace('*', '.*')))) {
+    //       // Check roles
+    //       const hasRequiredRole = config.roles.some(role => decoded.r.some(r => r[0] === role));
+    //       if (!hasRequiredRole) {
+    //         return redirectToUnauthorized(request, 'insufficient_role');
+    //       }
 
-          // Check permissions
-          if (config.permissions) {
-            const hasRequiredPermissions = config.permissions.every(
-              permission => decoded.p.includes(permission)
-            );
-            if (!hasRequiredPermissions) {
-              return redirectToUnauthorized(request, 'insufficient_permissions');
-            }
-          }
+    //       // Check permissions
+    //       if (config.permissions) {
+    //         const hasRequiredPermissions = config.permissions.every(
+    //           permission => decoded.p.includes(permission)
+    //         );
+    //         if (!hasRequiredPermissions) {
+    //           return redirectToUnauthorized(request, 'insufficient_permissions');
+    //         }
+    //       }
 
-          // Check security level requirements
-          if (config.securityLevel) {
-            const { mfa, minDataProtectionLevel, maxRiskScore } = config.securityLevel;
+    //       // Check security level requirements
+    //       if (config.securityLevel) {
+    //         const { mfa, minDataProtectionLevel, maxRiskScore } = config.securityLevel;
             
-            if (mfa && !decoded.ss.mfa) {
-              return redirectToMfa(request);
-            }
+    //         if (mfa && !decoded.ss.mfa) {
+    //           return redirectToMfa(request);
+    //         }
 
-            if (minDataProtectionLevel && decoded.ss.dpl < minDataProtectionLevel) {
-              return redirectToUnauthorized(request, 'insufficient_security_level');
-            }
+    //         if (minDataProtectionLevel && decoded.ss.dpl < minDataProtectionLevel) {
+    //           return redirectToUnauthorized(request, 'insufficient_security_level');
+    //         }
 
-            if (maxRiskScore && decoded.ss.rsk > maxRiskScore) {
-              return redirectToUnauthorized(request, 'high_risk_score');
-            }
-          }
-        }
-      }
+    //         if (maxRiskScore && decoded.ss.rsk > maxRiskScore) {
+    //           return redirectToUnauthorized(request, 'high_risk_score');
+    //         }
+    //       }
+    //     }
+    //   }
 
       // Add security headers
       const response = NextResponse.next();
@@ -184,66 +183,66 @@ export async function middleware(request: NextRequest) {
   }
 }
 
-async function getDeviceInfo(request: NextRequest) {
-  // Extract IP address
-  const ip = 
-    request.headers.get('x-forwarded-for')?.split(',')[0] || 
-    request.headers.get('x-real-ip') || 
-    'unknown';
+// async function getDeviceInfo(request: NextRequest) {
+//   // Extract IP address
+//   const ip = 
+//     request.headers.get('x-forwarded-for')?.split(',')[0] || 
+//     request.headers.get('x-real-ip') || 
+//     'unknown';
 
-  // Extract user agent
-  const userAgent = request.headers.get('user-agent') || 'unknown';
+//   // Extract user agent
+//   const userAgent = request.headers.get('user-agent') || 'unknown';
 
-  // Create device hash
-  const device = await createDeviceHash({ ip, userAgent });
+//   // Create device hash
+//   const device = await createDeviceHash({ ip, userAgent });
 
-  return {
-    ip,
-    userAgent,
-    device,
-  };
-}
+//   return {
+//     ip,
+//     userAgent,
+//     device,
+//   };
+// }
 
-async function createDeviceHash(info: { ip: string; userAgent: string }): Promise<string> {
-  const fingerprint = [
-    info.userAgent,
-    info.ip,
-  ].filter(Boolean).join('|');
+// async function createDeviceHash(info: { ip: string; userAgent: string }): Promise<string> {
+//   const fingerprint = [
+//     info.userAgent,
+//     info.ip,
+//   ].filter(Boolean).join('|');
   
-  // Use Web Crypto API for hashing
-  const encoder = new TextEncoder();
-  const data = encoder.encode(fingerprint);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+//   // Use Web Crypto API for hashing
+//   const encoder = new TextEncoder();
+//   const data = encoder.encode(fingerprint);
+//   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   
-  // Convert buffer to hex string
-  return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+//   // Convert buffer to hex string
+//   return Array.from(new Uint8Array(hashBuffer))
+//     .map(b => b.toString(16).padStart(2, '0'))
+//     .join('');
+// }
 
-async function validateSecurityContext(
-  context: UltraSecureJwtPayload['sc'],
-  deviceInfo: { ip?: string; device?: string; userAgent?: string }
-): Promise<boolean> {
-  // Verify IP hasn't changed drastically (subnet level)
-  const currentIpHash = await hashSubnet(deviceInfo.ip || '');
-  if (context.iph && currentIpHash.substring(0, 16) !== context.iph.substring(0, 16)) {
-    return false;
-  }
+// async function validateSecurityContext(
+//   context: UltraSecureJwtPayload['sc'],
+//   deviceInfo: { ip?: string; device?: string; userAgent?: string }
+// ): Promise<boolean> {
+//   // Verify IP hasn't changed drastically (subnet level)
+//   const currentIpHash = await hashSubnet(deviceInfo.ip || '');
+//   if (context.iph && currentIpHash.substring(0, 16) !== context.iph.substring(0, 16)) {
+//     return false;
+//   }
 
-  // Verify device fingerprint
-  if (context.dfp && context.dfp !== deviceInfo.device) {
-    return false;
-  }
+//   // Verify device fingerprint
+//   if (context.dfp && context.dfp !== deviceInfo.device) {
+//     return false;
+//   }
 
-  // Verify user agent
-  const currentUaHash = await hashString(deviceInfo.userAgent || '');
-  if (context.uah && currentUaHash !== context.uah) {
-    return false;
-  }
+//   // Verify user agent
+//   const currentUaHash = await hashString(deviceInfo.userAgent || '');
+//   if (context.uah && currentUaHash !== context.uah) {
+//     return false;
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
 async function hashSubnet(ip: string): Promise<string> {
   // Simple subnet hash (first 8 characters of SHA-256)
@@ -261,15 +260,16 @@ async function hashString(str: string): Promise<string> {
 }
 
 async function handleRefreshToken(request: NextRequest, refreshToken: string) {
-  const response = await fetch(new URL('/api/auth/refresh', request.url), {
+  const response = await fetch(new URL('/api/auth/session', request.url), {
     method: 'POST',
     headers: {
       'Cookie': `refreshToken=${refreshToken}`,
     },
+    credentials: 'include',
   });
 
-  if (!response.ok) {
-    return redirectToLogin(request, 'refresh_failed');
+  if (response.redirected || !response.ok) {
+    return NextResponse.redirect(response.url || request.url);
   }
 
   const newResponse = NextResponse.redirect(request.url);
