@@ -4,36 +4,40 @@ export interface DeviceInfo {
   userAgent?: string;
 }
 
+// types/jwt.ts
+
+export interface SecurityContext {
+  iph: string;        // SHA-256 hash of IP address
+  dfp: string;        // Device fingerprint hash
+  geo: string;        // ISO 3166-2 location code
+  uah: string;        // User agent hash
+}
+
+export interface SecurityState {
+  mfa: boolean;       // 2FA verified this session
+  bio: boolean;       // Biometric confirmation
+  dpl: number;        // Data protection level (1-5)
+  rsk: number;        // Risk score (0-100)
+}
+
 export interface UltraSecureJwtPayload {
-  // Core Identity Claims
-  sub: string;          // User ID (UUIDv4)
-  brn: string;          // Brokerage ID (Multi-tenancy)
-  iss: string;          // Fixed Issuer
-  
-  // Session Security Context
-  sctx: {
-    iph: string;        // SHA-256 hash of IP address
-    dfp: string;        // Device fingerprint hash (browser/device)
-    geo: string;        // ISO 3166-2 location code (AE-DU, CH-ZH)
-    uah: string;        // User agent hash
-  };
+  // Core Identity
+  sb: string;                                    // User ID
+  b: string;                                    // Brokerage ID
+  is: string;                                    // Issuer
 
-  // Access Control Claims
-  rls: string[];        // Role codes (e.g., ["SENIOR_BROKER", "COMPLIANCE"])
-  prv: string[];        // Privilege tags (e.g., ["VIP_ACCESS", "OFFMARKET_VIEW"])
-  cnd: string[];        // Contextual conditions (e.g., ["MAX_VALUE:10000000"])
+  // Enhanced RBAC Data
+  r: [string, number, string | null][]; // Compact role tuple      // Role information with hierarchy
+  p: string[];                    // Detailed permission info
+  c: [string, string][];                                  // Contextual conditions
 
-  // Security State
-  sec: {
-    mfa: boolean;       // 2FA verified this session
-    bio: boolean;       // Biometric confirmation
-    dpl: number;        // Data protection level (1-5)
-    rsk: number;        // Risk score (0-100)
-  };
+  // Security
+  sc: SecurityContext;                           // Security context
+  ss: SecurityState;                             // Security state
 
   // Token Metadata
-  jti: string;          // Unique token ID (for blacklisting)
-  iat?: number;         // Issued at timestamp (auto-generated)
-  exp?: number;         // Short expiration (auto-generated)
-  nbf?: number;         // Not before (for future-dated tokens)
+  jti: string;                                    // Unique token ID
+  iat?: number;                                   // Issued at
+  exp?: number;                                   // Expiration
+  nbf?: number;                                   // Not before
 }

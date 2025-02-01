@@ -5,7 +5,6 @@ import * as crypto from 'crypto';
 import dayjs from 'dayjs';
 import { UserSession } from '../types/auth.types.js';
 import { DeviceInfo } from '../services/auth.interfaces.js';
-import * as geoip from 'geoip-lite';
 
 @Injectable()
 export class SessionService {
@@ -35,15 +34,14 @@ export class SessionService {
       const refreshToken = crypto.randomBytes(64).toString('hex');
       const deviceHash = this.createDeviceHash(deviceInfo);
       const ipHash = this.hashIP(deviceInfo.ip);
-      const location = deviceInfo.ip || 'Local '
-
+      const location = this.hashLocation(deviceInfo.ip);
       const session = await this.prisma.userSession.create({
         data: {
           userId,
           refreshToken,
           deviceHash,
           ipHash,
-          location,
+          locationHash: location,
           userAgent: deviceInfo.userAgent,
           expiresAt: dayjs().add(7, 'days').toDate(),
           lastActivityAt: new Date(),
@@ -194,10 +192,11 @@ export class SessionService {
     return ip ? crypto.createHash('sha256').update(ip).digest('hex') : '';
   }
 
-  private getLocationFromIP(ip?: string): string | null {
-    if (!ip) return null;
-    const geo = geoip.lookup(ip);
-    return geo ? `${geo.country}-${geo.region}` : null;
+  private hashLocation(location?: string): string | null {
+    if (!location) return null;
+    //const geo = geoip.lookup(location);
+    // TODO 
+    return location
   }
 
   private calculateSecurityLevel(deviceInfo: DeviceInfo): number {

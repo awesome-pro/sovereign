@@ -532,6 +532,7 @@ model User {
 model Role {
   id                String             @id @default(cuid())
   name              String             @unique
+  roleHash          String             @unique
   description       String?            // Optional description for clarity
   users             UserRole[]         // Many-to-many relationship
   permissions Permission[] @relation("RolePermissions")
@@ -685,7 +686,7 @@ model UserSession{
   userId    String
   deviceHash    String?   // Device fingerprint hash
   ipHash        String?   // IP hash
-  location  String?   // Geographic location (ISO 3166-2)
+  locationHash  String?   // Geographic location (ISO 3166-2)
   userAgent String?   // User agent string
   refreshToken String?   // Refresh token
   revoked  Boolean  @default(false)

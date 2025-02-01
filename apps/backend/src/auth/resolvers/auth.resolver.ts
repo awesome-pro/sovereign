@@ -26,6 +26,7 @@ import {
   LoginHistory,
   VerificationResponse,
   User,
+  AuthServiceResponse,
 } from '../types/auth.types.js';
 import { RequirePermissions } from '../decorators/permissions.decorator.js';
 import { PermissionsGuard } from '../guards/permissions.guard.js';
@@ -111,7 +112,7 @@ export class AuthResolver {
       }
 
       // Generate tokens
-      const result: AuthResponse = await this.authService.login(user, { ip, userAgent });
+      const result: AuthServiceResponse = await this.authService.login(user, { ip, userAgent });
 
       // Set secure httpOnly cookies with enhanced security
       res.cookie('accessToken', result.accessToken, {
@@ -146,8 +147,9 @@ export class AuthResolver {
       });
 
       this.logger.debug('Login successful', { userId: user.id });
+      
 
-      return result;
+      return { user: result.user, accessTokenExpiry: Date.now() + 15 * 60 * 1000 }
     } catch (error) {
       this.logger.error('Login failed', error, { email: input.email });
       throw error;

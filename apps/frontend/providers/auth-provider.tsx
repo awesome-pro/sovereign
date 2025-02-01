@@ -50,12 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [logoutMutation] = useMutation(LOGOUT_MUTATION);
   const [refreshTokenMutation] = useMutation(REFRESH_TOKEN_MUTATION);
 
-  const count = Cookies.get('count') as number;
-
 
   // Query for current user
   const { refetch: refetchUser } = useQuery(GET_CURRENT_USER_QUERY, {
-    skip: !(count === 2), // Don't run automatically
+    skip: true, // Don't run automatically
     fetchPolicy: 'network-only',
     onError: handleAuthError
   });

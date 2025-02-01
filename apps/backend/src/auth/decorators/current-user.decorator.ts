@@ -20,7 +20,7 @@ export const CurrentUser = createParamDecorator(
 
       // Get JWT payload
       const jwtPayload = request.user as UltraSecureJwtPayload;
-      if (!jwtPayload?.sub) {
+      if (!jwtPayload?.sb) {
         throw new UnauthorizedException('Invalid authentication token');
       }
 
@@ -32,7 +32,7 @@ export const CurrentUser = createParamDecorator(
 
       // Load full user data with roles and permissions
       const user = await prisma.user.findUnique({
-        where: { id: jwtPayload.sub },
+        where: { id: jwtPayload.sb },
         include: {
           roles: {
             include: {
@@ -61,16 +61,16 @@ export const CurrentUser = createParamDecorator(
       const enhancedUser = {
         ...user,
         securityContext: {
-          deviceFingerprint: jwtPayload.sctx.dfp,
-          ipHash: jwtPayload.sctx.iph,
-          geoLocation: jwtPayload.sctx.geo,
-          userAgentHash: jwtPayload.sctx.uah,
-          mfaVerified: jwtPayload.sec.mfa,
-          riskScore: jwtPayload.sec.rsk,
+          deviceFingerprint: jwtPayload.sc.dfp,
+          ipHash: jwtPayload.sc.iph,
+          geoLocation: jwtPayload.sc.geo,
+          userAgentHash: jwtPayload.sc.uah,
+          mfaVerified: jwtPayload.ss.mfa,
+          riskScore: jwtPayload.ss.rsk,
         },
         // Map roles and permissions
-        effectivePermissions: jwtPayload.prv,
-        securityLevel: jwtPayload.sec.dpl,
+        effectivePermissions: jwtPayload.p,
+        securityLevel: jwtPayload.ss.dpl,
       };
 
       // Return specific property if requested

@@ -1,24 +1,37 @@
 // types/jwt.ts
+
+export interface SecurityContext {
+  iph: string;        // SHA-256 hash of IP address
+  dfp: string;        // Device fingerprint hash
+  geo: string;        // ISO 3166-2 location code
+  uah: string;        // User agent hash
+}
+
+export interface SecurityState {
+  mfa: boolean;       // 2FA verified this session
+  bio: boolean;       // Biometric confirmation
+  dpl: number;        // Data protection level (1-5)
+  rsk: number;        // Risk score (0-100)
+}
+
 export interface UltraSecureJwtPayload {
-    sub: string;          // User ID
-    brn: string;          // Brokerage ID
-    iss: string;          // Issuer
-    sctx: {              // Security Context
-      iph: string;       // IP hash
-      dfp: string;       // Device fingerprint
-      geo: string;       // Location code
-      uah: string;       // User agent hash
-    };
-    rls: string[];       // Roles
-    prv: string[];       // Privileges
-    cnd: string[];       // Conditions
-    sec: {
-      mfa: boolean;      // 2FA status
-      bio: boolean;      // Biometric status
-      dpl: number;       // Protection level
-      rsk: number;       // Risk score
-    };
-    jti: string;         // Token ID
-    iat: number;         // Issued at
-    exp: number;         // Expiration
-  }
+  // Core Identity
+  sb: string;                                    // User ID
+  b: string;                                    // Brokerage ID
+  is: string;                                    // Issuer
+
+  // Enhanced RBAC Data
+  r: [string, number, string | null][]; // Compact role tuple      // Role information with hierarchy
+  p: string[];                    // Detailed permission info
+  c: [string, string][];                                  // Contextual conditions
+
+  // Security
+  sc: SecurityContext;                           // Security context
+  ss: SecurityState;                             // Security state
+
+  // Token Metadata
+  jti: string;                                    // Unique token ID
+  iat?: number;                                   // Issued at
+  exp?: number;                                   // Expiration
+  nbf?: number;                                   // Not before
+}

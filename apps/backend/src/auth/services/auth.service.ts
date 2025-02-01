@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { LoggerService } from '../../logging/logging.service.js';
 import { RegisterInput } from '../dto/auth.input.js';
-import { AuthResponse, User, UserSession, VerificationResponse } from '../types/auth.types.js';
+import { AuthResponse, AuthServiceResponse, User, UserSession, VerificationResponse } from '../types/auth.types.js';
 import { mapPrismaUserToGraphQL } from '../utils/type-mappers.js';
 import { UltraSecureJwtPayload } from './auth.interfaces.js';
 import { SessionService } from '../session/session.service.js';
@@ -40,7 +40,7 @@ export class AuthService {
     this.logger = loggerService.setContext('AuthService');
   }
 
-  async register(input: RegisterInput, deviceInfo: DeviceInfo): Promise<AuthResponse> {
+  async register(input: RegisterInput, deviceInfo: DeviceInfo) : Promise<AuthServiceResponse> {
     try {
       // Check if user already exists
       const existingUser = await this.prisma.user.findUnique({
@@ -133,7 +133,7 @@ export class AuthService {
     }
   }
 
-  async login(user: PrismaUser, deviceInfo: DeviceInfo): Promise<AuthResponse> {
+  async login(user: PrismaUser, deviceInfo: DeviceInfo): Promise<AuthServiceResponse> {
     try {
       // Create a new session
       const session = await this.sessionService.createSession(user.id, deviceInfo);
@@ -156,7 +156,7 @@ export class AuthService {
     }
   }
 
-  async refreshToken(token: string, deviceInfo: DeviceInfo): Promise<AuthResponse> {
+  async refreshToken(token: string, deviceInfo: DeviceInfo): Promise<AuthServiceResponse> {
     try {
       // Find the refresh token in the database
       const refreshTokenRecord = await this.prisma.refreshToken.findFirst({
@@ -353,31 +353,74 @@ export class AuthService {
       // Get user permissions
       const permissions = await this.permissionService.getUserPermissions(user.id);
       
-      const roles = await this.prisma.userRole.findMany({
+      // Fetch user roles with their hierarchy and parent information
+      const userRoles = await this.prisma.userRole.findMany({
         where: { userId: user.id },
-        include: { role: true },
+        include: { 
+          role: {
+            include: {
+              parentRole: true // Include parent role information
+            }
+          }
+        },
+        orderBy: { role: { hierarchy: 'asc' } } // Ensure consistent ordering
+      });
+
+      // Map roles to the new compact tuple format
+      const mappedRoles = userRoles.map(userRole => {
+        const role = userRole.role;
+        return [
+          role.roleHash,               // Role hash
+          role.hierarchy,               // Hierarchy level
+          role.parentRole?.roleHash || null  // Parent role hash (if exists)
+        ] as [string, number, string | null];
+      });
+
+      // Prepare contextual conditions
+      const contextualConditions: [string, string][] = [];
+      userRoles.forEach(userRole => {
+        if (userRole.conditions) {
+          Object.entries(userRole.conditions).forEach(([key, value]) => {
+            contextualConditions.push([key, String(value)]);
+          });
+        }
       });
 
       const payload: Omit<UltraSecureJwtPayload, 'iat' | 'exp'> = {
-        sub: user.id,
-        rls: roles.map((r) => r.role.name),
-        brn: user.companyId || '', // Use actual company/brokerage ID
-        iss: this.configService.get<string>('JWT_ISSUER') || 'sovereign-crm',
-        sctx: {
+        sb: user.id,
+        b: user.companyId || '', // Use actual company/brokerage ID
+        is: this.configService.get<string>('JWT_ISSUER') || 'sovereign-crm',
+        
+        // Mapped roles with hierarchical information
+        r: mappedRoles,
+        
+        // Permissions
+        p: permissions,
+        
+        // Contextual conditions
+        c: contextualConditions,
+        
+        // Security context
+        sc: {
           iph: session.ipHash || '',
           dfp: session.deviceHash || '',
           geo: session.location || '',
           uah: crypto.createHash('sha256').update(deviceInfo.userAgent || '').digest('hex')
         },
-        prv: permissions,
-        cnd: [],
-        sec: {
+        
+        // Security state
+        ss: {
           mfa: user.twoFactorEnabled,
           bio: false, // Update if biometric auth is implemented
           dpl: 1,
           rsk: 0
         },
-        jti: session.id // Use session ID as JWT ID
+        
+        // Token metadata
+        jti: session.id, // Use session ID as JWT ID
+        
+        // Optional token timing (will be added by jwt service)
+        nbf: undefined
       };
 
       // Sign the token with explicit expiration

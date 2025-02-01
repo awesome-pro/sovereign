@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import * as crypto from 'crypto';
 import { SessionService } from '../session/session.service.js';
-import { UltraSecureJwtPayload } from '../services/auth.interfaces.js';
+import { DeviceInfo, UltraSecureJwtPayload } from '../services/auth.interfaces.js';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -27,7 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   async validate(req: Request, payload: UltraSecureJwtPayload) {
     try {
       // Get device info from request
-      const deviceInfo = {
+      const deviceInfo: DeviceInfo = {
         ip: req.ip,
         userAgent: req.headers['user-agent'],
         device: this.createDeviceHash(req),
@@ -44,17 +44,17 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       }
 
       // Validate security context
-      if (!this.validateSecurityContext(payload.sctx, deviceInfo)) {
+      if (!this.validateSecurityContext(payload.sc, deviceInfo)) {
         throw new UnauthorizedException('Security context mismatch');
       }
 
       // Check security requirements
-      if (payload.sec.mfa && !this.validateMfaRequirement(payload)) {
+      if (payload.ss.mfa && !this.validateMfaRequirement(payload)) {
         throw new UnauthorizedException('MFA verification required');
       }
 
       // Validate contextual conditions
-      if (!this.validateContextualConditions(payload.cnd)) {
+      if (!this.validateContextualConditions(payload.c)) {
         throw new UnauthorizedException('Contextual conditions not met');
       }
 
@@ -86,8 +86,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   private validateSecurityContext(
-    context: UltraSecureJwtPayload['sctx'],
-    deviceInfo: { ip?: string; device: string }
+    context: UltraSecureJwtPayload['sc'],
+    deviceInfo: DeviceInfo
   ): boolean {
     // Verify IP hasn't changed drastically (subnet level)
     const currentIpHash = this.hashValue(deviceInfo.ip);
@@ -109,7 +109,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     return true; // Placeholder
   }
 
-  private validateContextualConditions(conditions: string[]): boolean {
+  private validateContextualConditions(conditions: [string, string][]): boolean {
     // Implement contextual conditions validation
     // This should check things like time-based restrictions, location-based access, etc.
     return true; // Placeholder

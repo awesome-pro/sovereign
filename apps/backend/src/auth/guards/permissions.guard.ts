@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PERMISSIONS_KEY } from '../decorators/permissions.decorator.js';
+import { PERMISSIONS_KEY } from '../decorators/rbac.decorator.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { PermissionService } from '../services/permission.service.js';
@@ -24,7 +24,7 @@ export class PermissionsGuard implements CanActivate {
           [context.getHandler(), context.getClass()],
       );
 
-      if (!requiredPermissions) {
+      if (!requiredPermissions || requiredPermissions.length === 0) {
           return true; // No permissions required
       }
 

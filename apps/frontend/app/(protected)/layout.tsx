@@ -1,6 +1,7 @@
 import { AppSidebar } from '@/components/app-sidebar'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AuthProvider } from '@/providers/auth-provider'
+import { RBACProvider } from '@/providers/rbac-provider'
 import React from 'react'
 
 function ProtectedRoute(
@@ -11,13 +12,15 @@ function ProtectedRoute(
     }
 ) {
   return (
-    <SidebarProvider>
+    <RBACProvider>
+      <SidebarProvider>
       <AppSidebar />
       <main>
         <SidebarTrigger />
         {children}
       </main>
-    </SidebarProvider>
+      </SidebarProvider>
+    </RBACProvider>
   )
 }
 

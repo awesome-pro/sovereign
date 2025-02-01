@@ -229,10 +229,19 @@ export class Permission {
 
 @ObjectType()
 export class AuthResponse {
-  @Field()
+  @Field({ nullable: true })
+  accessTokenExpiry?: number; // UNIX timestamp or similar, if needed for UI notifications
+
+  @Field(() => User)
+  user!: User;
+}
+
+@ObjectType()
+export class AuthServiceResponse {
+  @Field(() => String)
   accessToken!: string;
 
-  @Field()
+  @Field(() => String)
   refreshToken!: string;
 
   @Field(() => User)
