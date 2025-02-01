@@ -85,50 +85,22 @@ async function refreshSession(request: NextRequest, res: NextResponse) {
     });
 
     const data = await response.json();
+    console.log(data);
 
     if (!response.ok || data.errors) {
       const error = data.errors?.[0]?.message || 'Token refresh failed';
       return handleAuthError(res, error);
     }
 
-    const { accessToken, refreshToken: newRefreshToken, user } = data.data.refreshToken;
-
-    if (!accessToken) {
-      return handleAuthError(res, 'No access token returned');
-    }
+    const { user } = data.data
+    console.log(data);
+    console.log(user);
 
     const jsonResponse = NextResponse.json({ 
       success: true,
       user 
     }, { 
       status: 200 
-    });
-
-    // Set the new tokens in cookies
-    jsonResponse.cookies.set(AUTH_TOKEN_KEY, accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-    });
-
-    if (newRefreshToken) {
-      jsonResponse.cookies.set(REFRESH_TOKEN_KEY, newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 7 * 24 * 60 * 60, // 7 days
-      });
-    }
-
-    // Update the token count cookie
-    const tokenCount = (newRefreshToken ? 2 : 1);
-    jsonResponse.cookies.set('count', String(tokenCount), {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
     });
 
     return jsonResponse;

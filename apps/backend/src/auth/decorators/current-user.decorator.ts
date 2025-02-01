@@ -57,21 +57,40 @@ export const CurrentUser = createParamDecorator(
         throw new UnauthorizedException('User account is not active');
       }
 
-      // Enhance user object with security context
-      const enhancedUser = {
-        ...user,
-        securityContext: {
-          deviceFingerprint: jwtPayload.sc.dfp,
-          ipHash: jwtPayload.sc.iph,
-          geoLocation: jwtPayload.sc.geo,
-          userAgentHash: jwtPayload.sc.uah,
-          mfaVerified: jwtPayload.ss.mfa,
-          riskScore: jwtPayload.ss.rsk,
-        },
-        // Map roles and permissions
-        effectivePermissions: jwtPayload.p,
-        securityLevel: jwtPayload.ss.dpl,
+      // Extract and flatten permissions from roles
+      const permissions = new Set<string>();
+      user.roles.forEach(userRole => {
+        userRole.role.permissions.forEach(permission => {
+          permissions.add(permission.slug);
+        });
+      });
+
+      // Map roles to JWTRole format
+      const mappedRoles = user.roles.map(userRole => ({
+        roleHash: userRole.role.roleHash,
+        hierarchy: userRole.role.hierarchy,
+        parentRoleHash: userRole.role.parentRoleId || null,
+      }));
+
+      // Create GraphQL-compatible user object
+      const enhancedUser: User = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+        emailVerified: user.emailVerified,
+        phone: user.phone,
+        phoneVerified: user.phoneVerified,
+        status: user.status,
+        roles: mappedRoles,
+        permissions: Array.from(permissions), // Convert Set to array
+        twoFactorEnabled: user.twoFactorEnabled,
       };
+
+      // Enhance user object with security context
+      // const enhancedUser = {
+      //   ...graphqlUser,
+      // };
 
       // Return specific property if requested
       if (data) {

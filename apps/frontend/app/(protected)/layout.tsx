@@ -12,7 +12,7 @@ function ProtectedRoute(
     }
 ) {
   return (
-    <RBACProvider>
+    // <RBACProvider>
       <SidebarProvider>
       <AppSidebar />
       <main>
@@ -20,7 +20,7 @@ function ProtectedRoute(
         {children}
       </main>
       </SidebarProvider>
-    </RBACProvider>
+    // </RBACProvider>
   )
 }
 

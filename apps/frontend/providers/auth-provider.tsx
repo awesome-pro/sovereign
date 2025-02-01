@@ -6,7 +6,6 @@ import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 import { toast } from 'sonner';
 import { JWTRole, LoginInput, RegisterInput, User } from '@/types';
 import { GET_CURRENT_USER_QUERY, LOGOUT_MUTATION, REFRESH_TOKEN_MUTATION, SIGN_IN_MUTATION } from '@/graphql/auth.mutations';
-import Cookies from 'js-cookie';
 import EstateLoading from '@/components/loading';
 
 // Types for better type safety
@@ -86,25 +85,25 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   }
 };
 
-const calculateEffectivePermissions = (roles: [string, number, string | null][], permissions: string[]): string[] => {
+const calculateEffectivePermissions = (roles: JWTRole[], permissions: string[]): string[] => {
   const effectivePerms = new Set<string>();
   
   // Add direct permissions
   permissions.forEach(p => effectivePerms.add(p));
   
   // Add role-based permissions based on hierarchy
-  roles.sort((a, b) => a[1] - b[1]); // Sort by hierarchy (0 is highest)
-  roles.forEach(([role]) => {
+  roles.sort((a, b) => a.hierarchy - b.hierarchy); // Sort by hierarchy (0 is highest)
+  roles.forEach(role => {
     // Add role-specific permissions based on your permission structure
-    const rolePerms = getRolePermissions(role);
+    const rolePerms = getRolePermissions(role.roleHash);
     rolePerms.forEach(p => effectivePerms.add(p));
   });
   
   return Array.from(effectivePerms);
 };
 
-const calculateEffectiveRoles = (roles: [string, number, string | null][]) => {
-  return roles.map(([role]) => role);
+const calculateEffectiveRoles = (roles: JWTRole[]): string[] => {
+  return roles.map(role => role.roleHash);
 };
 
 const getRolePermissions = (role: string) => {
@@ -137,68 +136,108 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        debugger;
+        
         // Try to refresh the session first
-        const refreshResponse = await fetch('/api/auth/refresh', {
-          method: 'POST',
+        const checkSessionResponse = await fetch('/api/auth/session', {
+          method: 'GET',
           credentials: 'include',
         });
 
-        if (!refreshResponse.ok) {
-          // If refresh fails and we're not on an auth page, redirect to login
-          if (!isAuthPage) {
-            router.push('/auth/sign-in');
-          }
-          dispatch({ type: 'INITIALIZE', payload: { ...initialState, isInitialized: true } });
+        // Handle redirects
+        if (checkSessionResponse.redirected) {
+          router.push(checkSessionResponse.url);
           return;
         }
 
-        // If refresh successful, fetch current user
-        const { data } = await client.query({
-          query: GET_CURRENT_USER_QUERY,
-          fetchPolicy: 'network-only',
-        });
+        const session = await checkSessionResponse.json();
 
-        if (data?.me) {
-          const { roles, permissions, ...user } = data.me;
-          const effectivePermissions = calculateEffectivePermissions(roles, permissions);
-          
-          dispatch({
-            type: 'INITIALIZE',
-            payload: {
-              isAuthenticated: true,
-              user,
-              roles: roles.map((r: { roleHash: any; }) => r.roleHash),
-              effectiveRoles: calculateEffectiveRoles(roles),
-              permissions,
-              effectivePermissions,
-              securityState: {
-                mfa: user.twoFactorEnabled || false,
-                bio: false,
-                dpl: 0,
-                rsk: 0
-              },
-              deviceFingerprint: await generateDeviceFingerprint(),
-              error: null,
-              isLoading: false,
-              isInitialized: true
+        if (checkSessionResponse.ok && session.isSignedIn) {
+          // Update state with user data if available
+          if (session.user) {
+            const effectiveRoles = calculateEffectiveRoles(session.user.roles);
+            const effectivePermissions = calculateEffectivePermissions(session.user.roles, session.user.permissions);
+
+            dispatch({
+              type: 'INITIALIZE',
+              payload: {
+                ...initialState,
+                isAuthenticated: true,
+                user: session.user,
+                roles: session.user.roles.map((r: { roleHash: any; }) => r.roleHash),
+                effectiveRoles,
+                permissions: session.user.permissions,
+                effectivePermissions,
+                isLoading: false,
+                error: null
+              }
+            });
+
+            // Only redirect if we're on an auth page
+            if (isAuthPage) {
+              router.push('/dashboard');
             }
+            return;
+          }
+
+          // If no user data in session, fetch from API
+          const { data } = await client.query({
+            query: GET_CURRENT_USER_QUERY,
+            fetchPolicy: 'network-only',
           });
 
-          // Redirect to dashboard if on auth page
-          if (isAuthPage) {
-            router.push('/dashboard');
+          if (data?.me) {
+            const { roles, permissions, ...user } = data.me;
+            const effectiveRoles = calculateEffectiveRoles(roles);
+            const effectivePermissions = calculateEffectivePermissions(roles, permissions);
+            
+            dispatch({
+              type: 'INITIALIZE',
+              payload: {
+                ...initialState,
+                isAuthenticated: true,
+                user,
+                roles: roles.map((r: { roleHash: any; }) => r.roleHash),
+                effectiveRoles,
+                permissions,
+                effectivePermissions,
+                deviceFingerprint: await generateDeviceFingerprint(),
+                error: null,
+                isLoading: false
+              }
+            });
+  
+            // Only redirect if we're on an auth page
+            if (isAuthPage) {
+              router.push('/dashboard');
+            }
+            return;
           }
         }
+
+        // If we get here, we're not authenticated
+        dispatch({
+          type: 'INITIALIZE',
+          payload: {
+            ...initialState,
+            isLoading: false,
+            error: session.error || 'Session expired. Please sign in again.'
+          }
+        });
+
+        if (!isAuthPage) {
+          router.push('/auth/sign-in');
+        }
       } catch (error: any) {
-        toast.error(error.message);
         console.error('Auth initialization error:', error);
+        
         dispatch({ 
           type: 'INITIALIZE', 
           payload: { 
-            ...initialState, 
-            isInitialized: true,
+            ...initialState,
+            isLoading: false,
             error: error.message 
-          } 
+          }
         });
         
         if (!isAuthPage) {
@@ -224,14 +263,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       });
       
-      if (data?.login) {
+      if (data?.login?.user) {
         const { roles, permissions, ...user } = data.login.user;
+        
         dispatch({
           type: 'UPDATE_SESSION',
           payload: {
             isAuthenticated: true,
             user,
-            roles: roles.map((r:JWTRole) => r.roleHash),
+            roles: roles.map((r: { roleHash: any; }) => r.roleHash),
             effectiveRoles: calculateEffectiveRoles(roles),
             permissions,
             effectivePermissions: calculateEffectivePermissions(roles, permissions),
