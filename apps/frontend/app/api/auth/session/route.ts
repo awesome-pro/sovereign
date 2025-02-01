@@ -110,22 +110,60 @@ async function handleRequest(request: NextRequest): Promise<NextResponse> {
           variables: { refreshToken },
         }),
       });
-  
+
+      console.log('GraphQL refresh response:', response);
+
+      // extract the cookies from the response
       const data = await response.json();
-      console.log('GraphQL refresh response:', data);
-  
-      // Check for errors in response.
-      if (!response.ok || data.errors) {
-        const error = data.errors?.[0]?.message || 'Token refresh failed';
-        return handleAuthError(error);
+    console.log('GraphQL refresh response:', data);
+
+    // Check for errors in response
+    if (!response.ok || data.errors) {
+      const error = data.errors?.[0]?.message || 'Token refresh failed';
+      return handleAuthError(error);
+    }
+
+    // Get the Set-Cookie header
+    const setCookieHeader = response.headers.get('set-cookie');
+    if (!setCookieHeader) {
+      return handleAuthError('No cookies received from server');
+    }
+
+    // Parse individual cookies from the set-cookie header
+    const cookieStrings = setCookieHeader.split(', ');
+    const parsedCookies: Record<string, string> = {};
+    
+    cookieStrings.forEach(cookieString => {
+      const [fullCookie] = cookieString.split(';');
+      const [name, value] = fullCookie ? fullCookie.split('=') : [];
+      if (name && value) {
+        parsedCookies[name] = value;
       }
-  
-      // Successfully refreshed: extract user info.
-      const { user } = data.data.refreshToken;
-      console.log('user:', user);
-      // Optionally: update tokens (set new cookies) if your GraphQL mutation returns new tokens.
-  
-      return NextResponse.json({ isSignedIn: true, user }, { status: 200 });
+    });
+
+    // Extract the user data from the GraphQL response
+    const { user } = data.data.refreshToken;
+
+    // Create the response with user data
+    const newResponse = NextResponse.json(
+      { isSignedIn: true, user },
+      { status: 200 }
+    );
+
+    // Set cookies in the response with the same attributes as the backend
+    if (parsedCookies[AUTH_TOKEN_KEY]) {
+      newResponse.headers.append('Set-Cookie', 
+        `${AUTH_TOKEN_KEY}=${parsedCookies[AUTH_TOKEN_KEY]}; Max-Age=900; Path=/; HttpOnly; SameSite=Strict${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`
+      );
+    }
+
+    if (parsedCookies[REFRESH_TOKEN_KEY]) {
+      newResponse.headers.append('Set-Cookie',
+        `${REFRESH_TOKEN_KEY}=${parsedCookies[REFRESH_TOKEN_KEY]}; Max-Age=604800; Path=/; HttpOnly; SameSite=Strict${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`
+      );
+    }
+
+    return newResponse;
     } catch (error) {
       console.error('Refresh token error:', error);
       return handleAuthError('Failed to refresh token');
