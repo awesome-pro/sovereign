@@ -63,11 +63,77 @@ export default function TasksPage() {
         dueDateTo: dateRange?.to?.toISOString(),
       },
     },
+    fetchPolicy: 'cache-first', // Use cache first, only fetch from network if not in cache
+    nextFetchPolicy: 'cache-only', // After first fetch, only use cache unless explicitly refetched
   });
 
-  const [createTask] = useMutation(CREATE_TASK_MUTATION);
-  const [updateTask] = useMutation(UPDATE_TASK_MUTATION);
-  const [deleteTask] = useMutation(DELETE_TASK_MUTATION);
+  const [createTask] = useMutation(CREATE_TASK_MUTATION, {
+    update(cache, { data: { createTask } }) {
+      const existingTasks = cache.readQuery<{ tasks: Task[] }>({
+        query: TASKS_QUERY,
+        variables: { filter: {} }
+      });
+
+      if (existingTasks?.tasks) {
+        cache.writeQuery({
+          query: TASKS_QUERY,
+          variables: { filter: {} },
+          data: {
+            tasks: [...existingTasks.tasks, createTask]
+          }
+        });
+      } else {
+        cache.writeQuery({
+          query: TASKS_QUERY,
+          variables: { filter: {} },
+          data: {
+            tasks: [createTask]
+          }
+        });
+      }
+    }
+  });
+
+  const [updateTask] = useMutation(UPDATE_TASK_MUTATION, {
+    update(cache, { data: { updateTask } }) {
+      const existingTasks = cache.readQuery<{ tasks: Task[] }>({
+        query: TASKS_QUERY,
+        variables: { filter: {} }
+      });
+
+      if (existingTasks?.tasks) {
+        cache.writeQuery({
+          query: TASKS_QUERY,
+          variables: { filter: {} },
+          data: {
+            tasks: existingTasks.tasks.map((task: Task) =>
+              task.id === updateTask.id ? updateTask : task
+            )
+          }
+        });
+      }
+    }
+  });
+
+  const [deleteTask] = useMutation(DELETE_TASK_MUTATION, {
+    update(cache, { data: { deleteTask } }, { variables }) {
+      const existingTasks = cache.readQuery<{ tasks: Task[] }>({
+        query: TASKS_QUERY,
+        variables: { filter: {} }
+      });
+
+      if (existingTasks?.tasks && variables?.id) {
+        cache.writeQuery({
+          query: TASKS_QUERY,
+          variables: { filter: {} },
+          data: {
+            tasks: existingTasks.tasks.filter((task: Task) => task.id !== variables.id)
+          }
+        });
+      }
+    }
+  });
+
   const [addChecklistItem] = useMutation(ADD_TASK_CHECKLIST_ITEM_MUTATION);
   const [addComment] = useMutation(ADD_TASK_COMMENT_MUTATION);
 
@@ -165,23 +231,25 @@ export default function TasksPage() {
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Tasks</h1>
-        <div>
-          <p className="text-white">Hello, {user?.email}</p>
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => refetch()}>
+            Refresh Tasks
+          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusIcon className="w-4 h-4 mr-2" />
+                New Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Create New Task</DialogTitle>
+              </DialogHeader>
+              <TaskForm onSubmit={handleCreateTask} />
+            </DialogContent>
+          </Dialog>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusIcon className="w-4 h-4 mr-2" />
-              New Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
-            </DialogHeader>
-            <TaskForm onSubmit={handleCreateTask} />
-          </DialogContent>
-        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

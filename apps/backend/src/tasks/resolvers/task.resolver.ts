@@ -25,7 +25,7 @@ export class TaskResolver {
     @Args('filter', { nullable: true }) filter: TaskFilterInput,
     @Context() { req, res }: { req: any; res: any },
   ): Promise<Task[]> {
-    return this.taskService.getTasks(filter, req.user.sub);
+    return this.taskService.getTasks(filter, req.user.sb);
   }
 
   @Mutation(() => Task)
@@ -33,7 +33,7 @@ export class TaskResolver {
     @Args('input') input: CreateTaskInput,
     @Context() {req, res}: {req: any; res: any},
   ): Promise<Task> {
-    return this.taskService.createTask(input, req.user.sub);
+    return this.taskService.createTask(input, req.user.sb);
   }
 
   @Mutation(() => Task)
@@ -41,7 +41,7 @@ export class TaskResolver {
     @Args('input') input: UpdateTaskInput,
     @Context() {req, res}: {req: any; res: any},
   ): Promise<Task> {
-    return this.taskService.updateTask(input, req.user.sub);
+    return this.taskService.updateTask(input, req.user.sb);
   }
 
   @Mutation(() => Boolean)
@@ -49,7 +49,7 @@ export class TaskResolver {
     @Args('id', { type: () => ID }) id: string,
     @Context() {req, res}: {req: any; res: any},
   ): Promise<boolean> {
-    return this.taskService.deleteTask(id, req.user.sub);
+    return this.taskService.deleteTask(id, req.user.sb);
   }
 
   @Mutation(() => Task)
@@ -58,7 +58,7 @@ export class TaskResolver {
     @Args('input') input: TaskChecklistInput,
     @Context() {req, res}: {req: any; res: any},
   ): Promise<Task> {
-    return this.taskService.addChecklistItem(taskId, input, req.user.sub);
+    return this.taskService.addChecklistItem(taskId, input, req.user.sb);
   }
 
   @Mutation(() => Task)

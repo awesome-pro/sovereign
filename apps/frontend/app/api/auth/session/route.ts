@@ -61,8 +61,8 @@ async function handleRequest(request: NextRequest): Promise<NextResponse> {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(AUTH_TOKEN_KEY)?.value;
   const refreshToken = cookieStore.get(REFRESH_TOKEN_KEY)?.value;
-  console.log('accessToken', accessToken, 'refreshToken', refreshToken);
-  console.log('cookieStore', cookieStore);
+  // console.log('accessToken', accessToken, 'refreshToken', refreshToken);
+  // console.log('cookieStore', cookieStore);
 
   // If both tokens are present & both are valid, return a 200 status with the tokens.
   if ((accessToken && refreshToken)) {

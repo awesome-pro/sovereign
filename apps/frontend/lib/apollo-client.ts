@@ -1,4 +1,4 @@
-import { ApolloClient, InMemoryCache, createHttpLink, from, Observable, NormalizedCacheObject, Reference, ApolloLink } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, from, Observable, NormalizedCacheObject, Reference, ApolloLink, StoreObject } from '@apollo/client';
 import { onError } from '@apollo/client/link/error';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
@@ -81,11 +81,31 @@ const cache = new InMemoryCache({
         },
         tasks: {
           keyArgs: ['filter'],
-          merge(existing = [], incoming, { args }) {
-            if (args?.offset === 0) {
+          merge(existing = [], incoming, { args, readField }) {
+            // If it's a new query (no offset) or no existing data, return incoming
+            if (!existing || !existing.length) {
               return incoming;
             }
-            return [...existing, ...incoming];
+
+            // Create a map of existing tasks by ID to avoid duplicates
+            const existingTasksMap = new Map();
+            existing.forEach((task: Reference | StoreObject | undefined) => {
+              const id = readField('id', task);
+              if (id) {
+                existingTasksMap.set(id, task);
+              }
+            });
+
+            // Update or add new tasks
+            incoming.forEach((task: Reference | StoreObject | undefined) => {
+              const id = readField('id', task);
+              if (id) {
+                existingTasksMap.set(id, task);
+              }
+            });
+
+            // Convert map back to array
+            return Array.from(existingTasksMap.values());
           }
         }
       }
@@ -116,16 +136,15 @@ const cache = new InMemoryCache({
         comments: {
           merge(existing = [], incoming, { readField }) {
             const merged = existing ? [...existing] : [];
-            incoming.forEach((comment: any) => {
-              const index = merged.findIndex(
-                (item: any) => readField('id', item) === readField('id', comment)
-              );
-              if (index >= 0) {
-                merged[index] = comment;
-              } else {
+            const commentIds = new Set(merged.map(comment => readField('id', comment)));
+            
+            incoming.forEach((comment: Reference | StoreObject | undefined) => {
+              const commentId = readField('id', comment);
+              if (!commentIds.has(commentId)) {
                 merged.push(comment);
               }
             });
+            
             return merged;
           }
         }
@@ -155,10 +174,19 @@ export function getApolloClient() {
       });
 
       const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+        debugger;
         if (graphQLErrors) {
           for (const err of graphQLErrors) {
-            switch (err.extensions?.code) {
+            const errorCode = err.extensions?.code || 
+                            (err.message.includes('Authentication required') ? 'UNAUTHENTICATED' : 'UNKNOWN_ERROR');
+
+            switch (errorCode) {
               case 'UNAUTHENTICATED':
+                // Don't redirect for the current user query to prevent infinite loops
+                if (operation.operationName === 'GetCurrentUser') {
+                  return;
+                }
+
                 return new Observable(observer => {
                   tokenManager.handleTokenRefresh()
                     .then(user => {
@@ -168,35 +196,83 @@ export function getApolloClient() {
                           query: GET_CURRENT_USER_QUERY,
                           data: { me: { ...user, __typename: 'User', __timestamp: Date.now() } },
                         });
+
                         // Retry the failed request
-                        const subscriber = forward(operation);
-                        subscriber.subscribe(observer);
+                        const subscriber = {
+                          next: observer.next.bind(observer),
+                          error: observer.error.bind(observer),
+                          complete: observer.complete.bind(observer)
+                        };
+
+                        forward(operation).subscribe(subscriber);
                       } else {
-                        window.location.href = '/auth/sign-in?reason=session_expired';
+                        // Clear Apollo cache
+                        cache.reset();
+                        
+                        // Redirect to login with return URL
+                        const returnUrl = typeof window !== 'undefined' ? 
+                          encodeURIComponent(window.location.pathname + window.location.search) : '';
+                        window.location.href = `/auth/sign-in?reason=session_expired&returnUrl=${returnUrl}`;
                       }
                     })
-                    .catch(() => {
+                    .catch(error => {
+                      console.error('Token refresh failed:', error);
+                      cache.reset();
                       window.location.href = '/auth/sign-in?reason=refresh_failed';
                     });
                 });
+
               case 'FORBIDDEN':
+                toast.error('You do not have permission to perform this action');
                 window.location.href = '/auth/unauthorized';
                 break;
+
               case 'SECURITY_LEVEL_INSUFFICIENT':
                 window.location.href = '/auth/mfa';
                 break;
+
+              case 'VALIDATION_ERROR':
+                toast.error(err.message || 'Validation error occurred');
+                break;
+
+              case 'NOT_FOUND':
+                toast.error(err.message || 'Resource not found');
+                break;
+
               default:
                 console.error('GraphQL Error:', err);
-                toast.error(err.message || 'An error occurred');
-                //window.location.href = '/auth/sign-in?reason=graphql_error';
+                toast.error(err.message || 'An unexpected error occurred');
+                
+                // Only redirect for severe errors
+                if (err.message.includes('Internal server error')) {
+                  window.location.href = '/error?type=server_error';
+                }
             }
           }
         }
 
         if (networkError) {
           console.error('Network error:', networkError);
-          toast.error('Network error occurred. Please check your connection and try again.');
+          
+          // Check if it's a CORS or network connectivity issue
+          if ('statusCode' in networkError) {
+            switch (networkError.statusCode) {
+              case 0:
+                toast.error('Unable to connect to the server. Please check your internet connection.');
+                break;
+              case 429:
+                toast.error('Too many requests. Please try again later.');
+                break;
+              default:
+                toast.error('Network error occurred. Please try again.');
+            }
+          } else {
+            toast.error('Network error occurred. Please check your connection and try again.');
+          }
         }
+
+        // Return error to let Apollo continue with error policies
+        return forward(operation);
       });
 
       apolloClient = new ApolloClient({

@@ -45,11 +45,33 @@ import { JwtModule } from '@nestjs/jwt';
           cors: false, // We handle CORS at the app level
           context: ({ req, res }: any) => ({ req, res }),
           formatError: (error: any) => {
+            // Define standard error codes
+            const errorCodes = {
+              UNAUTHENTICATED: 'UNAUTHENTICATED',
+              FORBIDDEN: 'FORBIDDEN',
+              SECURITY_LEVEL_INSUFFICIENT: 'SECURITY_LEVEL_INSUFFICIENT',
+              VALIDATION_ERROR: 'VALIDATION_ERROR',
+              NOT_FOUND: 'NOT_FOUND',
+              INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+            };
+
+            // Map error types to standard codes
+            let errorCode = error.extensions?.code || 'UNKNOWN_ERROR';
+            if (error.message.includes('Authentication required')) {
+              errorCode = errorCodes.UNAUTHENTICATED;
+            } else if (error.message.includes('Forbidden')) {
+              errorCode = errorCodes.FORBIDDEN;
+            }
+
             const errorDetails = {
               message: error.message,
-              code: error.extensions?.code || 'UNKNOWN_ERROR',
+              code: errorCode,
               path: error.path?.join('.'),
               locations: error.locations,
+              extensions: {
+                code: errorCode,
+                ...error.extensions,
+              },
               stacktrace: error.extensions?.exception?.stacktrace,
               originalError: error.originalError?.message,
             };
@@ -66,20 +88,24 @@ import { JwtModule } from '@nestjs/jwt';
             // Return a sanitized error for production
             if (process.env.NODE_ENV === 'production') {
               return {
-                message: 'Internal server error',
-                code: errorDetails.code,
-                path: errorDetails.path,
+                message: errorDetails.message,
+                extensions: {
+                  code: errorDetails.code,
+                  path: errorDetails.path,
+                }
               };
             }
 
             // Return detailed error for development
             return {
               message: errorDetails.message,
-              code: errorDetails.code,
-              path: errorDetails.path,
-              locations: errorDetails.locations,
-              stack: errorDetails.stacktrace,
-              originalError: errorDetails.originalError,
+              extensions: {
+                code: errorDetails.code,
+                path: errorDetails.path,
+                locations: errorDetails.locations,
+                stack: errorDetails.stacktrace,
+                originalError: errorDetails.originalError,
+              }
             };
           },
         };
