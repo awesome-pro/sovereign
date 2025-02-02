@@ -32,6 +32,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import Link from "next/link";
 
 // Define menu items with their required permissions
 const menuGroups = [
@@ -47,7 +48,7 @@ const menuGroups = [
       {
         title: "Notifications",
         icon: Bell,
-        url: "/notifications",
+        url: "/dashboard/notifications",
         permissions: ["message.001"]
       }
     ]
@@ -58,13 +59,13 @@ const menuGroups = [
       {
         title: "All Properties",
         icon: Building2,
-        url: "/properties",
+        url: "/dashboard/properties",
         permissions: ["property.001"]
       },
       {
         title: "Add Property",
         icon: UserPlus,
-        url: "/properties/add",
+        url: "/dashboard/properties/add",
         permissions: ["property.002"]
       }
     ]
@@ -75,13 +76,13 @@ const menuGroups = [
       {
         title: "Lead Management",
         icon: Users,
-        url: "/leads",
+        url:  "/dashboard/leads",
         permissions: ["lead.001", "lead.002"]
       },
       {
         title: "Client Database",
         icon: UserPlus,
-        url: "/clients",
+        url: "/dashboard/clients",
         permissions: ["lead.001"]
       }
     ]
@@ -92,13 +93,13 @@ const menuGroups = [
       {
         title: "Active Deals",
         icon: Briefcase,
-        url: "/deals",
+        url: "/dashboard/deals",
         permissions: ["deal.001"]
       },
       {
         title: "Transactions",
         icon: DollarSign,
-        url: "/transactions",
+        url: "/dashboard/transactions",
         permissions: ["transaction.001"]
       }
     ]
@@ -109,13 +110,13 @@ const menuGroups = [
       {
         title: "Messages",
         icon: MessageSquare,
-        url: "/messages",
+        url: "/dashboard/messages",
         permissions: ["message.001"]
       },
       {
         title: "Calendar",
         icon: Calendar,
-        url: "/calendar",
+        url: "/dashboard/calendar",
         permissions: ["message.001"]
       }
     ]
@@ -126,13 +127,13 @@ const menuGroups = [
       {
         title: "Performance",
         icon: BarChart3,
-        url: "/reports/performance",
+        url: "/dashboard/reports/performance",
         permissions: ["report.001"]
       },
       {
         title: "Documents",
         icon: FileText,
-        url: "/documents",
+        url: "/dashboard/documents",
         permissions: ["report.001"]
       }
     ]
@@ -171,10 +172,10 @@ const MenuItem = ({ item }: { item: MenuItemProps }) => {
       component={() => (
         <SidebarMenuItem>
           <SidebarMenuButton asChild>
-            <a href={item.url}>
+            <Link href={item.url}>
               <Icon className="h-4 w-4" />
               <span>{item.title}</span>
-            </a>
+            </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
       )}

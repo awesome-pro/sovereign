@@ -10,7 +10,7 @@ import React, {
   useMemo,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useMutation, useApolloClient } from "@apollo/client";
+import { useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { JWTRole, LoginInput, RegisterInput, User } from "@/types";
 import {
@@ -20,6 +20,7 @@ import {
   SIGN_IN_MUTATION,
 } from "@/graphql/auth.mutations";
 import EstateLoading from "@/components/loading";
+import { getApolloClient, resetApolloClient } from "@/lib/apollo-client";
 
 // --------------------
 // Types & Interfaces
@@ -27,7 +28,7 @@ import EstateLoading from "@/components/loading";
 interface SessionState {
   isAuthenticated: boolean;
   isLoading: boolean;
-  isInitialized: boolean; // Track initial auth check
+  isInitialized: boolean;
   user: User | null;
   roles: string[];
   permissions: string[];
@@ -106,10 +107,6 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 // --------------------
 // Helper Functions
 // --------------------
-/**
- * Calculate effective permissions by merging direct user permissions
- * with those granted by roles (sorted by hierarchy).
- */
 const calculateEffectivePermissions = (
   roles: JWTRole[],
   permissions: string[]
@@ -117,7 +114,7 @@ const calculateEffectivePermissions = (
   const effectivePerms = new Set<string>();
   permissions.forEach((p) => effectivePerms.add(p));
   roles
-    .sort((a, b) => a.hierarchy - b.hierarchy) // Lower hierarchy value = higher privileges
+    .sort((a, b) => a.hierarchy - b.hierarchy)
     .forEach((role) => {
       const rolePerms = getRolePermissions(role.roleHash);
       rolePerms.forEach((p) => effectivePerms.add(p));
@@ -137,7 +134,6 @@ const calculateEffectiveRoles = (roles: JWTRole[]): string[] => {
  * Extend this to incorporate your permission structure.
  */
 const getRolePermissions = (role: string): string[] => {
-  // TODO: Implement your permission lookup logic here.
   return [];
 };
 
@@ -146,11 +142,16 @@ const getRolePermissions = (role: string): string[] => {
  * such as FingerprintJS.
  */
 const generateDeviceFingerprint = async (): Promise<string | null> => {
-  // Placeholder: implement or plug in third-party library logic.
-  return "generated-device-fingerprint";
+  const clientFingerprint = generateClientFingerprint();
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('dfp', clientFingerprint);
+  }
+  return clientFingerprint;
 };
 
 const generateClientFingerprint = (): string => {
+  if (typeof window === 'undefined') return '';
+  
   const components = [
     navigator.userAgent,
     navigator.language,
@@ -161,9 +162,8 @@ const generateClientFingerprint = (): string => {
     navigator.platform,
   ];
   
-  // Create a hash of the components
   const fingerprint = components.join('|');
-  return btoa(fingerprint); // Base64 encode for transmission
+  return btoa(fingerprint);
 };
 
 // --------------------
@@ -176,82 +176,99 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = React.useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const client = useApolloClient();
+  const apolloClient = useMemo(() => getApolloClient(), []);
 
-  // Apollo GraphQL mutations for auth
   const [loginMutation] = useMutation(SIGN_IN_MUTATION);
   const [logoutMutation] = useMutation(LOGOUT_MUTATION);
   const [refreshTokenMutation] = useMutation(REFRESH_TOKEN_MUTATION);
 
   const isAuthPage = pathname?.startsWith("/auth/");
-
-  // Handle client-side mounting
+  
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // --------------------
-  // Initial Session Check / Refresh
-  // --------------------
   useEffect(() => {
     const initAuth = async () => {
+      if (!apolloClient) return;
+
       try {
         dispatch({ type: "SET_LOADING", payload: true });
         
-        // Generate client fingerprint
-        const clientFingerprint = generateClientFingerprint();
+        const clientFingerprint = await generateDeviceFingerprint();
         
-        // Attempt to refresh session from server (cookie-based, HttpOnly)
         const sessionResponse = await fetch("/api/auth/session", {
           method: "GET",
           credentials: "include",
           headers: {
-            'X-Client-Fingerprint': clientFingerprint,
-            'User-Agent': navigator.userAgent // Explicitly send browser's user agent
+            'X-Client-Fingerprint': clientFingerprint || '',
+            'User-Agent': navigator.userAgent
           }
         });
 
-        // Handle any redirect response (if session endpoint redirects on error)
-        if (sessionResponse.redirected) {
+        if (sessionResponse.redirected && !isAuthPage) {
           router.push(sessionResponse.url);
           return;
         }
 
         const session = await sessionResponse.json();
 
-        // If session exists and is valid
-        if (session?.isSignedIn) {
+        if (session?.isSignedIn && sessionResponse.ok) {
           let userData = session.user;
+          
           if (!userData) {
-            // Fallback: query current user data via GraphQL
-            const { data } = await client.query({
-              query: GET_CURRENT_USER_QUERY,
-              fetchPolicy: "network-only", // Ensure we always get the latest data
-            });
-            userData = data?.me;
+            try {
+              const { data } = await apolloClient.query({
+                query: GET_CURRENT_USER_QUERY,
+                fetchPolicy: "network-only",
+              });
+              userData = data?.me;
+            } catch (error) {
+              console.error("Failed to fetch user data:", error);
+              dispatch({
+                type: "INITIALIZE",
+                payload: { ...initialState, error: "Failed to fetch user data" }
+              });
+              return;
+            }
           }
 
           if (userData) {
-            const effectiveRoles = calculateEffectiveRoles(userData.roles);
-            const effectivePermissions = calculateEffectivePermissions(
-              userData.roles,
-              userData.permissions
-            );
+            // Ensure roles and permissions are arrays
+            const roles = Array.isArray(userData.roles) ? userData.roles : [];
+            const permissions = Array.isArray(userData.permissions) ? userData.permissions : [];
+            
+            const effectiveRoles = calculateEffectiveRoles(roles);
+            const effectivePermissions = calculateEffectivePermissions(roles, permissions);
+
+            const securityState = {
+              mfa: userData.twoFactorEnabled || false,
+              bio: false,
+              dpl: 0,
+              rsk: 0,
+            };
+
             dispatch({
               type: "INITIALIZE",
               payload: {
                 ...initialState,
                 isAuthenticated: true,
-                user: userData,
-                roles: userData.roles.map((r: { roleHash: string }) => r.roleHash),
+                user: {
+                  ...userData,
+                  roles,
+                  permissions,
+                },
+                roles: roles.map((r: { roleHash: string }) => r.roleHash),
                 effectiveRoles,
-                permissions: userData.permissions,
+                permissions,
                 effectivePermissions,
-                deviceFingerprint: await generateDeviceFingerprint(),
+                securityState,
+                deviceFingerprint: clientFingerprint,
                 error: null,
                 isLoading: false,
               },
             });
+
             if (isAuthPage) router.push("/dashboard");
             return;
           }
@@ -262,9 +279,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           payload: {
             ...initialState,
             isLoading: false,
-            error: session?.error || "Session expired. Please sign in again.",
+            error: session?.error || null,
           },
         });
+
         if (!isAuthPage) router.push("/auth/sign-in");
       } catch (error: any) {
         console.error("Auth initialization error:", error);
@@ -279,18 +297,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!state.isInitialized && mounted) {
       initAuth();
     }
-  }, [client, router, isAuthPage, state.isInitialized, mounted]);
+  }, [apolloClient, router, isAuthPage, state.isInitialized, mounted]);
 
-  // --------------------
-  // Auth Actions
-  // --------------------
   const signIn = useCallback(
     async (input: LoginInput): Promise<User> => {
+      if (!apolloClient) throw new Error("Apollo Client not initialized");
+
       dispatch({ type: "SET_LOADING", payload: true });
       try {
         const { data } = await loginMutation({
           variables: { input },
-          fetchPolicy: "no-cache", // Always hit the server
+          fetchPolicy: "no-cache",
         });
 
         if (data?.login?.user) {
@@ -318,14 +335,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "SET_LOADING", payload: false });
       }
     },
-    [loginMutation]
+    [loginMutation, apolloClient]
   );
 
   const signOut = useCallback(async () => {
+    if (!apolloClient) return;
+
     try {
       await logoutMutation();
-      // Clear Apollo store to remove cached sensitive data
-      await client.clearStore();
+      await apolloClient.clearStore();
+      resetApolloClient();
       dispatch({ type: "SIGN_OUT" });
       router.push("/auth/sign-in");
     } catch (error: any) {
@@ -333,14 +352,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Logout error:", error);
       dispatch({ type: "SET_ERROR", payload: "Failed to sign out" });
     }
-  }, [logoutMutation, client, router]);
+  }, [logoutMutation, apolloClient, router]);
 
-  // Placeholder for signUp – implement similarly when needed.
   const signUp = useCallback(async (input: RegisterInput): Promise<User> => {
     throw new Error("Not implemented");
   }, []);
 
   const refreshSession = useCallback(async () => {
+    if (!apolloClient) return;
+
     try {
       const { data } = await refreshTokenMutation({
         fetchPolicy: "no-cache",
@@ -364,7 +384,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_ERROR", payload: "Failed to refresh session" });
       await signOut();
     }
-  }, [refreshTokenMutation, signOut]);
+  }, [refreshTokenMutation, apolloClient, signOut]);
 
   const hasRole = useCallback(
     (requiredRoles: string | string[]): boolean => {
@@ -378,7 +398,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (requiredPermissions: string | string[]): boolean => {
       const permsArray = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
       return permsArray.some((permission) => {
-        // Support wildcard permissions (e.g., "admin.*")
         if (permission.endsWith(".*")) {
           const domain = permission.slice(0, -2);
           return state.effectivePermissions.some((p) => p.startsWith(domain));
@@ -389,7 +408,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [state.effectivePermissions]
   );
 
-  // Memoize the context value to avoid unnecessary re-renders.
   const value = useMemo(
     () => ({
       ...state,
@@ -403,12 +421,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [state, signIn, signUp, signOut, refreshSession, hasRole, hasPermission]
   );
 
-  // Render nothing until mounted to prevent hydration issues
   if (!mounted) {
     return null;
   }
 
-  // Render a loading indicator on protected routes if not yet initialized
   if (!state.isInitialized && !isAuthPage) {
     return <EstateLoading />;
   }

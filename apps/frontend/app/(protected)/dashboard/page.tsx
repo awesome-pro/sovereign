@@ -1,9 +1,12 @@
 'use client';
 
 import EstateLoading from '@/components/loading';
+import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/providers/auth-provider';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user, isLoading } = useAuthContext();
 
   if (isLoading) {
@@ -41,17 +44,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-            <div className="space-y-2">
-              <button className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                Create New Listing
-              </button>
-              <button className="w-full bg-gray-100 text-gray-800 px-4 py-2 rounded hover:bg-gray-200">
-                View Messages
-              </button>
-            </div>
-          </div>
+          <Button onClick={() => router.push('/dashboard/notifications')}>
+            View Notifications
+          </Button>
         </div>
       </div>
   );
