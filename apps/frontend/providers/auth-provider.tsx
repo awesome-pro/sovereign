@@ -150,6 +150,22 @@ const generateDeviceFingerprint = async (): Promise<string | null> => {
   return "generated-device-fingerprint";
 };
 
+const generateClientFingerprint = (): string => {
+  const components = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width,
+    screen.height,
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency,
+    navigator.platform,
+  ];
+  
+  // Create a hash of the components
+  const fingerprint = components.join('|');
+  return btoa(fingerprint); // Base64 encode for transmission
+};
+
 // --------------------
 // Context & Provider
 // --------------------
@@ -157,6 +173,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const [mounted, setMounted] = React.useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const client = useApolloClient();
@@ -168,16 +185,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAuthPage = pathname?.startsWith("/auth/");
 
+  // Handle client-side mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // --------------------
   // Initial Session Check / Refresh
   // --------------------
   useEffect(() => {
     const initAuth = async () => {
       try {
+        dispatch({ type: "SET_LOADING", payload: true });
+        
+        // Generate client fingerprint
+        const clientFingerprint = generateClientFingerprint();
+        
         // Attempt to refresh session from server (cookie-based, HttpOnly)
         const sessionResponse = await fetch("/api/auth/session", {
           method: "GET",
           credentials: "include",
+          headers: {
+            'X-Client-Fingerprint': clientFingerprint,
+            'User-Agent': navigator.userAgent // Explicitly send browser's user agent
+          }
         });
 
         // Handle any redirect response (if session endpoint redirects on error)
@@ -226,7 +257,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // If session not valid, reset state and redirect to sign-in if not already there.
         dispatch({
           type: "INITIALIZE",
           payload: {
@@ -246,10 +276,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    if (!state.isInitialized) {
+    if (!state.isInitialized && mounted) {
       initAuth();
     }
-  }, [client, router, isAuthPage, state.isInitialized]);
+  }, [client, router, isAuthPage, state.isInitialized, mounted]);
 
   // --------------------
   // Auth Actions
@@ -373,7 +403,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [state, signIn, signUp, signOut, refreshSession, hasRole, hasPermission]
   );
 
-  // Render a loading indicator on protected routes if not yet initialized.
+  // Render nothing until mounted to prevent hydration issues
+  if (!mounted) {
+    return null;
+  }
+
+  // Render a loading indicator on protected routes if not yet initialized
   if (!state.isInitialized && !isAuthPage) {
     return <EstateLoading />;
   }

@@ -1,41 +1,45 @@
 // apps/frontend/components/secure/SecureComponent.tsx
-import { ComponentType, ReactNode } from 'react';
+import React from 'react';
 import { useAuthContext } from '@/providers/auth-provider';
 
 interface SecureComponentProps {
-  component: ComponentType<any>;
-  roles?: string[];
+  component: React.ComponentType<any>;
   permissions?: string[];
-  requireAll?: boolean;
-  fallback?: ReactNode;
-  props?: any;
+  roles?: string[];
+  fallback?: React.ReactNode;
 }
 
 export function SecureComponent({
   component: Component,
-  roles = [],
   permissions = [],
-  requireAll = false,
-  fallback = null,
-  props = {}
+  roles = [],
+  fallback = null
 }: SecureComponentProps) {
-  const { hasRole, hasPermission } = useAuthContext();
+  const { hasPermission, hasRole, isLoading, isInitialized } = useAuthContext();
+  const [mounted, setMounted] = React.useState(false);
 
-  const hasAccess = () => {
-    const roleCheck = roles.length === 0 || (
-      requireAll
-        ? roles.every(role => hasRole(role))
-        : roles.some(role => hasRole(role))
-    );
+  // Handle client-side mounting
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
-    const permissionCheck = permissions.length === 0 || (
-      requireAll
-        ? permissions.every(perm => hasPermission(perm))
-        : permissions.some(perm => hasPermission(perm))
-    );
+  // Don't render anything until mounted to prevent hydration issues
+  if (!mounted) {
+    return null;
+  }
 
-    return roleCheck && permissionCheck;
-  };
+  // Show nothing while loading
+  if (isLoading || !isInitialized) {
+    return null;
+  }
 
-  return hasAccess() ? <Component {...props} /> : fallback;
+  // Check permissions and roles
+  const hasRequiredPermissions = permissions.length === 0 || permissions.some(p => hasPermission(p));
+  const hasRequiredRoles = roles.length === 0 || roles.some(r => hasRole(r));
+
+  if (!hasRequiredPermissions || !hasRequiredRoles) {
+    return fallback;
+  }
+
+  return <Component />;
 }

@@ -33,7 +33,7 @@ function MainPage() {
       <h1 className="text-2xl font-bold mb-4">Welcome to Sovereign!</h1>
       <div className="space-y-2">
         <p><span className="font-semibold">Email:</span> {user.email}</p>
-        <p><span className="font-semibold">Role:</span> {user.roles[0]?.role.name}</p>
+        {/* <p><span className="font-semibold">Role:</span> {user.roles[0]?.role.name}</p> */}
       </div>
     </main>
   )

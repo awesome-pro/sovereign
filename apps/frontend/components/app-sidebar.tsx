@@ -185,7 +185,47 @@ const MenuItem = ({ item }: { item: MenuItemProps }) => {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useAuthContext()
+  const { user, isLoading, isInitialized } = useAuthContext();
+  const [mounted, setMounted] = React.useState(false);
+
+  // Handle client-side mounting
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render anything until mounted to prevent hydration issues
+  if (!mounted) {
+    return null;
+  }
+
+  // Show loading state
+  if (isLoading || !isInitialized) {
+    return (
+      <Sidebar collapsible="icon" {...props}>
+        <SidebarHeader>
+          <div className="flex items-center space-x-2 px-4 py-2">
+            <Building2 className="h-6 w-6" />
+            <h1 className="text-xl font-bold">Estate CRM</h1>
+          </div>
+        </SidebarHeader>
+        <SidebarContent>
+          {menuGroups.map((group) => (
+            <SidebarGroup key={group.title}>
+              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <SidebarMenuSkeleton key={item.title} showIcon />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </SidebarContent>
+        <SidebarRail />
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -239,5 +279,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       
       <SidebarRail />
     </Sidebar>
-  )
+  );
+}
+
+
+
+export function SidebarMenuSkeleton({ showIcon }: { showIcon: boolean }) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild>
+        <a href="#">
+          {showIcon && <Search className="h-4 w-4" />}
+          <span className="sr-only">Loading...</span>
+        </a>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
 }

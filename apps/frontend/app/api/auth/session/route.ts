@@ -74,13 +74,20 @@ async function handleRequest(request: NextRequest): Promise<NextResponse> {
   if (refreshToken) {
     console.log('only refresh token present');
     try {
+      // Get client fingerprint and user agent from request headers
+      const clientFingerprint = request.headers.get('X-Client-Fingerprint');
+      const userAgent = request.headers.get('User-Agent');
+      console.log('clientFingerprint', clientFingerprint, 'userAgent', userAgent);
+
       // Call your GraphQL endpoint to refresh the token.
       const response = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_URL!, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           // Optionally forward the refresh token in the header or cookie as needed.
-          'Cookie': `${REFRESH_TOKEN_KEY}=${refreshToken}`
+          'Cookie': `${REFRESH_TOKEN_KEY}=${refreshToken}`,
+          'X-Client-Fingerprint': clientFingerprint || '',
+          'User-Agent': userAgent || '',
         },
         // 'credentials: include' is useful when using a custom fetch; here we assume tokens are handled via cookies.
         credentials: 'include',
