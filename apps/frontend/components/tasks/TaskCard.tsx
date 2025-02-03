@@ -87,10 +87,9 @@ export const TaskCard: FC<TaskCardProps> = ({ task, onClick }) => {
           <div className="flex -space-x-2">
             {task.assignedTo.slice(0, 3).map((user) => (
               <Avatar key={user.id} className="border-2 border-white">
-                <AvatarImage src={user.profile?.avatar} />
+                <AvatarImage src={user.avatar} />
                 <AvatarFallback>
-                  {user.profile?.firstName?.[0]}
-                  {user.profile?.lastName?.[0]}
+                  {user.name[0]}
                 </AvatarFallback>
               </Avatar>
             ))}

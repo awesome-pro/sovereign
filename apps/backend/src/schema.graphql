@@ -13,10 +13,10 @@ type AuthResponse {
 }
 
 input CreatePermissionInput {
-  category: PermissionCategory!
+  bit: Float!
   description: String
   name: String!
-  slug: String!
+  resourceCode: String!
 }
 
 input CreateTaskInput {
@@ -87,25 +87,14 @@ type Mutation {
 
 type Permission {
   allowedRoles: [Role!]!
-  category: PermissionCategory!
+  bit: Float!
   createdAt: DateTime!
   description: String
   id: ID!
   name: String!
+  resourceCode: String!
   slug: String!
   updatedAt: DateTime!
-}
-
-"""Permission category"""
-enum PermissionCategory {
-  ADMIN_VIEW
-  CREATE
-  CREATE_EDIT
-  DELETE
-  EDIT
-  EDIT_DELETE
-  MANAGE
-  VIEW
 }
 
 """Priority of task"""
@@ -249,10 +238,11 @@ input TwoFactorTokenInput {
 }
 
 input UpdatePermissionInput {
-  category: PermissionCategory
+  bit: Float
   description: String
   id: ID!
   name: String
+  resourceCode: String
   slug: String
 }
 
@@ -275,12 +265,17 @@ type User {
   emailVerified: DateTime
   id: ID!
   name: String!
-  permissions: [String!]!
+  permissions: [UserPermission!]!
   phone: String
   phoneVerified: DateTime
   roles: [JWTRole!]!
   status: UserStatus!
   twoFactorEnabled: Boolean
+}
+
+type UserPermission {
+  bit: Float!
+  resourceCode: String!
 }
 
 type UserRole {

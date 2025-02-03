@@ -1,14 +1,9 @@
 import { ObjectType, Field, ID, registerEnumType, OmitType } from '@nestjs/graphql';
-import { UserStatus, PermissionCategory } from '@sovereign/database';
+import { UserStatus } from '@sovereign/database';
 
 registerEnumType(UserStatus, {
   name: 'UserStatus',
   description: 'User account status',
-});
-
-registerEnumType(PermissionCategory, {
-  name: 'PermissionCategory',
-  description: 'Permission category',
 });
 
 @ObjectType()
@@ -33,6 +28,15 @@ export class JWTRole {
 
   @Field(() => String, { nullable: true })
   parentRoleHash!: string | null;
+}
+
+@ObjectType()
+export class UserPermission {
+  @Field()
+  resourceCode!: string;
+
+  @Field()
+  bit!: number;
 }
 
 @ObjectType()
@@ -64,8 +68,8 @@ export class User {
   @Field(() => [JWTRole])
   roles!: JWTRole[];
 
-  @Field(() => [String])
-  permissions!: string[];
+  @Field(() => [UserPermission])
+  permissions!: UserPermission[];
 
   @Field(() => Boolean, { nullable: true })
   twoFactorEnabled!: boolean | null;
@@ -230,13 +234,16 @@ export class Permission {
   name!: string;
 
   @Field()
+  resourceCode!: string;
+
+  @Field()
   slug!: string;
+
+  @Field()
+  bit!: number;
 
   @Field({ nullable: true })
   description?: string;
-
-  @Field(() => PermissionCategory)
-  category!: PermissionCategory;
 
   @Field(() => [Role])
   allowedRoles!: Role[];

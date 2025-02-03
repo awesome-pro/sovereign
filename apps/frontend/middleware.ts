@@ -4,12 +4,6 @@ import type { NextRequest } from 'next/server';
 import { jwtDecode } from 'jwt-decode';
 import { UltraSecureJwtPayload } from './types/jwt';
 
-// Protected route patterns
-const PROTECTED_ROUTES = [
-  '/app/(protected)/:path*',
-  '/api/protected/:path*',
-];
-
 // Public routes that don't need authentication
 const PUBLIC_ROUTES = [
   '/',
@@ -22,68 +16,6 @@ const PUBLIC_ROUTES = [
 ];
 
 // Routes that require specific roles and permissions
-const ROLE_PROTECTED_ROUTES: Record<string, { 
-  roles: string[]; 
-  permissions?: string[];
-  securityLevel?: {
-    mfa?: boolean;
-    minDataProtectionLevel?: number;
-    maxRiskScore?: number;
-  };
-}> = {
-  '/app/(protected)/admin/:path*': {
-    roles: ['s001', 'admin'],
-    permissions: ['user.001', 'user.003', 'user.007', 'roles.edit', 'property.001', 'property.003', 'property.007'],
-    securityLevel: {
-      mfa: true,
-      minDataProtectionLevel: 4,
-      maxRiskScore: 20,
-    }
-  },
-  '/app/(protected)/settings/:path*': {
-    roles: ['s001', 'admin', 'agent', 'broker'],
-    permissions: ['user.003', 'property.003', 'deal.003', 'transaction.003'],
-    securityLevel: {
-      mfa: true,
-      minDataProtectionLevel: 3
-    }
-  },
-  '/app/(protected)/dashboard/:path*': {
-    roles: ['s001', 'admin', 'agent', 'investor', 'broker', 'customer'],
-    permissions: ['property.001', 'lead.001', 'deal.001', 'transaction.001', 'report.001'],
-    securityLevel: {
-      minDataProtectionLevel: 2
-    }
-  },
-  '/app/(protected)/deals/:path*': {
-    roles: ['s001', 'admin', 'agent', 'investor', 'broker'],
-    permissions: ['deal.001', 'deal.002', 'deal.003'],
-    securityLevel: {
-      minDataProtectionLevel: 2
-    }
-  },
-  '/app/(protected)/properties/:path*': {
-    roles: ['s001', 'admin', 'agent', 'investor'],
-    permissions: ['property.001', 'property.002', 'property.003'],
-    securityLevel: {
-      minDataProtectionLevel: 2
-    }
-  },
-  '/app/(protected)/transactions/:path*': {
-    roles: ['s001', 'admin', 'broker', 'investor'],
-    permissions: ['transaction.001', 'transaction.002', 'transaction.003'],
-    securityLevel: {
-      minDataProtectionLevel: 3
-    }
-  },
-  '/app/(protected)/messages/:path*': {
-    roles: ['s001', 'admin', 'agent', 'broker', 'customer'],
-    permissions: ['message.001', 'message.002'],
-    securityLevel: {
-      minDataProtectionLevel: 1
-    }
-  }
-};
 
 // Add buffer time to handle token expiration (30 seconds)
 const TOKEN_EXPIRY_BUFFER = 30;
@@ -243,21 +175,6 @@ export async function middleware(request: NextRequest) {
 
 //   return true;
 // }
-
-async function hashSubnet(ip: string): Promise<string> {
-  // Simple subnet hash (first 8 characters of SHA-256)
-  return await hashString(ip.split('.').slice(0, 3).join('.'));
-}
-
-async function hashString(str: string): Promise<string> {
-  // Synchronous hash function for simple string hashing
-  const encoder = new TextEncoder();
-  const data = encoder.encode(str);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 async function handleRefreshToken(request: NextRequest, refreshToken: string) {
   const response = await fetch(new URL('/api/auth/session', request.url), {

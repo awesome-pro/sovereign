@@ -4,12 +4,18 @@ export interface RelatedUser{
   id: string;
   email: string;
   name: string;
+  avatar?: string;
 }
 
 export interface JWTRole {
   roleHash: string;
   hierarchy: number;
   parentRoleHash: string | null;
+}
+
+export interface UserPermission {
+  resourceCode: string;
+  bit: number;
 }
 
 export interface User {
@@ -23,7 +29,7 @@ export interface User {
   phoneVerified?: Date;
   twoFactorEnabled: boolean;
   roles: JWTRole[];
-  permissions: string[];
+  permissions: UserPermission[];
 }
 
 export interface UserRole {

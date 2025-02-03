@@ -567,11 +567,18 @@ model UserRole {
 
 model Permission {
   id          String    @id @default(cuid())
-  name        String    @unique  
-  slug        String    @unique  // Machine-readable code
-  description String?
-  category    PermissionCategory
-  actionLevel  Int       @default(0) // 0=lowest, no action allowed
+  name        String    @unique
+  description String? 
+  resourceCode  String   // Unique code for the entity (e.g., "0p" for property. "0l" for lead, "0u" for user) 
+  slug        String    @unique  // (combining resourceCode + bit, eg `0p.0x0001`, `0l.0x0002`, `0u.0x0004`)
+  bit         Int       @default(0) // 32 bit, 2 powered hexadecimal numbers ONLY for storing permission access 
+  // 0x0001 - VIEW
+  // 0x0002 - CREATE
+  // 0x0004 - EDIT
+  // 0x0008 - DELETE
+  // 0x0010 - MANAGE
+  // 0x0020 - APPROVE
+  // 0x0040 - EXECUTE
   allowedRoles Role[] @relation("RolePermissions")
   
   // Audit fields
@@ -581,16 +588,6 @@ model Permission {
   @@map("permissions")
 }
 
-enum PermissionCategory {
-  VIEW        // Reading permissions - 001
-  CREATE      // Creation permissions - 002
-  EDIT        // Modification permissions - 003
-  DELETE      // Deletion permissions - 004
-  CREATE_EDIT  // Combined create and edit permissions - 023
-  EDIT_DELETE  // Combined edit and delete permissions - 034
-  MANAGE      // Administrative permissions - 007
-  ADMIN_VIEW  // View-only administrative permissions - 008
-}
 
 
 model UserProfile {

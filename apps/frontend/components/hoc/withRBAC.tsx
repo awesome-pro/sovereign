@@ -2,10 +2,11 @@
 import { useAuthContext } from '@/providers/auth-provider';
 import { useRouter } from 'next/navigation';
 import { ComponentType, useEffect } from 'react';
+import { RequiredPermission } from '@/utils/permissions';
 
 interface RBACOptions {
   requiredRoles?: string[];
-  requiredPermissions?: string[];
+  requiredPermissions?: RequiredPermission[];
   requireAllRoles?: boolean;
   requireAllPermissions?: boolean;
   fallbackUrl?: string;
@@ -38,11 +39,8 @@ export function withRBAC<P extends object>(
           : requiredRoles.some(role => hasRole(role))
       );
 
-      const permissionCheck = requiredPermissions.length === 0 || (
-        requireAllPermissions
-          ? requiredPermissions.every(perm => hasPermission(perm))
-          : requiredPermissions.some(perm => hasPermission(perm))
-      );
+      const permissionCheck = requiredPermissions.length === 0 || 
+        hasPermission(requiredPermissions, requireAllPermissions);
 
       return roleCheck && permissionCheck;
     };

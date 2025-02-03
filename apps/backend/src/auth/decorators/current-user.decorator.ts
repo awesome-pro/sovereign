@@ -1,7 +1,7 @@
 import { createParamDecorator, ExecutionContext, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { UltraSecureJwtPayload } from '../services/auth.interfaces.js';
-import { CompleteUser, User } from '../types/auth.types.js';
+import { CompleteUser, User, UserPermission } from '../types/auth.types.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 type UserKey = keyof (User & CompleteUser);
@@ -15,7 +15,7 @@ export const CurrentUser = createParamDecorator(
   async (data: UserKey | undefined, context: ExecutionContext) => {
     try {
       // Get request context
-      const ctx = GqlExecutionContext.create(context);
+      const ctx =GqlExecutionContext.create(context);
       const request = ctx.getContext().req;
 
       // Get JWT payload
@@ -57,13 +57,26 @@ export const CurrentUser = createParamDecorator(
         throw new UnauthorizedException('User account is not active');
       }
 
-      // Extract and flatten permissions from roles
-      const permissions = new Set<string>();
+      // Aggregate permissions by resourceCode using bitwise OR
+      const userPermissions: Record<string, number> = {};
       user.roles.forEach(userRole => {
         userRole.role.permissions.forEach(permission => {
-          permissions.add(permission.slug);
+          if (permission.resourceCode in userPermissions) {
+            userPermissions[permission.resourceCode] |= permission.bit;
+          } else {
+            userPermissions[permission.resourceCode] = permission.bit;
+          }
         });
       });
+
+      // Convert permission numbers to hexadecimal format
+      const formattedPermissions: UserPermission[] = [];
+      for (const [resourceCode, bits] of Object.entries(userPermissions)) {
+        formattedPermissions.push({
+          resourceCode,
+          bit: bits
+        });
+      }
 
       // Map roles to JWTRole format
       const mappedRoles = user.roles.map(userRole => ({
@@ -83,14 +96,9 @@ export const CurrentUser = createParamDecorator(
         phoneVerified: user.phoneVerified,
         status: user.status,
         roles: mappedRoles,
-        permissions: Array.from(permissions), // Convert Set to array
+        permissions: formattedPermissions,
         twoFactorEnabled: user.twoFactorEnabled,
       };
-
-      // Enhance user object with security context
-      // const enhancedUser = {
-      //   ...graphqlUser,
-      // };
 
       // Return specific property if requested
       if (data) {
@@ -114,17 +122,6 @@ export const CurrentUser = createParamDecorator(
  * Helper method to check if user has specific permissions
  * Checks both direct permissions and role-based permissions
  */
-export function hasPermission(user: User | CompleteUser, requiredPermission: string): boolean {
-  // Check effective permissions from JWT
-  if ('effectivePermissions' in user && Array.isArray(user.effectivePermissions)) {
-    if (user.effectivePermissions.includes(requiredPermission)) {
-      return true;
-    }
-  }
-
-  // Check role-based permissions
-  return user.permissions.includes(requiredPermission);
-}
 
 /**
  * Helper method to check security level requirements

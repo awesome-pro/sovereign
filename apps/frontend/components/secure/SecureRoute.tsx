@@ -2,11 +2,12 @@
 import { ReactNode } from 'react';
 import { useAuthContext } from '@/providers/auth-provider';
 import EstateLoading from '@/components/loading';
+import { RequiredPermission } from '@/utils/permissions';
 
 interface SecureRouteProps {
   children: ReactNode;
   roles?: string[];
-  permissions?: string[];
+  permissions?: RequiredPermission[];
   requireAll?: boolean;
   fallback?: ReactNode;
 }
@@ -34,11 +35,7 @@ export function SecureRoute({
       : roles.some(role => hasRole(role))
   );
 
-  const hasRequiredPermissions = permissions.length === 0 || (
-    requireAll
-      ? permissions.every(perm => hasPermission(perm))
-      : permissions.some(perm => hasPermission(perm))
-  );
+  const hasRequiredPermissions = permissions.length === 0 || hasPermission(permissions, requireAll);
 
   if (!hasRequiredRoles || !hasRequiredPermissions) {
     return fallback;

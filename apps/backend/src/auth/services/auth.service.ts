@@ -3,7 +3,7 @@ import { RoleService } from './role.service.js';
 import { Injectable, UnauthorizedException, ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { User as PrismaUser, UserStatus, PermissionCategory } from '@sovereign/database';
+import { User as PrismaUser, UserStatus } from '@sovereign/database';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { LoggerService } from '../../logging/logging.service.js';
 import { RegisterInput } from '../dto/auth.input.js';
-import { AuthResponse, AuthServiceResponse, User, UserSession, VerificationResponse } from '../types/auth.types.js';
+import { AuthServiceResponse, User, UserSession, VerificationResponse } from '../types/auth.types.js';
 import { UltraSecureJwtPayload } from './auth.interfaces.js';
 import { SessionService } from '../session/session.service.js';
 
@@ -366,34 +366,48 @@ export class AuthService {
   ): Promise<string> {
     try {
       // Get user permissions
-      const permissions = await this.permissionService.getUserPermissions(user.id);
-      
-      // Fetch user roles with their hierarchy and parent information
-      const userRoles = await this.prisma.userRole.findMany({
+      const userPermissions = await this.prisma.userRole.findMany({
         where: { userId: user.id },
         include: { 
           role: {
             include: {
-              parentRole: true // Include parent role information
+              parentRole: true,
+              permissions: true // Include permissions
             }
           }
         },
-        orderBy: { role: { hierarchy: 'asc' } } // Ensure consistent ordering
+        orderBy: { role: { hierarchy: 'asc' } }
       });
 
       // Map roles to the new compact tuple format
-      const mappedRoles = userRoles.map(userRole => {
+      const mappedRoles = userPermissions.map(userRole => {
         const role = userRole.role;
         return [
-          role.roleHash,               // Role hash
-          role.hierarchy,               // Hierarchy level
-          role.parentRole?.roleHash || null  // Parent role hash (if exists)
+          role.roleHash,
+          role.hierarchy,
+          role.parentRole?.roleHash || null
         ] as [string, number, string | null];
       });
 
+      // Aggregate permissions by resourceCode using bitwise OR
+      const permissionMap: Record<string, number> = {};
+      
+      userPermissions.forEach(userRole => {
+        userRole.role.permissions.forEach(permission => {
+          const { resourceCode, bit } = permission;
+          permissionMap[resourceCode] = (permissionMap[resourceCode] || 0) | bit;
+        });
+      });
+
+      // Convert permission numbers to hexadecimal format
+      const formattedPermissions: Record<string, string> = {};
+      for (const [resourceCode, bits] of Object.entries(permissionMap)) {
+        formattedPermissions[resourceCode] = `0x${bits.toString(16).padStart(4, '0')}`;
+      }
+
       // Prepare contextual conditions
       const contextualConditions: [string, string][] = [];
-      userRoles.forEach(userRole => {
+      userPermissions.forEach(userRole => {
         if (userRole.conditions) {
           Object.entries(userRole.conditions).forEach(([key, value]) => {
             contextualConditions.push([key, String(value)]);
@@ -403,42 +417,27 @@ export class AuthService {
 
       const payload: Omit<UltraSecureJwtPayload, 'iat' | 'exp'> = {
         sb: user.id,
-        b: user.companyId || '', // Use actual company/brokerage ID
+        b: user.companyId || '',
         is: this.configService.get<string>('JWT_ISSUER') || 'sovereign-crm',
-        
-        // Mapped roles with hierarchical information
         r: mappedRoles,
-        
-        // Permissions
-        p: permissions,
-        
-        // Contextual conditions
+        p: formattedPermissions,
         c: contextualConditions,
-        
-        // Security context
         sc: {
           iph: session.ipHash || '',
           dfp: session.deviceHash || '',
           geo: session.location || '',
           uah: crypto.createHash('sha256').update(deviceInfo.userAgent || '').digest('hex')
         },
-        
-        // Security state
         ss: {
           mfa: user.twoFactorEnabled,
-          bio: false, // Update if biometric auth is implemented
+          bio: false,
           dpl: 1,
           rsk: 0
         },
-        
-        // Token metadata
-        jti: session.id, // Use session ID as JWT ID
-        
-        // Optional token timing (will be added by jwt service)
+        jti: session.id,
         nbf: new Date().getTime() / 1000
       };
 
-      // Sign the token with explicit expiration
       return this.jwtService.sign(payload, {
         expiresIn: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRES_IN') || '15m',
         secret: this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET')
@@ -732,7 +731,10 @@ export class AuthService {
 
     // Get all permissions from all roles
     const permissions = userWithRoles.roles.flatMap(userRole => 
-      userRole.role.permissions.map(permission => permission.slug)
+      userRole.role.permissions.map(permission => ({
+        resourceCode: permission.slug,
+        bit: permission.bit
+      }))
     );
 
     // Return transformed user

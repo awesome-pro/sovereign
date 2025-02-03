@@ -287,7 +287,10 @@ export class AuthResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)
-  @Permissions('user.007')
+  @Permissions(
+    { resourceCode: '0p', actions: ['EDIT'] },
+    { resourceCode: '0l', actions: ['CREATE'] }
+  )
   async assignRole(
     @Args('input') input: AssignRoleInput,
     @CurrentUser() currentUser: User,
@@ -302,7 +305,10 @@ export class AuthResolver {
 
   @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean)
-  @Permissions('user.007')
+  @Permissions(
+    { resourceCode: '0p', actions: ['EDIT'] },
+    { resourceCode: '0l', actions: ['CREATE'] }
+  )
   async removeRole(
     @Args('userId') userId: string,
     @Args('roleId') roleId: string,
@@ -314,7 +320,7 @@ export class AuthResolver {
 
   @UseGuards(GqlAuthGuard)
   @Query(() => [SecurityLog])
-  @Permissions('logs.001')
+  // @Permissions('logs.001')
   async getSecurityLogs(
     @Args('input') input: SecurityLogsInput,
   ): Promise<SecurityLog[]> {
@@ -333,7 +339,7 @@ export class AuthResolver {
   @UseGuards(GqlAuthGuard)
   @Query(() => [LoginHistory])
   @Roles('admin')
-  // @Permissions('logs.002')
+  // // @Permissions('logs.002')
   async getLoginHistory(
     @CurrentUser() user: User,
     @Args('input') input: LoginHistoryInput,

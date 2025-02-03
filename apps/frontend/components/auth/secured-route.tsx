@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/token-manager';
 import { toast } from 'sonner';
 import EstateLoading from '../loading';
+import { RequiredPermission } from '@/utils/permissions';
 
 interface SecureRouteProps {
   children: React.ReactNode;
-  requiredPermissions?: string[];
+  requiredPermissions?: RequiredPermission[];
   requiredRoles?: string[];
   minSecurityLevel?: number;
 }

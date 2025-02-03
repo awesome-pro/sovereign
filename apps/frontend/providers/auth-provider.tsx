@@ -12,7 +12,7 @@ import React, {
 import { useRouter, usePathname } from "next/navigation";
 import { useMutation } from "@apollo/client";
 import { toast } from "sonner";
-import { JWTRole, LoginInput, RegisterInput, User } from "@/types";
+import { JWTRole, LoginInput, RegisterInput, User, UserPermission } from "@/types";
 import {
   GET_CURRENT_USER_QUERY,
   LOGOUT_MUTATION,
@@ -21,6 +21,7 @@ import {
 } from "@/graphql/auth.mutations";
 import EstateLoading from "@/components/loading";
 import { getApolloClient, resetApolloClient } from "@/lib/apollo-client";
+import { hasPermission as checkPermission, RequiredPermission } from '@/utils/permissions';
 
 // --------------------
 // Types & Interfaces
@@ -31,7 +32,7 @@ interface SessionState {
   isInitialized: boolean;
   user: User | null;
   roles: string[];
-  permissions: string[];
+  permissions: UserPermission[];
   error: string | null;
 }
 
@@ -44,7 +45,7 @@ interface SecurityState {
 
 interface AuthState extends SessionState {
   effectiveRoles: string[];
-  effectivePermissions: string[];
+  effectivePermissions: UserPermission[];
   securityState: SecurityState;
   deviceFingerprint: string | null;
 }
@@ -62,7 +63,7 @@ interface AuthContextType extends AuthState {
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
   hasRole: (roles: string | string[]) => boolean;
-  hasPermission: (permissions: string | string[]) => boolean;
+  hasPermission: (permissions: RequiredPermission | RequiredPermission[], requireAll?: boolean) => boolean;
 }
 
 // --------------------
@@ -109,9 +110,9 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 // --------------------
 const calculateEffectivePermissions = (
   roles: JWTRole[],
-  permissions: string[]
-): string[] => {
-  const effectivePerms = new Set<string>();
+  permissions: UserPermission[]
+): UserPermission[] => {
+  const effectivePerms = new Set<UserPermission>();
   permissions.forEach((p) => effectivePerms.add(p));
   roles
     .sort((a, b) => a.hierarchy - b.hierarchy)
@@ -133,7 +134,7 @@ const calculateEffectiveRoles = (roles: JWTRole[]): string[] => {
  * Placeholder for a function to derive role-based permissions.
  * Extend this to incorporate your permission structure.
  */
-const getRolePermissions = (role: string): string[] => {
+const getRolePermissions = (role: string): UserPermission[] => {
   return [];
 };
 
@@ -395,17 +396,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const hasPermission = useCallback(
-    (requiredPermissions: string | string[]): boolean => {
-      const permsArray = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
-      return permsArray.some((permission) => {
-        if (permission.endsWith(".*")) {
-          const domain = permission.slice(0, -2);
-          return state.effectivePermissions.some((p) => p.startsWith(domain));
-        }
-        return state.effectivePermissions.includes(permission);
-      });
+    (requiredPermissions: RequiredPermission | RequiredPermission[], requireAll = false): boolean => {
+      return checkPermission(state.permissions, requiredPermissions, requireAll);
     },
-    [state.effectivePermissions]
+    [state.permissions]
   );
 
   const value = useMemo(

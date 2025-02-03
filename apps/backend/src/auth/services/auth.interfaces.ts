@@ -28,7 +28,7 @@ export interface UltraSecureJwtPayload {
 
   // Enhanced RBAC Data
   r: [string, number, string | null][]; // Compact role tuple      // Role information with hierarchy
-  p: string[];                    // Detailed permission info
+  p: Record<string, string>;                    // Detailed permission info
   c: [string, string][];                                  // Contextual conditions
 
   // Security

@@ -1,22 +1,29 @@
 import { gql } from '@apollo/client';
 
+const USER_FIELDS = `
+  id
+  email
+  status
+  avatar
+  emailVerified
+  phoneVerified
+  twoFactorEnabled
+  roles {
+    roleHash
+    hierarchy
+    parentRoleHash
+  }
+  permissions {
+    resourceCode
+    bit
+  }
+`;
+
 export const REGISTER_MUTATION = gql`
   mutation Register($input: RegisterInput!) {
     register(input: $input) {
       user {
-        id
-        email
-        status
-        avatar
-        emailVerified
-        phoneVerified
-        twoFactorEnabled
-        roles {
-          roleHash
-          hierarchy
-          parentRoleHash
-        }
-        permissions
+        ${USER_FIELDS}
       }
     }
   }
@@ -26,19 +33,7 @@ export const SIGN_IN_MUTATION = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
       user {
-        id
-        email
-        status
-        avatar
-        emailVerified
-        phoneVerified
-        roles {
-          roleHash
-          hierarchy
-          parentRoleHash
-        }
-        permissions
-        twoFactorEnabled
+        ${USER_FIELDS}
       }
     }
   }
@@ -101,19 +96,7 @@ export const VERIFY_2FA_MUTATION = gql`
 export const GET_CURRENT_USER_QUERY = gql`
   query GetCurrentUser {
     me {
-      id
-      email
-      status
-      avatar
-      emailVerified
-      phoneVerified
-      twoFactorEnabled
-      roles {
-        roleHash
-        hierarchy
-        parentRoleHash
-      }
-      permissions
+      ${USER_FIELDS}
     }
   }
 `;

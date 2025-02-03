@@ -37,8 +37,10 @@ export class SensitiveActionGuard implements CanActivate {
     // Compare the token's permissions with current permissions.
     // You might want to do a more detailed check here. For demonstration,
     // we verify that every permission in the token is still valid.
-    const tokenPermissions: string[] = user.p || [];
-    const valid = tokenPermissions.every(perm => currentPermissions.includes(perm));
+    const tokenPermissions: Record<string, string> = user.p || [];
+    const valid = Object.keys(tokenPermissions).every(perm => 
+      currentPermissions.includes(perm)
+    );
     return valid;
   }
 }

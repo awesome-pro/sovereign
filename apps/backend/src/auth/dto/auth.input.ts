@@ -1,6 +1,5 @@
 import { InputType, Field, ID, Int } from '@nestjs/graphql';
-import { IsEmail, IsString, MinLength, IsOptional, IsEnum, IsUUID, IsDate, Max, IsPhoneNumber } from 'class-validator';
-import { PermissionCategory } from '@sovereign/database';
+import { IsEmail, IsString, MinLength, IsOptional, IsEnum, IsUUID, IsDate, Max, IsPhoneNumber, IsNumber } from 'class-validator';
 
 @InputType()
 export class LoginInput {
@@ -146,16 +145,16 @@ export class CreatePermissionInput {
 
   @Field()
   @IsString()
-  slug!: string;
+  resourceCode!: string;
+
+  @Field()
+  @IsNumber()
+  bit!: number;
 
   @Field({ nullable: true })
   @IsString()
   @IsOptional()
   description?: string;
-
-  @Field(() => PermissionCategory)
-  @IsEnum(PermissionCategory)
-  category!: PermissionCategory;
 }
 
 @InputType()
@@ -175,12 +174,17 @@ export class UpdatePermissionInput {
   slug?: string;
 
   @Field({ nullable: true })
+  @IsNumber()
+  @IsOptional()
+  bit?: number;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  resourceCode?: string;
+
+  @Field({ nullable: true })
   @IsString()
   @IsOptional()
   description?: string;
-
-  @Field(() => PermissionCategory, { nullable: true })
-  @IsEnum(PermissionCategory)
-  @IsOptional()
-  category?: PermissionCategory;
 }

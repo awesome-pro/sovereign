@@ -109,7 +109,10 @@ async function handleRequest(request: NextRequest): Promise<NextResponse> {
                     hierarchy
                     parentRoleHash
                   }
-                  permissions
+                  permissions {
+                    resourceCode
+                    bit
+                  }
                 }
               }
             }
@@ -118,11 +121,11 @@ async function handleRequest(request: NextRequest): Promise<NextResponse> {
         }),
       });
 
-      console.log('GraphQL refresh response:', response);
+      // console.log('GraphQL refresh response:', response);
 
       // extract the cookies from the response
       const data = await response.json();
-    console.log('GraphQL refresh response:', data);
+    //  console.log('GraphQL refresh response:', data);
 
     // Check for errors in response
     if (!response.ok || data.errors) {

@@ -33,9 +33,10 @@ import {
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import Link from "next/link";
+import { RequiredPermission } from "@/utils/permissions";
 
 // Define menu items with their required permissions
-const menuGroups = [
+const menuGroups: { title: string; items: MenuItemProps[] }[] = [
   {
     title: "Dashboard",
     items: [
@@ -43,13 +44,13 @@ const menuGroups = [
         title: "Overview",
         icon: Home,
         url: "/dashboard",
-        permissions: ["property.001"] // Basic view permission
+        permissions: [] // Basic view permission
       },
       {
         title: "Notifications",
         icon: Bell,
         url: "/dashboard/notifications",
-        permissions: ["message.001"]
+        permissions: []
       }
     ]
   },
@@ -60,13 +61,13 @@ const menuGroups = [
         title: "All Properties",
         icon: Building2,
         url: "/dashboard/properties",
-        permissions: ["property.001"]
+        permissions: []
       },
       {
         title: "Add Property",
         icon: UserPlus,
         url: "/dashboard/properties/add",
-        permissions: ["property.002"]
+        permissions: []
       }
     ]
   },
@@ -77,13 +78,13 @@ const menuGroups = [
         title: "Lead Management",
         icon: Users,
         url:  "/dashboard/leads",
-        permissions: ["lead.001", "lead.002"]
+        permissions: []
       },
       {
         title: "Client Database",
         icon: UserPlus,
         url: "/dashboard/clients",
-        permissions: ["lead.001"]
+        permissions: []
       }
     ]
   },
@@ -94,13 +95,13 @@ const menuGroups = [
         title: "Active Deals",
         icon: Briefcase,
         url: "/dashboard/deals",
-        permissions: ["deal.001"]
+        permissions: []
       },
       {
         title: "Transactions",
         icon: DollarSign,
         url: "/dashboard/transactions",
-        permissions: ["transaction.001"]
+        permissions: []
       }
     ]
   },
@@ -111,13 +112,13 @@ const menuGroups = [
         title: "Messages",
         icon: MessageSquare,
         url: "/dashboard/messages",
-        permissions: ["message.001"]
+        permissions: []
       },
       {
         title: "Calendar",
         icon: Calendar,
         url: "/dashboard/calendar",
-        permissions: ["message.001"]
+        permissions: []
       }
     ]
   },
@@ -128,13 +129,13 @@ const menuGroups = [
         title: "Performance",
         icon: BarChart3,
         url: "/dashboard/reports/performance",
-        permissions: ["report.001"]
+        permissions: []
       },
       {
         title: "Documents",
         icon: FileText,
         url: "/dashboard/documents",
-        permissions: ["report.001"]
+        permissions: []
       }
     ]
   },
@@ -145,7 +146,7 @@ const menuGroups = [
         title: "System Settings",
         icon: Settings,
         url: "/settings",
-        permissions: ["user.007"] // Admin only
+        permissions: [] // Admin only
       },
       {
         title: "Tasks",
@@ -161,7 +162,7 @@ interface MenuItemProps {
   title: string
   icon: any
   url: string
-  permissions: string[]
+  permissions: RequiredPermission[]
 }
 
 const MenuItem = ({ item }: { item: MenuItemProps }) => {

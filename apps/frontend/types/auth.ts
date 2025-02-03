@@ -1,22 +1,13 @@
 import { User, UserRole } from "./user";
-
-enum PermissionCategory {
-    VIEW = 'VIEW',        
-    EDIT = 'EDIT',        
-    DELETE = 'DELETE',      
-    MANAGE = 'MANAGE',      
-    SHARE = 'SHARE',       
-    COMMUNICATE = 'COMMUNICATE', 
-  }
   
-
 export interface Permission {
   id: String,
-  category: PermissionCategory,
   name: String,
   description?: String,
-  slug: String,
-  allowedRoles: Role[],
+  resourceCode: String,
+  bit: number;
+  slug: String;
+  allowedRoles: Role[];
 };
 
 export interface Role{

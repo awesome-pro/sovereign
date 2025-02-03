@@ -13,6 +13,7 @@ import { RoleResolver } from './resolvers/role.resolver.js';
 import { PermissionService } from './services/permission.service.js';
 import { PermissionResolver } from './resolvers/permission.resolver.js';
 import { SecurityService } from './services/security.service.js';
+import { BitmaskService } from './services/bitmask.service.js';
 import { TwoFactorAuthService } from './services/two-factor-auth.service.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { GqlAuthGuard } from './guards/gql-auth.guard.js';
@@ -48,6 +49,7 @@ import { PrismaContextMiddleware } from './middleware/prisma-context.middleware.
     PermissionResolver,
     SecurityService,
     TwoFactorAuthService,
+    BitmaskService,
     JwtStrategy,
     GqlAuthGuard,
     RolesGuard,
@@ -76,6 +78,7 @@ import { PrismaContextMiddleware } from './middleware/prisma-context.middleware.
     GqlAuthGuard,
     RolesGuard,
     PermissionsGuard,
+    BitmaskService,
   ],
 })
 export class AuthModule implements NestModule {

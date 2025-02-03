@@ -1,11 +1,13 @@
 // apps/frontend/components/secure/SecureComponent.tsx
 import React from 'react';
 import { useAuthContext } from '@/providers/auth-provider';
+import { RequiredPermission } from '@/utils/permissions';
 
 interface SecureComponentProps {
   component: React.ComponentType<any>;
-  permissions?: string[];
+  permissions?: RequiredPermission[];
   roles?: string[];
+  requireAll?: boolean;
   fallback?: React.ReactNode;
 }
 
@@ -13,6 +15,7 @@ export function SecureComponent({
   component: Component,
   permissions = [],
   roles = [],
+  requireAll = false,
   fallback = null
 }: SecureComponentProps) {
   const { hasPermission, hasRole, isLoading, isInitialized } = useAuthContext();
@@ -34,8 +37,12 @@ export function SecureComponent({
   }
 
   // Check permissions and roles
-  const hasRequiredPermissions = permissions.length === 0 || permissions.some(p => hasPermission(p));
-  const hasRequiredRoles = roles.length === 0 || roles.some(r => hasRole(r));
+  const hasRequiredPermissions = permissions.length === 0 || hasPermission(permissions, requireAll);
+  const hasRequiredRoles = roles.length === 0 || (
+    requireAll 
+      ? roles.every(r => hasRole(r))
+      : roles.some(r => hasRole(r))
+  );
 
   if (!hasRequiredPermissions || !hasRequiredRoles) {
     return fallback;
