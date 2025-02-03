@@ -87,14 +87,13 @@ export const TaskDetails: FC<TaskDetailsProps> = ({
                 className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1"
               >
                 <Avatar className="h-6 w-6">
-                  <AvatarImage src={user.profile?.avatar} />
+                  <AvatarImage src={user.avatar} />
                   <AvatarFallback>
-                    {user.profile?.firstName?.[0]}
-                    {user.profile?.lastName?.[0]}
+                    {user.name?.[0]}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm">
-                  {user.profile?.firstName} {user.profile?.lastName}
+                  {user.name} {user.name}
                 </span>
               </div>
             ))}
@@ -148,17 +147,15 @@ export const TaskDetails: FC<TaskDetailsProps> = ({
             {task.comments.map((comment) => (
               <div key={comment.id} className="flex gap-3">
                 <Avatar>
-                  <AvatarImage src={comment.author.profile?.avatar} />
+                  <AvatarImage src={comment.author.avatar} />
                   <AvatarFallback>
-                    {comment.author.profile?.firstName?.[0]}
-                    {comment.author.profile?.lastName?.[0]}
+                    {comment.author.name[0]}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">
-                      {comment.author.profile?.firstName}{' '}
-                      {comment.author.profile?.lastName}
+                      {comment.author.name}
                     </span>
                     <span className="text-sm text-gray-500">
                       {format(new Date(comment.createdAt), 'PP')}

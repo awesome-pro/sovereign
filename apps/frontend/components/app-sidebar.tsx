@@ -15,7 +15,8 @@ import {
   Bell,
   Calendar,
   ChevronRight,
-  Search
+  Search,
+  PersonStanding
 } from "lucide-react"
 import { useAuthContext } from "@/providers/auth-provider"
 import { SecureComponent } from "@/components/secure/SecureComponent"
@@ -143,9 +144,9 @@ const menuGroups: { title: string; items: MenuItemProps[] }[] = [
     title: "Settings",
     items: [
       {
-        title: "System Settings",
-        icon: Settings,
-        url: "/settings",
+        title: "Profile",
+        icon: PersonStanding,
+        url: "/dashboard/profile",
         permissions: [] // Admin only
       },
       {

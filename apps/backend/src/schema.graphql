@@ -8,12 +8,49 @@ input AssignRoleInput {
 }
 
 type AuthResponse {
-  accessTokenExpiry: Float
+  accessTokenExpiry: Int
   user: User!
 }
 
+input CertificationInput {
+  expiryDate: Timestamp
+  issueDate: Timestamp!
+  issuingOrganization: String!
+  name: String!
+}
+
+type CompleteUserProfile {
+  activeListings: Int!
+  address: UserAddress
+  bio: String
+  certifications: [UserCertification!]!
+  coverImage: String
+  createdAt: Timestamp!
+  currency: String!
+  dateOfBirth: Timestamp
+  displayName: String
+  experience: Int
+  gender: Gender
+  id: ID!
+  languages: [Language!]!
+  lastName: String!
+  licenses: [UserLicense!]!
+  nationality: String
+  rating: Int
+  reviewCount: Int!
+  secondaryEmail: String
+  secondaryPhone: String
+  socialLinks: SocialLinks
+  specializations: [String!]!
+  timeZone: String!
+  title: String
+  updatedAt: Timestamp!
+  userId: String!
+  whatsapp: String
+}
+
 input CreatePermissionInput {
-  bit: Float!
+  bit: Int!
   description: String
   name: String!
   resourceCode: String!
@@ -22,25 +59,48 @@ input CreatePermissionInput {
 input CreateTaskInput {
   assignedToIds: [String!]! = []
   description: String
-  dueDate: DateTime
+  dueDate: Timestamp
   priority: Priority!
   title: String!
   type: TaskType!
 }
 
+"""Gender options"""
+enum Gender {
+  FEMALE
+  MALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
 """
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
-scalar DateTime
+scalar JSON
 
 type JWTRole {
-  hierarchy: Float!
+  hierarchy: Int!
   parentRoleHash: String
   roleHash: String!
 }
 
+type Language {
+  code: String!
+  id: ID!
+  name: String!
+  proficiency: String!
+}
+
+input LicenseInput {
+  expiryDate: Timestamp!
+  issueDate: Timestamp!
+  issuingAuthority: String!
+  number: String!
+  type: String!
+}
+
 type LoginHistory {
-  createdAt: DateTime!
+  createdAt: Timestamp!
   description: String
   id: ID!
   ip: String!
@@ -59,6 +119,8 @@ input LoginInput {
 }
 
 type Mutation {
+  addCertification(input: CertificationInput!): CompleteUserProfile!
+  addLicense(input: LicenseInput!): CompleteUserProfile!
   addTaskChecklistItem(input: TaskChecklistInput!, taskId: ID!): Task!
   addTaskComment(input: TaskCommentInput!): Task!
   assignPermissionsToRole(permissionIds: [ID!]!, roleId: ID!): Boolean!
@@ -66,6 +128,8 @@ type Mutation {
   createPermission(input: CreatePermissionInput!): Permission!
   createRole(description: String, name: String!, roleHash: String!): Role!
   createTask(input: CreateTaskInput!): Task!
+  deleteCertification(certId: ID!): CompleteUserProfile!
+  deleteLicense(licenseId: ID!): CompleteUserProfile!
   deletePermission(id: ID!): Boolean!
   deleteRole(id: ID!): Boolean!
   deleteTask(id: ID!): Boolean!
@@ -79,22 +143,25 @@ type Mutation {
   resetPassword(input: ResetPasswordInput!): VerificationResponse!
   setupTwoFactor: TwoFactorResponse!
   updatePermission(id: ID!, input: UpdatePermissionInput!): Permission!
+  updateProfile(input: UpdateProfileInput!): CompleteUserProfile!
   updateRole(description: String, id: ID!, name: String): Role!
   updateTask(input: UpdateTaskInput!): Task!
+  uploadAvatar(file: Upload!): String!
+  uploadCoverImage(file: Upload!): String!
   verifyAndEnableTwoFactor(input: TwoFactorTokenInput!): Boolean!
   verifyEmail(token: String!): VerificationResponse!
 }
 
 type Permission {
   allowedRoles: [Role!]!
-  bit: Float!
-  createdAt: DateTime!
+  bit: Int!
+  createdAt: Timestamp!
   description: String
   id: ID!
   name: String!
   resourceCode: String!
   slug: String!
-  updatedAt: DateTime!
+  updatedAt: Timestamp!
 }
 
 """Priority of task"""
@@ -106,8 +173,10 @@ enum Priority {
 
 type Query {
   getLoginHistory(input: LoginHistoryInput!): [LoginHistory!]!
+  getProfile: CompleteUserProfile!
   getRolePermissions(roleId: ID!): [Permission!]!
   getSecurityLogs(input: SecurityLogsInput!): [SecurityLog!]!
+  getUserProfile(userId: ID!): CompleteUserProfile!
   me: User!
   permission(id: ID!): Permission!
   permissions: [Permission!]!
@@ -143,7 +212,7 @@ type Role {
 }
 
 type SecurityLog {
-  createdAt: DateTime!
+  createdAt: Timestamp!
   description: String!
   id: ID!
   ip: String
@@ -151,32 +220,40 @@ type SecurityLog {
 }
 
 input SecurityLogsInput {
-  endDate: DateTime!
-  startDate: DateTime!
+  endDate: Timestamp!
+  startDate: Timestamp!
   userId: String!
+}
+
+type SocialLinks {
+  facebook: String
+  instagram: String
+  linkedin: String
+  twitter: String
+  website: String
 }
 
 type Task {
   assignedTo: [RelatedUser!]!
   checklist: [TaskChecklist!]!
   comments: [TaskComment!]!
-  completedAt: DateTime
-  createdAt: DateTime!
+  completedAt: Timestamp
+  createdAt: Timestamp!
   createdBy: RelatedUser!
   description: String
-  dueDate: DateTime
+  dueDate: Timestamp
   id: ID!
   priority: Priority!
-  startDate: DateTime
+  startDate: Timestamp
   status: TaskStatus!
   title: String!
   type: TaskType!
-  updatedAt: DateTime!
+  updatedAt: Timestamp!
 }
 
 type TaskChecklist {
   completed: Boolean!
-  completedAt: DateTime
+  completedAt: Timestamp
   id: ID!
   item: String!
 }
@@ -188,9 +265,9 @@ input TaskChecklistInput {
 type TaskComment {
   author: RelatedUser!
   content: String!
-  createdAt: DateTime!
+  createdAt: Timestamp!
   id: ID!
-  updatedAt: DateTime!
+  updatedAt: Timestamp!
 }
 
 input TaskCommentInput {
@@ -201,8 +278,8 @@ input TaskCommentInput {
 input TaskFilterInput {
   assignedToIds: [String!]
   createdByIds: [String!]
-  dueDateFrom: DateTime
-  dueDateTo: DateTime
+  dueDateFrom: Timestamp
+  dueDateTo: Timestamp
   priority: [Priority!]
   status: [TaskStatus!]
   type: [TaskType!]
@@ -228,6 +305,11 @@ enum TaskType {
   VIEWING
 }
 
+"""
+`Date` type as integer. Type represents date and time as number of milliseconds from start of UNIX epoch.
+"""
+scalar Timestamp
+
 type TwoFactorResponse {
   qrCodeUrl: String!
   secret: String!
@@ -238,7 +320,7 @@ input TwoFactorTokenInput {
 }
 
 input UpdatePermissionInput {
-  bit: Float
+  bit: Int
   description: String
   id: ID!
   name: String
@@ -246,40 +328,90 @@ input UpdatePermissionInput {
   slug: String
 }
 
+input UpdateProfileInput {
+  bio: String
+  currency: String
+  dateOfBirth: Timestamp
+  displayName: String
+  experience: Int
+  gender: Gender
+  lastName: String
+  nationality: String
+  secondaryEmail: String
+  secondaryPhone: String
+  socialLinks: JSON
+  specializations: [String!]
+  timeZone: String
+  title: String
+  whatsapp: String
+}
+
 input UpdateTaskInput {
   assignedToIds: [String!]
-  completedAt: DateTime
+  completedAt: Timestamp
   description: String
-  dueDate: DateTime
+  dueDate: Timestamp
   id: ID!
   priority: Priority
-  startDate: DateTime
+  startDate: Timestamp
   status: TaskStatus
   title: String
   type: TaskType
 }
 
+"""File upload scalar type"""
+scalar Upload
+
 type User {
   avatar: String
   email: String!
-  emailVerified: DateTime
+  emailVerified: Timestamp
   id: ID!
   name: String!
   permissions: [UserPermission!]!
   phone: String
-  phoneVerified: DateTime
+  phoneVerified: Timestamp
   roles: [JWTRole!]!
   status: UserStatus!
   twoFactorEnabled: Boolean
 }
 
+type UserAddress {
+  city: String!
+  country: String!
+  id: ID!
+  isVerified: Boolean!
+  postalCode: String!
+  state: String!
+  street: String!
+}
+
+type UserCertification {
+  expiryDate: Timestamp
+  id: ID!
+  isVerified: Boolean!
+  issueDate: Timestamp!
+  issuingOrganization: String!
+  name: String!
+}
+
+type UserLicense {
+  expiryDate: Timestamp!
+  id: ID!
+  isVerified: Boolean!
+  issueDate: Timestamp!
+  issuingAuthority: String!
+  number: String!
+  type: String!
+}
+
 type UserPermission {
-  bit: Float!
+  bit: Int!
   resourceCode: String!
 }
 
 type UserRole {
-  assignedAt: DateTime!
+  assignedAt: Timestamp!
   id: ID!
   role: Role!
 }

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
@@ -13,6 +13,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { PermissionsGuard } from './auth/guards/permissions.guard.js';
 import { TaskModule } from './tasks/task.module.js';
 import { JwtModule } from '@nestjs/jwt';
+import { StorageModule } from './storage/storage.module.js';
+import { ProfileModule } from './profile/profile.module.js';
+import { UploadScalar } from './common/scalars/upload.scalar.js';
+import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
+import { Request, Response, NextFunction } from 'express';
 
 @Module({
   imports: [
@@ -44,6 +49,11 @@ import { JwtModule } from '@nestjs/jwt';
           debug: configService.get('NODE_ENV') !== 'production',
           cors: false, // We handle CORS at the app level
           context: ({ req, res }: any) => ({ req, res }),
+          uploads: false, // Disable Apollo Server's built-in upload handling
+          buildSchemaOptions: {
+            numberScalarMode: 'integer',
+            dateScalarMode: 'timestamp',
+          },
           formatError: (error: any) => {
             // Define standard error codes
             const errorCodes = {
@@ -113,11 +123,29 @@ import { JwtModule } from '@nestjs/jwt';
     }),
     AuthModule,
     TaskModule,
+    StorageModule,
+    ProfileModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService, {
-    provide: APP_GUARD,
-    useClass: PermissionsGuard,
-  }],
+  providers: [
+    AppService,
+    PrismaService,
+    UploadScalar,
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(
+        graphqlUploadExpress({
+          maxFileSize: 10000000, // 10 MB
+          maxFiles: 5,
+        }),
+      )
+      .forRoutes('graphql');
+  }
+}
