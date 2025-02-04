@@ -235,7 +235,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <div className="flex items-center space-x-2 px-4 py-2">
           <Building2 className="h-6 w-6" />
-          <h1 className="text-xl font-bold">Estate CRM</h1>
+          {/* <h1 className="text-xl font-bold">Estate CRM</h1> */}
         </div>
         <div className="px-4 py-2">
           <div className="flex items-center space-x-2">

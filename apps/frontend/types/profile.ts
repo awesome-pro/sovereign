@@ -128,8 +128,6 @@ export interface LanguageInput {
 }
 
 export function parseSocialLinks(socialLinks?: SocialLinks | string | null): SocialLinks | undefined {
-  debugger;
-  
   if (!socialLinks) return undefined;
   
   // If it's already an object, return it

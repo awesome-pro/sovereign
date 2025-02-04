@@ -23,11 +23,13 @@ import type {
 } from '@/types/profile';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
+import { getApolloClient } from '@/lib/apollo-client'; // Import the Apollo client
 
 export const useProfile = () => {
   // State for upload loading
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverImageUploading, setCoverImageUploading] = useState(false);
+
 
   // Queries
   const {
@@ -36,9 +38,21 @@ export const useProfile = () => {
     error: profileError,
     refetch: refetchProfile,
   } = useQuery(GET_USER_PROFILE, {
-    fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-first',
+    fetchPolicy: 'cache-first',
+    nextFetchPolicy: 'cache-only',
     notifyOnNetworkStatusChange: true,
+    // onCompleted: (data) => {
+    //   // Update cache with normalized data
+    //   getApolloClient()?.cache.writeQuery({
+    //     query: GET_USER_PROFILE,
+    //     data: {
+    //       getProfile: {
+    //         ...data.getProfile,
+    //         __typename: 'UserProfile',
+    //       },
+    //     },
+    //   });
+    // },
   });
 
   // Mutations

@@ -94,10 +94,39 @@ const cache = new InMemoryCache({
           },
         },
         getProfile: {
+          keyArgs: false,
           merge(existing, incoming, { mergeObjects }) {
-            return incoming ? mergeObjects(existing, incoming) : incoming;
+            if (!incoming) return existing;
+            if (!existing) return incoming;
+            
+            // Deep merge social links
+            const mergedSocialLinks = incoming.socialLinks 
+              ? {
+                  ...existing.socialLinks,
+                  ...incoming.socialLinks,
+                }
+              : existing.socialLinks;
+
+            return mergeObjects(existing, {
+              ...incoming,
+              socialLinks: mergedSocialLinks,
+              __typename: 'UserProfile',
+              __lastUpdated: new Date().toISOString(),
+            });
           },
           read(existing) {
+            if (!existing) return undefined;
+            
+            // Add cache invalidation if needed
+            const lastUpdated = new Date(existing.__lastUpdated || 0);
+            const now = new Date();
+            const cacheAge = now.getTime() - lastUpdated.getTime();
+            
+            // Invalidate cache after 5 minutes
+            if (cacheAge > 5 * 60 * 1000) {
+              return undefined;
+            }
+            
             return existing;
           }
         },
@@ -127,6 +156,19 @@ const cache = new InMemoryCache({
             });
 
             return Array.from(existingTasksMap.values());
+          }
+        }
+      }
+    },
+    UserProfile: {
+      keyFields: ['id'],
+      fields: {
+        socialLinks: {
+          merge(existing, incoming) {
+            return incoming ? {
+              ...existing,
+              ...incoming,
+            } : existing;
           }
         }
       }

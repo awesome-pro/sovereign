@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useRef } from 'react';
+import { motion } from 'framer-motion';
 import { UserProfile } from '@/types/profile';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera, Pencil, Loader2 } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuthContext } from '@/providers/auth-provider';
+import { cn } from '@/lib/utils';
 
 interface ProfileHeaderProps {
   profile: UserProfile;
@@ -24,7 +26,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     coverImageUploading 
   } = useProfile();
 
-  const { user  } = useAuthContext();
+  const { user } = useAuthContext();
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverImageInputRef = useRef<HTMLInputElement>(null);
@@ -33,7 +35,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       await uploadAvatar(file);
-      // Reset the input to allow re-uploading the same file
       if (avatarInputRef.current) {
         avatarInputRef.current.value = '';
       }
@@ -44,7 +45,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       await uploadCoverImage(file);
-      // Reset the input to allow re-uploading the same file
       if (coverImageInputRef.current) {
         coverImageInputRef.current.value = '';
       }
@@ -60,19 +60,25 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   };
 
   return (
-    <div className="relative mb-8">
-      {/* Cover Image */}
-      <div className="relative h-48 md:h-64 rounded-lg overflow-hidden bg-gray-100">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="relative rounded-2xl overflow-hidden shadow-lg bg-white"
+    >
+      {/* Cover Image Section */}
+      <div className="relative h-48 md:h-64 group">
         {profile.coverImage ? (
           <img
             src={profile.coverImage}
             alt="Cover"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-all duration-300 group-hover:brightness-90"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-r from-blue-100 to-blue-200" />
+          <div className="w-full h-full bg-gradient-to-r from-blue-100 to-blue-200 opacity-80" />
         )}
-        <div className="absolute bottom-4 right-4">
+        
+        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
           <input
             ref={coverImageInputRef}
             type="file"
@@ -86,28 +92,33 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             variant="secondary" 
             onClick={triggerCoverImageUpload}
             disabled={coverImageUploading}
+            className="bg-white/80 hover:bg-white"
           >
             {coverImageUploading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" />
             ) : (
-              <Camera className="h-4 w-4 mr-2" />
+              <Camera className="h-4 w-4 mr-2 text-primary" />
             )}
             {coverImageUploading ? 'Uploading...' : 'Change Cover'}
           </Button>
         </div>
       </div>
 
-      {/* Profile Info */}
-      <div className="relative px-4 sm:px-6 lg:px-8 -mt-16">
-        <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
-          {/* Avatar */}
-          <div className="relative">
-            <Avatar className="h-32 w-32 ring-4 ring-white">
-              <AvatarImage src={user?.avatar || ''} />
-              <AvatarFallback>
+      {/* Profile Info Section */}
+      <div className="px-6 pb-6 pt-16 md:pt-20 relative">
+        <div className="absolute -top-16 md:-top-20 left-6 z-10">
+          <div className="relative group">
+            <Avatar className="h-32 w-32 md:h-40 md:w-40 ring-4 ring-white shadow-lg">
+              <AvatarImage 
+                src={user?.avatar || ''} 
+                alt={profile.displayName || 'Profile Avatar'}
+                className="object-cover transition-all duration-300 group-hover:brightness-90"
+              />
+              <AvatarFallback className="bg-primary text-white text-4xl">
                 {user?.name?.[0] || profile.lastName[0]}
               </AvatarFallback>
             </Avatar>
+            
             <div className="absolute bottom-0 right-0">
               <input
                 ref={avatarInputRef}
@@ -120,42 +131,47 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <Button 
                 size="icon" 
                 variant="secondary" 
-                className="rounded-full"
+                className="rounded-full bg-white/80 hover:bg-white shadow-md"
                 onClick={triggerAvatarUpload}
                 disabled={avatarUploading}
               >
                 {avatarUploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 ) : (
-                  <Camera className="h-4 w-4" />
+                  <Camera className="h-4 w-4 text-primary" />
                 )}
               </Button>
             </div>
           </div>
-
-          {/* Profile Details */}
-          <div className="flex-1 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold">
-                  {profile.displayName || `${profile.user?.name} ${profile.lastName}`}
-                </h1>
-                <p className="text-gray-500">{profile.title || 'Real Estate Professional'}</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onEditBasicInfo}
-                className="hidden sm:flex"
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit Profile
-              </Button>
-            </div>
-            <p className="mt-2 text-gray-600 max-w-2xl">{profile.bio}</p>
-          </div>
         </div>
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+          <div className="pl-36 md:pl-44 space-y-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+              {profile.displayName || `${profile.user?.name} ${profile.lastName}`}
+            </h1>
+            <p className="text-sm md:text-base text-gray-500">
+              {profile.title || 'Real Estate Professional'}
+            </p>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onEditBasicInfo}
+            className="flex items-center space-x-2 border-primary text-primary hover:bg-primary/10"
+          >
+            <Pencil className="h-4 w-4" />
+            <span>Edit Profile</span>
+          </Button>
+        </div>
+
+        {profile.bio && (
+          <div className="mt-4 text-gray-600 max-w-2xl">
+            <p className="text-sm md:text-base">{profile.bio}</p>
+          </div>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 };
