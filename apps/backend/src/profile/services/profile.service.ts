@@ -60,31 +60,90 @@ export class ProfileService {
 
   async uploadAvatar(userId: string, file: FileUpload) {
     try {
-      const { createReadStream, filename } = file;
+      // Validate input
+      if (!userId) throw new BadRequestException('User ID is required');
+      if (!file) throw new BadRequestException('File is required');
+
+      const { createReadStream, filename, mimetype } = file;
+      if (!createReadStream || !filename) {
+        throw new BadRequestException('Invalid file upload');
+      }
+
+      // Validate file type
+      const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedMimeTypes.includes(mimetype)) {
+        throw new BadRequestException('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.');
+      }
+
+      // Read the file stream
       const stream = createReadStream();
       const chunks: Buffer[] = [];
 
-      for await (const chunk of stream) {
-        chunks.push(chunk);
+      try {
+        for await (const chunk of stream) {
+          chunks.push(chunk);
+        }
+      } catch (streamError) {
+        this.logger.error('Failed to read file stream', { error: streamError, userId });
+        throw new BadRequestException('Failed to process file upload');
       }
 
+      // Validate file size (5MB limit)
       const buffer = Buffer.concat(chunks);
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (buffer.length > maxSize) {
+        throw new BadRequestException('File size must be less than 5MB');
+      }
+
+      // Upload to S3
       const result = await this.storageService.uploadFile(buffer, filename, {
-        contentType: file.mimetype,
-        metadata: { prefix: 'avatars', userId },
-        acl: 'public-read',
+        contentType: mimetype,
+        metadata: {
+          prefix: 'avatars',
+          userId,
+          uploadType: 'avatar',
+        },
+        tags: {
+          uploadType: 'avatar',
+          userId,
+        },
       });
 
-      // Update user's avatar URL
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { avatar: result.location },
-      });
+      // Update user's avatar URL in database
+      try {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { avatar: result.location },
+        });
+      } catch (dbError) {
+        // If database update fails, try to delete the uploaded file
+        this.logger.error('Failed to update user avatar in database', { error: dbError, userId });
+        try {
+          await this.storageService.deleteFile(result.key);
+        } catch (deleteError) {
+          this.logger.error('Failed to delete uploaded file after database error', { error: deleteError, key: result.key });
+        }
+        throw new BadRequestException('Failed to update avatar');
+      }
 
       return result.location;
     } catch (error) {
-      this.logger.error('Failed to upload avatar', { error, userId });
-      throw new BadRequestException('Failed to upload avatar');
+      this.logger.error('Failed to upload avatar', {
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        } : error,
+        userId,
+      });
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Failed to upload avatar'
+      );
     }
   }
 

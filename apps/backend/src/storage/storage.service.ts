@@ -57,13 +57,26 @@ export class StorageService {
     try {
       const key = this.generateFileKey(fileName, options.metadata?.prefix);
       
+      // Basic validation
+      if (!file) {
+        throw new Error('File content is required');
+      }
+      if (!fileName) {
+        throw new Error('File name is required');
+      }
+
+      // Set up the command without ACL
       const command = new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
         Body: file,
-        ContentType: options.contentType,
-        Metadata: options.metadata,
-        ACL: options.acl,
+        ContentType: options.contentType || 'application/octet-stream',
+        Metadata: {
+          ...options.metadata,
+          originalname: fileName,
+          uploadedAt: new Date().toISOString(),
+        },
+        // Remove ACL as it's not supported with Object Ownership enabled
         Tagging: options.tags 
           ? Object.entries(options.tags)
               .map(([key, value]) => `${key}=${value}`)
@@ -73,7 +86,10 @@ export class StorageService {
 
       const result = await this.s3Client.send(command);
       
-      const location = `https://${this.bucket}.s3.${this.configService.get('AWS_REGION')}.amazonaws.com/${key}`;
+      const region = this.configService.get('AWS_REGION');
+      const location = `https://${this.bucket}.s3.${region}.amazonaws.com/${key}`;
+      
+      this.logger.log(`File uploaded successfully: ${location}`);
       
       return {
         key,
@@ -82,7 +98,29 @@ export class StorageService {
         versionId: result.VersionId,
       };
     } catch (error) {
-      this.logger.error(`Failed to upload file ${fileName}`, error);
+      this.logger.error(`Failed to upload file ${fileName}`, {
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        } : error,
+        fileName,
+        options,
+      });
+
+      // Throw a more specific error
+      if (error instanceof Error) {
+        if (error.message.includes('AccessControlListNotSupported')) {
+          throw new Error('S3 bucket does not support ACL. Please configure bucket for public access if needed.');
+        }
+        if (error.message.includes('NoSuchBucket')) {
+          throw new Error('S3 bucket does not exist. Please check your configuration.');
+        }
+        if (error.message.includes('AccessDenied')) {
+          throw new Error('Access denied to S3 bucket. Please check your IAM permissions.');
+        }
+      }
+      
       throw error;
     }
   }

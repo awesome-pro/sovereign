@@ -14,11 +14,11 @@ function ProtectedRoute(
   return (
     // <RBACProvider>
       <SidebarProvider>
-      <AppSidebar />
-      <main>
-        <SidebarTrigger />
-        {children}
-      </main>
+        <AppSidebar />
+        <main className='w-full'>
+          <SidebarTrigger />
+          {children}
+        </main>
       </SidebarProvider>
     // </RBACProvider>
   )

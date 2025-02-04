@@ -18,6 +18,7 @@ import { ProfileModule } from './profile/profile.module.js';
 import { UploadScalar } from './common/scalars/upload.scalar.js';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import { Request, Response, NextFunction } from 'express';
+import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 @Module({
   imports: [
@@ -41,15 +42,18 @@ import { Request, Response, NextFunction } from 'express';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const logger = new LoggerService().setContext('GraphQL');
-
+        const frontendUrl = configService.get('FRONTEND_URL') || 'http://localhost:3000';
+        logger.log(`Frontend URL: ${frontendUrl}`);
+        
         return {
           autoSchemaFile: join(process.cwd(), 'src/schema.graphql'),
           sortSchema: true,
           playground: true,
           debug: configService.get('NODE_ENV') !== 'production',
-          cors: false, // We handle CORS at the app level
+          cors: false,
           context: ({ req, res }: any) => ({ req, res }),
-          uploads: false, // Disable Apollo Server's built-in upload handling
+          uploads: false,
+          //bodyParserConfig: false,
           buildSchemaOptions: {
             numberScalarMode: 'integer',
             dateScalarMode: 'timestamp',
@@ -130,6 +134,10 @@ import { Request, Response, NextFunction } from 'express';
   providers: [
     AppService,
     PrismaService,
+    {
+      provide: 'Upload',
+      useValue: GraphQLUpload,
+    },
     UploadScalar,
     {
       provide: APP_GUARD,
@@ -141,6 +149,20 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(
+        (req: Request, res: Response, next: NextFunction) => {
+          const origin = req.headers.origin || 'http://localhost:3000';
+          res.setHeader('Access-Control-Allow-Credentials', 'true');
+          res.setHeader('Access-Control-Allow-Origin', origin);
+          res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 
+            'Content-Type, Authorization, apollo-require-preflight, x-apollo-operation-name, apollo-operation-name, x-requested-with'
+          );
+          if (req.method === 'OPTIONS') {
+            res.sendStatus(200);
+            return;
+          }
+          next();
+        },
         graphqlUploadExpress({
           maxFileSize: 10000000, // 10 MB
           maxFiles: 5,

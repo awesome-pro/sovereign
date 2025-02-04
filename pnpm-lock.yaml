@@ -126,6 +126,9 @@ importers:
       rxjs:
         specifier: ^7.8.1
         version: 7.8.1
+      stream:
+        specifier: ^0.0.3
+        version: 0.0.3
       ua-parser-js:
         specifier: ^2.0.0
         version: 2.0.0
@@ -295,6 +298,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.1.7
         version: 1.1.7(@types/react-dom@19.0.3(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      apollo-upload-client:
+        specifier: ^18.0.1
+        version: 18.0.1(@apollo/client@3.12.7(@types/react@19.0.8)(graphql-ws@6.0.2(graphql@16.10.0)(ws@8.18.0))(graphql@16.10.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(subscriptions-transport-ws@0.11.0(graphql@16.10.0)))(graphql@16.10.0)
       apollo3-cache-persist:
         specifier: ^0.15.0
         version: 0.15.0(@apollo/client@3.12.7(@types/react@19.0.8)(graphql-ws@6.0.2(graphql@16.10.0)(ws@8.18.0))(graphql@16.10.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(subscriptions-transport-ws@0.11.0(graphql@16.10.0)))
@@ -310,6 +316,9 @@ importers:
       framer-motion:
         specifier: ^12.0.6
         version: 12.0.6(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      graphql-upload:
+        specifier: ^17.0.0
+        version: 17.0.0(@types/express@5.0.0)(@types/koa@2.15.0)(graphql@16.10.0)
       graphql-ws:
         specifier: ^6.0.2
         version: 6.0.2(graphql@16.10.0)(ws@8.18.0)
@@ -356,6 +365,12 @@ importers:
       '@eslint/eslintrc':
         specifier: ^3
         version: 3.2.0
+      '@types/apollo-upload-client':
+        specifier: ^18.0.0
+        version: 18.0.0(@types/react@19.0.8)(graphql-ws@6.0.2(graphql@16.10.0)(ws@8.18.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(subscriptions-transport-ws@0.11.0(graphql@16.10.0))
+      '@types/graphql-upload':
+        specifier: ^17.0.0
+        version: 17.0.0
       '@types/js-cookie':
         specifier: ^3.0.6
         version: 3.0.6
@@ -2901,6 +2916,9 @@ packages:
   '@types/accepts@1.3.7':
     resolution: {integrity: sha512-Pay9fq2lM2wXPWbteBsRAGiWH2hig4ZE2asK+mm7kUzlxRTfL961rj89I6zV/E3PcIkDqyuBEcMxFT7rccugeQ==}
 
+  '@types/apollo-upload-client@18.0.0':
+    resolution: {integrity: sha512-cMgITNemktxasqvp6jiPj15dv84n3FTMvMoYBP1+xonDS+0l6JygIJrj2LJh85rShRzTOOkrElrAsCXXARa3KA==}
+
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
 
@@ -2962,6 +2980,9 @@ packages:
 
   '@types/express@5.0.0':
     resolution: {integrity: sha512-DvZriSMehGHL1ZNLzi6MidnsDhUZM/x2pRdDIKdwbUNqqwHxMlRdkxtn6/EPKyqKpHqTl/4nRZsRNLpZxZRpPQ==}
+
+  '@types/extract-files@13.0.1':
+    resolution: {integrity: sha512-/fRbzc2lAd7jDJSSnxWiUyXWjdUZZ4HbISLJzVgt1AvrdOa7U49YRPcvuCUywkmURZ7uwJOheDjx19itbQ5KvA==}
 
   '@types/geoip-lite@1.4.4':
     resolution: {integrity: sha512-2uVfn+C6bX/H356H6mjxsWUA5u8LO8dJgSBIRO/NFlpMe4DESzacutD/rKYrTDKm1Ugv78b4Wz1KvpHrlv3jSw==}
@@ -3380,6 +3401,13 @@ packages:
   anymatch@3.1.3:
     resolution: {integrity: sha512-KMReFUr0B4t+D+OBkjR3KYqvocp2XaSzO55UcB6mgQMd3KbcE+mWTyvVV7D/zsdEbNnV6acZUutkiHQXvTr1Rw==}
     engines: {node: '>= 8'}
+
+  apollo-upload-client@18.0.1:
+    resolution: {integrity: sha512-OQvZg1rK05VNI79D658FUmMdoI2oB/KJKb6QGMa2Si25QXOaAvLMBFUEwJct7wf+19U8vk9ILhidBOU1ZWv6QA==}
+    engines: {node: ^18.15.0 || >=20.4.0}
+    peerDependencies:
+      '@apollo/client': ^3.8.0
+      graphql: 14 - 16
 
   apollo3-cache-persist@0.15.0:
     resolution: {integrity: sha512-asxhPOHGddgXYvY4/Wa+XLODYpjci/kPB4zdy82D0tVGzVmvO4lqp3k06NtzHvd//gd9kCnTaG8iziwAcXZYjw==}
@@ -3844,6 +3872,10 @@ packages:
 
   component-emitter@1.3.1:
     resolution: {integrity: sha512-T0+barUSQRTUQASh8bx02dl+DhF54GtIDY13Y3m9oWTklKbb3Wv974meRpeZ3lp1JpLVECWWNHC4vaG2XHXouQ==}
+
+  component-emitter@2.0.0:
+    resolution: {integrity: sha512-4m5s3Me2xxlVKG9PkZpQqHQR7bgpnN7joDMJ4yvVkVXngjoITG76IaZmzmywSeRTeTpc6N6r3H3+KyUurV8OYw==}
+    engines: {node: '>=18'}
 
   concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
@@ -4482,6 +4514,10 @@ packages:
   external-editor@3.1.0:
     resolution: {integrity: sha512-hMQ4CX1p1izmuLYyZqLMO/qGNw10wSv9QDCPfzXfyFrOaCSSoRfqE1Kf1s5an66J5JZC62NewG+mK49jOCtQew==}
     engines: {node: '>=4'}
+
+  extract-files@13.0.0:
+    resolution: {integrity: sha512-FXD+2Tsr8Iqtm3QZy1Zmwscca7Jx3mMC5Crr+sEP1I303Jy1CYMuYCm7hRTplFNg3XdUavErkxnTzpaqdSoi6g==}
+    engines: {node: ^14.17.0 || ^16.0.0 || >= 18.0.0}
 
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
@@ -5125,6 +5161,10 @@ packages:
   is-plain-obj@1.1.0:
     resolution: {integrity: sha512-yvkRyxmFKEOQ4pNXCmJG5AEQNlXJS5LaONXo5/cLdTZdWvsZ1ioJEonLGAosKlMWE8lwUy/bJzMjcw8az73+Fg==}
     engines: {node: '>=0.10.0'}
+
+  is-plain-obj@4.1.0:
+    resolution: {integrity: sha512-+Pgi+vMuUNkJyExiMBt5IlFoMyKnr5zhJ4Uspz58WOhBF5QoIZkFyNHIbBAtHwzVAgk5RtndVNsDRN61/mmDqg==}
+    engines: {node: '>=12'}
 
   is-promise@4.0.0:
     resolution: {integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==}
@@ -6746,6 +6786,9 @@ packages:
   statuses@2.0.1:
     resolution: {integrity: sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==}
     engines: {node: '>= 0.8'}
+
+  stream@0.0.3:
+    resolution: {integrity: sha512-aMsbn7VKrl4A2T7QAQQbzgN7NVc70vgF5INQrBXqn4dCXN1zy3L9HGgLO5s7PExmdrzTJ8uR/27aviW8or8/+A==}
 
   streamsearch@1.1.0:
     resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
@@ -10465,6 +10508,18 @@ snapshots:
     dependencies:
       '@types/node': 22.10.10
 
+  '@types/apollo-upload-client@18.0.0(@types/react@19.0.8)(graphql-ws@6.0.2(graphql@16.10.0)(ws@8.18.0))(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(subscriptions-transport-ws@0.11.0(graphql@16.10.0))':
+    dependencies:
+      '@apollo/client': 3.12.7(@types/react@19.0.8)(graphql-ws@6.0.2(graphql@16.10.0)(ws@8.18.0))(graphql@16.10.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(subscriptions-transport-ws@0.11.0(graphql@16.10.0))
+      '@types/extract-files': 13.0.1
+      graphql: 16.10.0
+    transitivePeerDependencies:
+      - '@types/react'
+      - graphql-ws
+      - react
+      - react-dom
+      - subscriptions-transport-ws
+
   '@types/babel__core@7.20.5':
     dependencies:
       '@babel/parser': 7.26.7
@@ -10559,6 +10614,8 @@ snapshots:
       '@types/express-serve-static-core': 5.0.5
       '@types/qs': 6.9.18
       '@types/serve-static': 1.15.7
+
+  '@types/extract-files@13.0.1': {}
 
   '@types/geoip-lite@1.4.4': {}
 
@@ -11140,6 +11197,12 @@ snapshots:
       normalize-path: 3.0.0
       picomatch: 2.3.1
 
+  apollo-upload-client@18.0.1(@apollo/client@3.12.7(@types/react@19.0.8)(graphql-ws@6.0.2(graphql@16.10.0)(ws@8.18.0))(graphql@16.10.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(subscriptions-transport-ws@0.11.0(graphql@16.10.0)))(graphql@16.10.0):
+    dependencies:
+      '@apollo/client': 3.12.7(@types/react@19.0.8)(graphql-ws@6.0.2(graphql@16.10.0)(ws@8.18.0))(graphql@16.10.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(subscriptions-transport-ws@0.11.0(graphql@16.10.0))
+      extract-files: 13.0.0
+      graphql: 16.10.0
+
   apollo3-cache-persist@0.15.0(@apollo/client@3.12.7(@types/react@19.0.8)(graphql-ws@6.0.2(graphql@16.10.0)(ws@8.18.0))(graphql@16.10.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(subscriptions-transport-ws@0.11.0(graphql@16.10.0))):
     dependencies:
       '@apollo/client': 3.12.7(@types/react@19.0.8)(graphql-ws@6.0.2(graphql@16.10.0)(ws@8.18.0))(graphql@16.10.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(subscriptions-transport-ws@0.11.0(graphql@16.10.0))
@@ -11687,6 +11750,8 @@ snapshots:
       repeat-string: 1.6.1
 
   component-emitter@1.3.1: {}
+
+  component-emitter@2.0.0: {}
 
   concat-map@0.0.1: {}
 
@@ -12589,6 +12654,10 @@ snapshots:
       iconv-lite: 0.4.24
       tmp: 0.0.33
 
+  extract-files@13.0.0:
+    dependencies:
+      is-plain-obj: 4.1.0
+
   fast-deep-equal@3.1.3: {}
 
   fast-diff@1.3.0: {}
@@ -13319,6 +13388,8 @@ snapshots:
 
   is-plain-obj@1.1.0:
     optional: true
+
+  is-plain-obj@4.1.0: {}
 
   is-promise@4.0.0: {}
 
@@ -15199,6 +15270,10 @@ snapshots:
   standard-as-callback@2.1.0: {}
 
   statuses@2.0.1: {}
+
+  stream@0.0.3:
+    dependencies:
+      component-emitter: 2.0.0
 
   streamsearch@1.1.0: {}
 

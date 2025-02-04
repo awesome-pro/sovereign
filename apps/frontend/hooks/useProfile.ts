@@ -21,10 +21,14 @@ import type {
   CertificationInput,
   LanguageInput,
 } from '@/types/profile';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
 export const useProfile = () => {
+  // State for upload loading
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [coverImageUploading, setCoverImageUploading] = useState(false);
+
   // Queries
   const {
     data: profileData,
@@ -137,7 +141,7 @@ export const useProfile = () => {
     },
   });
 
-  // Helper functions
+  // Helper functions with robust error handling
   const handleUpdateProfile = useCallback(async (input: UpdateProfileInput) => {
     try {
       await updateProfile({ variables: { input } });
@@ -147,18 +151,82 @@ export const useProfile = () => {
   }, [updateProfile]);
 
   const handleUploadAvatar = useCallback(async (file: File) => {
+    // Validate file
+    if (!file) {
+      toast.error('No file selected');
+      return;
+    }
+
+    // Check file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.');
+      return;
+    }
+
     try {
-      await uploadAvatar({ variables: { file } });
+      setAvatarUploading(true);
+      await uploadAvatar({ 
+        variables: { 
+          file: file // Pass the file directly
+        },
+        context: {
+          headers: {
+            'apollo-require-preflight': 'true',
+          }
+        }
+      });
     } catch (error) {
       console.error('Failed to upload avatar:', error);
+      toast.error('Failed to upload avatar. Please try again.');
+    } finally {
+      setAvatarUploading(false);
     }
   }, [uploadAvatar]);
 
   const handleUploadCoverImage = useCallback(async (file: File) => {
+    // Validate file
+    if (!file) {
+      toast.error('No file selected');
+      return;
+    }
+
+    // Check file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.');
+      return;
+    }
+
     try {
-      await uploadCoverImage({ variables: { file } });
+      setCoverImageUploading(true);
+      await uploadCoverImage({ 
+        variables: { file },
+        context: {
+          headers: {
+            'apollo-require-preflight': 'true',
+          }
+        }
+      });
     } catch (error) {
       console.error('Failed to upload cover image:', error);
+      toast.error('Failed to upload cover image. Please try again.');
+    } finally {
+      setCoverImageUploading(false);
     }
   }, [uploadCoverImage]);
 
@@ -242,5 +310,7 @@ export const useProfile = () => {
     updateCertification: handleUpdateCertification,
     deleteCertification: handleDeleteCertification,
     updateLanguages: handleUpdateLanguages,
+    avatarUploading,
+    coverImageUploading,
   };
 };

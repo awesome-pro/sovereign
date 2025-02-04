@@ -1,9 +1,12 @@
-import React from 'react';
+"use client";
+
+import React, { useRef } from 'react';
 import { UserProfile } from '@/types/profile';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, Pencil } from 'lucide-react';
+import { Camera, Pencil, Loader2 } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuthContext } from '@/providers/auth-provider';
 
 interface ProfileHeaderProps {
   profile: UserProfile;
@@ -14,12 +17,26 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   profile,
   onEditBasicInfo,
 }) => {
-  const { uploadAvatar, uploadCoverImage } = useProfile();
+  const { 
+    uploadAvatar, 
+    uploadCoverImage, 
+    avatarUploading, 
+    coverImageUploading 
+  } = useProfile();
+
+  const { user  } = useAuthContext();
+
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       await uploadAvatar(file);
+      // Reset the input to allow re-uploading the same file
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = '';
+      }
     }
   };
 
@@ -27,7 +44,19 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       await uploadCoverImage(file);
+      // Reset the input to allow re-uploading the same file
+      if (coverImageInputRef.current) {
+        coverImageInputRef.current.value = '';
+      }
     }
+  };
+
+  const triggerAvatarUpload = () => {
+    avatarInputRef.current?.click();
+  };
+
+  const triggerCoverImageUpload = () => {
+    coverImageInputRef.current?.click();
   };
 
   return (
@@ -43,18 +72,29 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         ) : (
           <div className="w-full h-full bg-gradient-to-r from-blue-100 to-blue-200" />
         )}
-        <label className="absolute bottom-4 right-4 cursor-pointer">
+        <div className="absolute bottom-4 right-4">
           <input
+            ref={coverImageInputRef}
             type="file"
             className="hidden"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/gif,image/webp"
             onChange={handleCoverImageChange}
+            disabled={coverImageUploading}
           />
-          <Button size="sm" variant="secondary">
-            <Camera className="h-4 w-4 mr-2" />
-            Change Cover
+          <Button 
+            size="sm" 
+            variant="secondary" 
+            onClick={triggerCoverImageUpload}
+            disabled={coverImageUploading}
+          >
+            {coverImageUploading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Camera className="h-4 w-4 mr-2" />
+            )}
+            {coverImageUploading ? 'Uploading...' : 'Change Cover'}
           </Button>
-        </label>
+        </div>
       </div>
 
       {/* Profile Info */}
@@ -63,22 +103,34 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           {/* Avatar */}
           <div className="relative">
             <Avatar className="h-32 w-32 ring-4 ring-white">
-              <AvatarImage src={profile.user?.avatar || ''} />
+              <AvatarImage src={user?.avatar || ''} />
               <AvatarFallback>
-                {profile.displayName?.[0] || profile.lastName[0]}
+                {user?.name?.[0] || profile.lastName[0]}
               </AvatarFallback>
             </Avatar>
-            <label className="absolute bottom-0 right-0 cursor-pointer">
+            <div className="absolute bottom-0 right-0">
               <input
+                ref={avatarInputRef}
                 type="file"
                 className="hidden"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/gif,image/webp"
                 onChange={handleAvatarChange}
+                disabled={avatarUploading}
               />
-              <Button size="icon" variant="secondary" className="rounded-full">
-                <Camera className="h-4 w-4" />
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="rounded-full"
+                onClick={triggerAvatarUpload}
+                disabled={avatarUploading}
+              >
+                {avatarUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
               </Button>
-            </label>
+            </div>
           </div>
 
           {/* Profile Details */}
