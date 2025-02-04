@@ -157,18 +157,6 @@ export const TaskDetails: FC<TaskDetailsProps> = ({
                   <ClockIcon className="w-4 h-4 text-gray-500" />
                   <span>Due: {task.dueDate ? format(new Date(task.dueDate), 'PPP') : 'Not set'}</span>
                 </div>
-                {task.location && (
-                  <div className="flex items-center gap-2">
-                    <MapPinIcon className="w-4 h-4 text-gray-500" />
-                    <span>{task.location}</span>
-                  </div>
-                )}
-                {task.budget && (
-                  <div className="flex items-center gap-2">
-                    <DollarSignIcon className="w-4 h-4 text-gray-500" />
-                    <span>{task.budget.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
-                  </div>
-                )}
                 {task.duration && (
                   <div className="flex items-center gap-2">
                     <ClockIcon className="w-4 h-4 text-gray-500" />

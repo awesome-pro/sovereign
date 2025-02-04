@@ -16,7 +16,7 @@ const priorityColors = {
   [Priority.LOW]: 'bg-gray-500',
   [Priority.MEDIUM]: 'bg-blue-500',
   [Priority.HIGH]: 'bg-orange-500',
-  [Priority.URGENT]: 'bg-red-500',
+  [Priority.VIP]: 'bg-red-500',
 };
 
 const statusColors = {

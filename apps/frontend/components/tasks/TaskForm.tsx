@@ -1,7 +1,9 @@
-import { FC } from 'react';
+import { FC, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useLazyQuery } from '@apollo/client';
+import AsyncSelect from 'react-select/async';
 import { Task, TaskType, Priority, CreateTaskInput, UpdateTaskInput } from '@/types/task';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,6 +45,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { RelatedDeal, RelatedLead, RelatedProperty, RelatedUser } from '@/types';
 import { relatedPropertySchema, relatedLeadSchema, relatedDealSchema, relatedUserSchema } from '@/schemas';
+import {
+  SEARCH_USERS_QUERY,
+  SEARCH_LEADS_QUERY,
+  SEARCH_DEALS_QUERY,
+  SEARCH_PROPERTIES_QUERY,
+} from '@/graphql/tasks.mutations';
 
 const taskSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -51,37 +59,29 @@ const taskSchema = z.object({
   priority: z.nativeEnum(Priority),
   dueDate: z.date().optional(),
   startDate: z.date().optional(),
-  assignedTo: z.array(relatedUserSchema),
-  properties: z.array(relatedPropertySchema),
-  leads: z.array(relatedLeadSchema),
-  deals: z.array(relatedDealSchema),
-  location: z.string().optional(),
-  duration: z.number().min(0).optional(),
-  reminderTime: z.date().optional(),
+  assignedToIds: z.array(z.string()),
+  propertyIds: z.array(z.string()),
+  leadIds: z.array(z.string()),
+  dealIds: z.array(z.string()),
   isPrivate: z.boolean().default(false),
-  tags: z.array(z.string()).default([]),
-  budget: z.number().min(0).optional(),
 });
 
 interface TaskFormProps {
   task?: Task;
   onSubmit: (data: CreateTaskInput | UpdateTaskInput) => void;
   isLoading?: boolean;
-  properties: RelatedProperty[];
-  leads: RelatedLead[];
-  deals: RelatedDeal[];
-  users: RelatedUser[];
 }
 
 export const TaskForm: FC<TaskFormProps> = ({
   task,
   onSubmit,
   isLoading = false,
-  properties = [],
-  leads = [],
-  deals = [],
-  users = [],
 }) => {
+  const [searchUsers] = useLazyQuery(SEARCH_USERS_QUERY);
+  const [searchLeads] = useLazyQuery(SEARCH_LEADS_QUERY);
+  const [searchDeals] = useLazyQuery(SEARCH_DEALS_QUERY);
+  const [searchProperties] = useLazyQuery(SEARCH_PROPERTIES_QUERY);
+
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: task
@@ -92,33 +92,108 @@ export const TaskForm: FC<TaskFormProps> = ({
           priority: task.priority,
           dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
           startDate: task.startDate ? new Date(task.startDate) : undefined,
-          assignedTo: task.assignedTo,
-          reminderTime: task.reminderTime ? new Date(task.reminderTime) : undefined,
+          assignedToIds: task.assignedTo.map((user) => user.id),
+          propertyIds: task.properties.map((property) => property.id),
+          leadIds: task.leads.map((lead) => lead.id),
+          dealIds: task.deals.map((deal) => deal.id),
           isPrivate: task.isPrivate,
         }
       : {
           priority: Priority.MEDIUM,
           type: TaskType.FOLLOW_UP,
-          duration: 30,
           isPrivate: false,
-          assignedTo: [],
+          assignedToIds: [],
+          propertyIds: [],
+          leadIds: [],
+          dealIds: [],
         },
   });
 
+  const loadUsers = async (inputValue: string) => {
+    if (inputValue.length < 2) return [];
+    const { data } = await searchUsers({
+      variables: { query: inputValue, limit: 10 },
+    });
+    return data?.searchUsers.map((user: RelatedUser) => ({
+      value: user.id,
+      label: user.name,
+      data: user,
+    })) || [];
+  };
+
+  const loadProperties = async (inputValue: string) => {
+    if (inputValue.length < 2) return [];
+    const { data } = await searchProperties({
+      variables: { query: inputValue, limit: 10 },
+    });
+    return data?.searchProperties.map((property: RelatedProperty) => ({
+      value: property.id,
+      label: `${property.referenceNumber} - ${property.title}`,
+      data: property,
+    })) || [];
+  };
+
+  const loadLeads = async (inputValue: string) => {
+    if (inputValue.length < 2) return [];
+    const { data } = await searchLeads({
+      variables: { query: inputValue, limit: 10 },
+    });
+    return data?.searchLeads.map((lead: RelatedLead) => ({
+      value: lead.id,
+      label: `${lead.referenceNumber} - ${lead.title}`,
+      data: lead,
+    })) || [];
+  };
+
+  const loadDeals = async (inputValue: string) => {
+    if (inputValue.length < 2) return [];
+    const { data } = await searchDeals({
+      variables: { query: inputValue, limit: 10 },
+    });
+    return data?.searchDeals.map((deal: RelatedDeal) => ({
+      value: deal.id,
+      label: `${deal.referenceNumber} - ${deal.title}`,
+      data: deal,
+    })) || [];
+  };
+
   const handleSubmit = (values: z.infer<typeof taskSchema>) => {
-    const input = {
-      ...values,
+    const baseInput = {
+      title: values.title,
+      description: values.description,
+      type: values.type,
+      priority: values.priority,
       dueDate: values.dueDate?.toISOString(),
       startDate: values.startDate?.toISOString(),
-      reminderTime: values.reminderTime?.toISOString(),
-      ...(task && { id: task.id }),
+      assignedToIds: values.assignedToIds,
+      propertyIds: values.propertyIds,
+      leadIds: values.leadIds,
+      dealIds: values.dealIds,
+      isPrivate: values.isPrivate,
     };
-    onSubmit(input);
+
+    const input = task 
+      ? { 
+          ...baseInput, 
+          id: task.id,
+          status: task.status, 
+          completedAt: task.completedAt 
+        } 
+      : baseInput;
+
+    onSubmit(input as CreateTaskInput | UpdateTaskInput);
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold">Form Details</h3>
+          <p>Form Errors: {JSON.stringify(form.formState.errors)}</p>
+          <p>Form Values: {JSON.stringify(form.getValues())}</p>
+          <p>FOrm valid: {form.formState.isValid ? 'true' : 'false'}</p>
+          <p>Form dirty: {form.formState.isDirty ? 'true' : 'false'}</p>
+        </div>
         <Tabs defaultValue="basic" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -324,183 +399,159 @@ export const TaskForm: FC<TaskFormProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="duration"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Duration (minutes)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Meeting location" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="reminderTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Reminder</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            'w-full pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP HH:mm')
-                          ) : (
-                            <span>Set reminder</span>
-                          )}
-                          <BellIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </TabsContent>
 
           <TabsContent value="relations" className="space-y-4 pt-4">
-            {/* <FormField
-              control={form.control}
-              name="propertyId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Related Property</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select property" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {properties.map((property) => (
-                        <SelectItem key={property.id} value={property.id}>
-                          <div className="flex items-center gap-2">
-                            <BuildingIcon className="h-4 w-4" />
-                            {property.title}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <FormField
               control={form.control}
-              name="leadId"
+              name="assignedToIds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Related Lead</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select lead" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {leads.map((lead) => (
-                        <SelectItem key={lead.id} value={lead.id}>
-                          <div className="flex items-center gap-2">
-                            <UserIcon className="h-4 w-4" />
-                            {lead.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="dealId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Related Deal</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select deal" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {deals.map((deal) => (
-                        <SelectItem key={deal.id} value={deal.id}>
-                          <div className="flex items-center gap-2">
-                            <BriefcaseIcon className="h-4 w-4" />
-                            {deal.title}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            /> */}
-
-            <FormField
-              control={form.control}
-              name="budget"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Budget</FormLabel>
+                  <FormLabel>Assigned To</FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      <DollarSignIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="number"
-                        className="pl-9"
-                        placeholder="Enter budget"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </div>
+                    <AsyncSelect
+                      isMulti
+                      cacheOptions
+                      defaultOptions
+                      loadOptions={loadUsers}
+                      value={field.value.map((userId) => {
+                        const user = task?.assignedTo.find(u => u.id === userId) || 
+                                     form.getValues('assignedToIds').map(id => 
+                                       task?.assignedTo.find(u => u.id === id)
+                                     ).find(u => u?.id === userId);
+                        return user ? {
+                          value: user.id,
+                          label: `${user.name} (${user.email})`,
+                          data: user
+                        } : null;
+                      }).filter(Boolean)}
+                      onChange={(newValue) => {
+                        field.onChange(newValue.map((v: any) => v.data.id));
+                      }}
+                      className="min-w-[200px]"
+                      classNames={{
+                        control: () => 'py-2 border rounded-md',
+                        menu: () => 'mt-2 rounded-md border bg-white shadow-lg',
+                        option: () => 'px-4 py-2 hover:bg-gray-100',
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="propertyIds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Related Properties</FormLabel>
+                  <FormControl>
+                    <AsyncSelect
+                      isMulti
+                      cacheOptions
+                      defaultOptions
+                      loadOptions={loadProperties}
+                      value={field.value.map((propertyId) => {
+                        const property = task?.properties.find(p => p.id === propertyId) || 
+                                         form.getValues('propertyIds').map(id => 
+                                           task?.properties.find(p => p.id === id)
+                                         ).find(p => p?.id === propertyId);
+                        return property ? {
+                          value: property.id,
+                          label: `${property.referenceNumber} - ${property.title}`,
+                          data: property
+                        } : null;
+                      }).filter(Boolean)}
+                      onChange={(newValue) => {
+                        field.onChange(newValue.map((v: any) => v.data.id));
+                      }}
+                      className="min-w-[200px]"
+                      classNames={{
+                        control: () => 'py-2 border rounded-md',
+                        menu: () => 'mt-2 rounded-md border bg-white shadow-lg',
+                        option: () => 'px-4 py-2 hover:bg-gray-100',
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="leadIds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Related Leads</FormLabel>
+                  <FormControl>
+                    <AsyncSelect
+                      isMulti
+                      cacheOptions
+                      defaultOptions
+                      loadOptions={loadLeads}
+                      value={field.value.map((leadId) => {
+                        const lead = task?.leads.find(l => l.id === leadId) || 
+                                     form.getValues('leadIds').map(id => 
+                                       task?.leads.find(l => l.id === id)
+                                     ).find(l => l?.id === leadId);
+                        return lead ? {
+                          value: lead.id,
+                          label: `${lead.referenceNumber} - ${lead.title}`,
+                          data: lead
+                        } : null;
+                      }).filter(Boolean)}
+                      onChange={(newValue) => {
+                        field.onChange(newValue.map((v: any) => v.data.id));
+                      }}
+                      className="min-w-[200px]"
+                      classNames={{
+                        control: () => 'py-2 border rounded-md',
+                        menu: () => 'mt-2 rounded-md border bg-white shadow-lg',
+                        option: () => 'px-4 py-2 hover:bg-gray-100',
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="dealIds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Related Deals</FormLabel>
+                  <FormControl>
+                    <AsyncSelect
+                      isMulti
+                      cacheOptions
+                      defaultOptions
+                      loadOptions={loadDeals}
+                      value={field.value.map((dealId) => {
+                        const deal = task?.deals.find(d => d.id === dealId) || 
+                                     form.getValues('dealIds').map(id => 
+                                       task?.deals.find(d => d.id === id)
+                                     ).find(d => d?.id === dealId);
+                        return deal ? {
+                          value: deal.id,
+                          label: `${deal.referenceNumber} - ${deal.title}`,
+                          data: deal
+                        } : null;
+                      }).filter(Boolean)}
+                      onChange={(newValue) => {
+                        field.onChange(newValue.map((v: any) => v.data.id));
+                      }}
+                      className="min-w-[200px]"
+                      classNames={{
+                        control: () => 'py-2 border rounded-md',
+                        menu: () => 'mt-2 rounded-md border bg-white shadow-lg',
+                        option: () => 'px-4 py-2 hover:bg-gray-100',
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -6,6 +6,7 @@ import { useAuthContext } from '@/providers/auth-provider';
 import type { LoginInput } from '@/types';
 import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,12 +47,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 size-full">
+    <div className="min-h-screen flex items-center justify-center size-full">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-100">
             Sign in to your account
           </h2>
+          <Image
+            src="/logo.svg"
+            alt="Image"
+            width={100}
+            height={100}
+            className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          />
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">

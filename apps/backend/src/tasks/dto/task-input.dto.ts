@@ -1,6 +1,6 @@
 import { Field, ID, InputType, registerEnumType } from '@nestjs/graphql';
 import { TaskStatus, TaskType, Priority } from '@sovereign/database';
-import { IsString, IsOptional, IsEnum, IsArray, IsDate, IsUUID, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsArray, IsDate, IsUUID, IsNotEmpty, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 @InputType()
@@ -34,6 +34,41 @@ export class CreateTaskInput {
   @IsUUID("4", { each: true })
   @IsOptional()
   assignedToIds?: string[];
+
+  @Field(() => [String], { defaultValue: [] })
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  propertyIds?: string[];
+
+  @Field(() => [String], { defaultValue: [] })
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  leadIds?: string[];
+
+  @Field(() => [String], { defaultValue: [] })
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  dealIds?: string[];
+
+  @Field(() => Boolean, { nullable: true })
+  @IsBoolean()
+  @IsOptional()
+  isPrivate?: boolean;
+
+  @Field(() => Date, { nullable: true })
+  @IsDate()
+  @IsOptional()
+  @Type(() => Date, )
+  startDate?: Date | null;
+
+  @Field(() => Date, { nullable: true })
+  @IsDate()
+  @IsOptional()
+  @Type(() => Date)
+  completedAt?: Date | null;
 }
 
 @InputType()
@@ -78,6 +113,29 @@ export class UpdateTaskInput {
   @IsUUID("4", { each: true })
   @IsOptional()
   assignedToIds?: string[];
+
+  @Field(() => [String], { nullable: true })
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  propertyIds?: string[];
+
+  @Field(() => [String], { nullable: true })
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  leadIds?: string[];
+
+  @Field(() => [String], { nullable: true })
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @IsOptional()
+  dealIds?: string[];
+
+  @Field(() => Boolean, { nullable: true })
+  @IsBoolean()
+  @IsOptional()
+  isPrivate?: boolean;
 
   @Field(() => Date, { nullable: true })
   @IsDate()

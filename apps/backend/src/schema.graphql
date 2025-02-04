@@ -58,9 +58,15 @@ input CreatePermissionInput {
 
 input CreateTaskInput {
   assignedToIds: [String!]! = []
+  completedAt: Timestamp
+  dealIds: [String!]! = []
   description: String
   dueDate: Timestamp
+  isPrivate: Boolean
+  leadIds: [String!]! = []
   priority: Priority!
+  propertyIds: [String!]! = []
+  startDate: Timestamp
   title: String!
   type: TaskType!
 }
@@ -189,6 +195,24 @@ input RegisterInput {
   phone: String
 }
 
+type RelatedDeal {
+  id: ID!
+  referenceNumber: String!
+  title: String!
+}
+
+type RelatedLead {
+  id: ID!
+  referenceNumber: String!
+  title: String!
+}
+
+type RelatedProperty {
+  id: ID!
+  referenceNumber: String!
+  title: String!
+}
+
 type RelatedUser {
   email: String!
   id: ID!
@@ -244,10 +268,13 @@ type Task {
   completedAt: Timestamp
   createdAt: Timestamp!
   createdBy: RelatedUser!
+  deals: [RelatedDeal!]!
   description: String
   dueDate: Timestamp
   id: ID!
+  leads: [RelatedLead!]!
   priority: Priority!
+  properties: [RelatedProperty!]!
   startDate: Timestamp
   status: TaskStatus!
   title: String!
@@ -365,10 +392,14 @@ input UpdateProfileInput {
 input UpdateTaskInput {
   assignedToIds: [String!]
   completedAt: Timestamp
+  dealIds: [String!]
   description: String
   dueDate: Timestamp
   id: ID!
+  isPrivate: Boolean
+  leadIds: [String!]
   priority: Priority
+  propertyIds: [String!]
   startDate: Timestamp
   status: TaskStatus
   title: String

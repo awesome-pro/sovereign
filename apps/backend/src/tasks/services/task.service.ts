@@ -12,6 +12,9 @@ export class TaskService {
   async createTask(input: CreateTaskInput, userId: string): Promise<Task> {
     const {
       assignedToIds = [],
+      dealIds = [],
+      leadIds = [],
+      propertyIds = [],
       ...taskData
     } = input;
 
@@ -22,6 +25,15 @@ export class TaskService {
         assignedTo: {
           connect: assignedToIds.map(id => ({ id })),
         },
+        deals: {
+          connect: dealIds.map(id => ({ id })),
+        },
+        leads: {
+          connect: leadIds.map(id => ({ id })),
+        },
+        properties: {
+          connect: propertyIds.map(id => ({ id })),
+        }
       },
       include: {
         createdBy: true,

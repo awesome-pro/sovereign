@@ -24,6 +24,21 @@ export const TASKS_QUERY = gql`
         email
         name
       }
+      properties {
+        id
+        title
+        referenceNumber
+      }
+      leads {
+        id
+        title
+        referenceNumber
+      }
+      deals {
+        id
+        title
+        referenceNumber
+      }
       checklist {
         id
         item
@@ -215,6 +230,47 @@ export const ADD_TASK_COMMENT_MUTATION = gql`
         createdAt
         updatedAt
       }
+    }
+  }
+`;
+
+export const SEARCH_USERS_QUERY = gql`
+  query SearchUsers($query: String!, $limit: Int) {
+    searchUsers(query: $query, limit: $limit) {
+      id
+      name
+      email
+      avatar
+    }
+  }
+`;
+
+export const SEARCH_LEADS_QUERY = gql`
+  query SearchLeads($query: String!, $limit: Int) {
+    searchLeads(query: $query, limit: $limit) {
+      id
+      referenceNumber
+      title
+    }
+  }
+`;
+
+export const SEARCH_DEALS_QUERY = gql`
+  query SearchDeals($query: String!, $limit: Int) {
+    searchDeals(query: $query, limit: $limit) {
+      id
+      referenceNumber
+      title
+    }
+  }
+`;
+
+export const SEARCH_PROPERTIES_QUERY = gql`
+  query SearchProperties($query: String!, $limit: Int) {
+    searchProperties(query: $query, limit: $limit) {
+      id
+      referenceNumber
+      title
     }
   }
 `;

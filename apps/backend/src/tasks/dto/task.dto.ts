@@ -1,6 +1,9 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { RelatedUser } from '../../auth/types/auth.types.js';
 import { TaskStatus, TaskType, Priority } from '@sovereign/database';
+import { RelatedProperty } from '../../properties/dto/properties.dto.js';
+import { RelatedLead } from '../../leads/dto/lead.dto.js';
+import { RelatedDeal } from '../../deals/dto/deal.dto.js';
 
 @ObjectType()
 export class TaskChecklist {
@@ -81,4 +84,13 @@ export class Task {
 
   @Field(() => [RelatedUser], { defaultValue: [] })
   assignedTo!: RelatedUser[];
+
+  @Field(() => [RelatedProperty], { defaultValue: [] })
+  properties!: RelatedProperty[];
+
+  @Field(() => [RelatedLead], { defaultValue: []})
+  leads!: RelatedLead[];
+
+  @Field(() => [RelatedDeal], { defaultValue: [] })
+  deals!: RelatedDeal[];
 }

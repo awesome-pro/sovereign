@@ -86,7 +86,7 @@ export interface Task {
   checklist: TaskChecklist[];
   comments: TaskComment[];
   attachments: TaskAttachment[];
-  properties?: RelatedProperty[];
+  properties: RelatedProperty[];
   leads: RelatedLead[];
   deals: RelatedDeal[];
   duration?: number | null;
@@ -101,13 +101,10 @@ export interface CreateTaskInput {
   priority: Priority;
   dueDate?: Date;
   startDate?: Date;
-  assignedTo: RelatedUser[]
-  properties: RelatedProperty[];
-  leads: RelatedLead[];
-  deals: RelatedDeal[]
-  location?: string;
-  duration?: number;
-  reminderTime?: Date;
+  assignedToIds: string[];
+  propertyIds: string[];
+  leadIds: string[];
+  dealIds: string[];
   isPrivate?: boolean;
 }
 
@@ -120,10 +117,10 @@ export interface UpdateTaskInput {
   priority?: Priority;
   dueDate?: Date;
   startDate?: Date;
-  assignedTo: RelatedUser[]
-  properties: RelatedProperty[];
-  leads: RelatedLead[];
-  deals: RelatedDeal[]
+  assignedToIds?: string[];
+  propertyIds?: string[];
+  leadIds?: string[];
+  dealIds?: string[];
   location?: string;
   duration?: number;
   isPrivate?: boolean;
