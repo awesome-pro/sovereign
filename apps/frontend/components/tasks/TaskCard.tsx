@@ -1,6 +1,6 @@
 import { FC } from 'react';
 import { format } from 'date-fns';
-import { Task, TaskStatus, Priority } from '@/types/task.types';
+import { Task, TaskStatus, Priority } from '@/types/task';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

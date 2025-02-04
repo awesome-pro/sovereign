@@ -51,6 +51,7 @@ enum Priority {
   LOW
   MEDIUM
   HIGH
+  VIP
 }
 
 enum Language {
@@ -928,7 +929,8 @@ model Team {
   
   // Collaboration
   // projects    Project[]
-  tasks       TeamTask[] 
+  tasks       Task[]  @relation("TaskTeam")
+
   teamDocumentAccesses DocumentAccess[]
   // meetings    Meeting[]
   
@@ -1195,7 +1197,7 @@ model Property {
   favoriteCount     Int              @default(0)
   inquiryCount      Int              @default(0)
   lastViewedAt      DateTime?
-  
+  tasks            Task[]           @relation("AssignedTasks")
   // System Fields
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
@@ -1204,7 +1206,6 @@ model Property {
   propertyAddress PropertyAddress?
   
   @@map("properties")
-  PropertyTask PropertyTask[]
   PropertyTag PropertyTag[]
   PropertyHistory PropertyHistory[]
 }
@@ -2084,6 +2085,7 @@ enum LeadPriority {
 model Lead {
   id                String          @id @default(cuid())
   referenceNumber   String          @unique // Internal reference
+  title             String
   status            LeadStatus      @default(NEW)
   priority          LeadPriority    @default(MEDIUM)
   source            LeadSource
@@ -2232,6 +2234,7 @@ enum DealType {
 model Deal {
   id              String        @id @default(cuid())
   referenceNumber String        @unique
+  title           String
   type            DealType
   status          DealStatus    @default(DRAFT)
   stage           DealStage     @default(AGREEMENT)
@@ -3328,18 +3331,30 @@ enum MessageStatus {
 }
 
 enum TaskType {
-  FOLLOW_UP
-  VIEWING
-  MEETING
+  PROPERTY_VIEWING
+  CLIENT_MEETING
   DOCUMENT_REVIEW
-  CALL
-  EMAIL
+  CONTRACT_SIGNING
+  PROPERTY_INSPECTION
+  FOLLOW_UP
+  DUE_DILIGENCE
+  NEGOTIATION
+  VALUATION
+  MARKETING_APPROVAL
+  LEGAL_REVIEW
+  COMMISSION_PROCESSING
+  CLIENT_CALL
+  VIP_ARRANGEMENT
   OTHER
 }
 
 enum TaskStatus {
   TODO
   IN_PROGRESS
+  WAITING_CLIENT
+  WAITING_DOCUMENTS
+  WAITING_APPROVAL
+  RESCHEDULED
   COMPLETED
   CANCELLED
   BLOCKED
@@ -3476,6 +3491,7 @@ model Task {
   
   createdBy       User            @relation("TaskCreator", fields: [createdById], references: [id])
   createdById     String
+  team            Team[]          @relation("TaskTeam")
   
   
   // Additional Fields
@@ -3491,37 +3507,13 @@ model Task {
 
   // relations
   assignedTo User[]  @relation("AssignedTasks")
-  teamTasks TeamTask[]
   leads Lead[]  @relation("LeadTasks")
   deals Deal[]  @relation("DealTasks")
-  propertyTasks PropertyTask[]
+  properties Property[] @relation("AssignedTasks")
   
   @@index([status, dueDate])
   @@map("tasks")
-}
-
-model TeamTask {
-  id              String          @id @default(cuid())
-  task            Task            @relation(fields: [taskId], references: [id])
-  taskId          String
-  team            Team            @relation(fields: [teamId], references: [id])
-  teamId          String
-  assignedAt      DateTime        @default(now())
   
-  @@unique([taskId, teamId])
-  @@map("team_tasks")
-}
-
-model PropertyTask {
-  id              String          @id @default(cuid())
-  task            Task            @relation(fields: [taskId], references: [id])
-  taskId          String
-  property        Property        @relation(fields: [propertyId], references: [id])
-  propertyId      String
-  assignedAt      DateTime        @default(now())
-  
-  @@unique([taskId, propertyId])
-  @@map("property_tasks")
 }
 
 model TaskChecklist {

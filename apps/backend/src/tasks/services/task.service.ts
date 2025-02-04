@@ -34,11 +34,7 @@ export class TaskService {
         },
         leads: true,
         deals: true,
-        propertyTasks: {
-          include: {
-            property: true,
-          },
-        },
+        properties: true,
       },
     });
   }
@@ -91,11 +87,7 @@ export class TaskService {
         },
         leads: true,
         deals: true,
-        propertyTasks: {
-          include: {
-            property: true,
-          },
-        },
+        properties: true,
       },
     });
   }
@@ -132,11 +124,7 @@ export class TaskService {
         },
         leads: true,
         deals: true,
-        propertyTasks: {
-          include: {
-            property: true,
-          },
-        },
+        properties: true,
       },
     });
 
@@ -175,11 +163,7 @@ export class TaskService {
         },
         leads: true,
         deals: true,
-        propertyTasks: {
-          include: {
-            property: true,
-          },
-        },
+        properties: true,
       },
       orderBy: [
         { priority: 'desc' },

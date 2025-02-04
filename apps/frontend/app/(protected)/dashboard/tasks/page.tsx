@@ -11,7 +11,7 @@ import {
   ADD_TASK_CHECKLIST_ITEM_MUTATION,
   ADD_TASK_COMMENT_MUTATION,
 } from '@/graphql/tasks.mutations';
-import { Task, TaskStatus, Priority, TaskType } from '@/types/task.types';
+import { Task, TaskStatus, Priority, TaskType } from '@/types/task';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { TaskDetails } from '@/components/tasks/TaskDetails';
@@ -338,6 +338,20 @@ export default function TasksPage() {
               }
               onAddComment={(content) =>
                 handleAddComment(selectedTask.id, content)
+              }
+              onUploadAttachment={(file) =>
+                // handleUploadAttachment(selectedTask.id, file)
+                toast({
+                  title: "TODO ",
+                  description: "Please try again.",
+                  variant: "destructive"
+                })
+              }
+              onUpdateStatus={(status) =>
+                handleUpdateTask({
+                  id: selectedTask.id,
+                  status,
+                })
               }
             />
           )}
