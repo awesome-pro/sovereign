@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, Context } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { ProfileService } from '../services/profile.service.js';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard.js';
@@ -22,8 +22,8 @@ export class ProfileResolver {
 
   @Query(() => CompleteUserProfile)
   // @Permissions([{ resourceCode: '0u', actions: ['VIEW'] }])
-  async getProfile(@CurrentUser('id') userId: string) {
-    return this.profileService.getProfile(userId);
+  async getProfile(@Context() { req, res }: { req: any; res: any },) {
+    return this.profileService.getProfile(req.user.sb);
   }
 
   @Query(() => CompleteUserProfile)
@@ -35,105 +35,105 @@ export class ProfileResolver {
   @Mutation(() => CompleteUserProfile)
   // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }])
   async updateProfile(
-    @CurrentUser('id') userId: string,
+    @Context() {req, res}: {req: any; res: any},
     @Args('input') input: UpdateProfileInput,
   ) {
-    return this.profileService.updateProfile(userId, input);
+    return this.profileService.updateProfile(req.user.sb, input);
   }
 
   @Mutation(() => String)
   // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }])
   async uploadAvatar(
-    @CurrentUser('id') userId: string,
+    @Context() {req, res}: {req: any; res: any},
     @Args({ name: 'file', type: () => UploadScalar })
     fileUpload: Promise<FileUpload>,
   ) {
     const file = await fileUpload;
-    return this.profileService.uploadAvatar(userId, file);
+    return this.profileService.uploadAvatar(req.user.sb, file);
   }
 
   @Mutation(() => String)
   // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }])
   async uploadCoverImage(
-    @CurrentUser('id') userId: string,
+    @Context() {req, res}: {req: any; res: any},
     @Args({ name: 'file', type: () => UploadScalar })
     fileUpload: Promise<FileUpload>,
   ) {
     const file = await fileUpload;
-    return this.profileService.uploadCoverImage(userId, file);
+    return this.profileService.uploadCoverImage(req.user.sb, file);
   }
 
   // @Mutation(() => CompleteUserProfile)
   // // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }))
   // async updateAddress(
-  //   @CurrentUser('id') userId: string,
+  //   @Context() {req, res}: {req: any; res: any},
   //   @Args('input') input: AddressInput,
   // ) {
-  //   return this.profileService.updateAddress(userId, input);
+  //   return this.profileService.updateAddress(req.user.sb, input);
   // }
 
   @Mutation(() => CompleteUserProfile)
   // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }])
   async addLicense(
-    @CurrentUser('id') userId: string,
+    @Context() {req, res}: {req: any; res: any},
     @Args('input') input: LicenseInput,
   ) {
-    return this.profileService.addLicense(userId, input);
+    return this.profileService.addLicense(req.user.sb, input);
   }
 
   // @Mutation(() => CompleteUserProfile)
   // // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }])
   // async updateLicense(
-  //   @CurrentUser('id') userId: string,
+  //   @Context() {req, res}: {req: any; res: any},
   //   @Args('licenseId', { type: () => ID }) licenseId: string,
   //   @Args('input') input: LicenseInput,
   // ) {
-  //   return this.profileService.updateLicense(userId, licenseId, input);
+  //   return this.profileService.updateLicense(req.user.sb, licenseId, input);
   // }
 
   @Mutation(() => CompleteUserProfile)
   // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }])
   async deleteLicense(
-    @CurrentUser('id') userId: string,
+    @Context() {req, res}: {req: any; res: any},
     @Args('licenseId', { type: () => ID }) licenseId: string,
   ) {
-    return this.profileService.deleteLicense(userId, licenseId);
+    return this.profileService.deleteLicense(req.user.sb, licenseId);
   }
 
   @Mutation(() => CompleteUserProfile)
   // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }])
   async addCertification(
-    @CurrentUser('id') userId: string,
+    @Context() {req, res}: {req: any; res: any},
     @Args('input') input: CertificationInput,
   ) {
-    return this.profileService.addCertification(userId, input);
+    return this.profileService.addCertification(req.user.sb, input);
   }
 
   // @Mutation(() => CompleteUserProfile)
   // // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }])
   // async updateCertification(
-  //   @CurrentUser('id') userId: string,
+  //   @Context() {req, res}: {req: any; res: any},
   //   @Args('certId', { type: () => ID }) certId: string,
   //   @Args('input') input: CertificationInput,
   // ) {
-  //   return this.profileService.updateCertification(userId, certId, input);
+  //   return this.profileService.updateCertification(req.user.sb, certId, input);
   // }
 
   @Mutation(() => CompleteUserProfile)
   // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }])
   async deleteCertification(
-    @CurrentUser('id') userId: string,
+    @Context() {req, res}: {req: any; res: any},
     @Args('certId', { type: () => ID }) certId: string,
   ) {
-    return this.profileService.deleteCertification(userId, certId);
+    return this.profileService.deleteCertification(req.user.sb, certId);
   }
 
   // @Mutation(() => CompleteUserProfile)
   // // @Permissions([{ resourceCode: '0u', actions: ['EDIT'] }])
   // async updateLanguages(
-  //   @CurrentUser('id') userId: string,
+  //   @Context() {req, res}: {req: any; res: any},
   //   @Args('languages', { type: () => [LanguageInput] }) languages: LanguageInput[],
   // ) {
-  //   return this.profileService.updateLanguages(userId, languages);
+  //   return this.profileService.updateLanguages(req.user.sb, languages);
   // }
 }

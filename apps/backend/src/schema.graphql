@@ -73,11 +73,6 @@ enum Gender {
   PREFER_NOT_TO_SAY
 }
 
-"""
-The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
-"""
-scalar JSON
-
 type JWTRole {
   hierarchy: Int!
   parentRoleHash: String
@@ -233,6 +228,14 @@ type SocialLinks {
   website: String
 }
 
+input SocialLinksInput {
+  facebook: String
+  instagram: String
+  linkedin: String
+  twitter: String
+  website: String
+}
+
 type Task {
   assignedTo: [RelatedUser!]!
   checklist: [TaskChecklist!]!
@@ -339,7 +342,7 @@ input UpdateProfileInput {
   nationality: String
   secondaryEmail: String
   secondaryPhone: String
-  socialLinks: JSON
+  socialLinks: SocialLinksInput
   specializations: [String!]
   timeZone: String
   title: String

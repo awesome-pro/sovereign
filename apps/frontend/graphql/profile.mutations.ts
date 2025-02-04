@@ -18,7 +18,13 @@ export const UPDATE_PROFILE = gql`
       experience
       timeZone
       currency
-      socialLinks
+      socialLinks {
+        linkedin
+        twitter
+        facebook
+        instagram
+        website
+      }
     }
   }
 `;

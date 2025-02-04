@@ -93,7 +93,14 @@ const cache = new InMemoryCache({
             };
           },
         },
-        // Add other advanced merge strategies for different query types
+        getProfile: {
+          merge(existing, incoming, { mergeObjects }) {
+            return incoming ? mergeObjects(existing, incoming) : incoming;
+          },
+          read(existing) {
+            return existing;
+          }
+        },
         tasks: {
           keyArgs: ['filter'],
           merge(existing = [], incoming, { args, readField }) {
@@ -124,21 +131,18 @@ const cache = new InMemoryCache({
         }
       }
     },
-    // Add type-specific merge strategies
     User: {
       keyFields: ['id'],
       fields: {
         roles: { merge: (_, incoming) => incoming },
         permissions: { merge: (_, incoming) => incoming }
       }
-    },
-    // Add more type policies as needed
+    }
   },
-  // Enable warnings for potential cache issues in development
   dataIdFromObject: ((object: any) => {
-    // Explicitly return a string or false
     if (object.__typename === 'User' && object.id) return `User:${object.id}`;
     if (object.__typename === 'Task' && object.id) return `Task:${object.id}`;
+    if (object.__typename === 'UserProfile' && object.id) return `UserProfile:${object.id}`;
     return false;
   }) as KeyFieldsFunction
 });

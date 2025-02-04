@@ -201,6 +201,34 @@ export class CompleteUserProfile {
 }
 
 @InputType()
+export class SocialLinksInput {
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  linkedin?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  twitter?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  facebook?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  instagram?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  website?: string;
+}
+
+@InputType()
 export class UpdateProfileInput {
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -273,9 +301,9 @@ export class UpdateProfileInput {
   @MaxLength(3)
   currency?: string;
 
-  @Field(() => GraphQLJSON, { nullable: true })
+  @Field(() => SocialLinksInput, { nullable: true })
   @IsOptional()
-  socialLinks?: Record<string, string>;
+  socialLinks?: SocialLinksInput;
 }
 
 @InputType()

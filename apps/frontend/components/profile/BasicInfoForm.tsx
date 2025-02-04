@@ -20,10 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Gender, UpdateProfileInput } from '@/types/profile';
+import { Gender, UpdateProfileInput, parseSocialLinks } from '@/types/profile';
+
+const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
 
 const formSchema = z.object({
-  lastName: z.string().min(1, 'Last name is required'),
+  lastName: z.string().optional(),
   displayName: z.string().optional(),
   bio: z.string().max(500, 'Bio must be less than 500 characters').optional(),
   title: z.string().optional(),
@@ -35,6 +37,13 @@ const formSchema = z.object({
   experience: z.number().min(0).optional(),
   timeZone: z.string(),
   currency: z.string().length(3, 'Currency must be a 3-letter code'),
+  socialLinks: z.object({
+    linkedin: z.string().url('Invalid LinkedIn URL').optional().or(z.literal('')),
+    twitter: z.string().url('Invalid Twitter URL').optional().or(z.literal('')),
+    facebook: z.string().url('Invalid Facebook URL').optional().or(z.literal('')),
+    instagram: z.string().url('Invalid Instagram URL').optional().or(z.literal('')),
+    website: z.string().url('Invalid Website URL').optional().or(z.literal('')),
+  }).optional(),
 });
 
 interface BasicInfoFormProps {
@@ -50,12 +59,39 @@ export const BasicInfoForm: React.FC<BasicInfoFormProps> = ({
 }) => {
   const form = useForm<UpdateProfileInput>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: {
+      ...defaultValues,
+      socialLinks: (() => {
+        // Parse social links if it's a string
+        const parsedLinks = parseSocialLinks(defaultValues.socialLinks);
+        
+        return {
+          linkedin: parsedLinks?.linkedin || '',
+          twitter: parsedLinks?.twitter || '',
+          facebook: parsedLinks?.facebook || '',
+          instagram: parsedLinks?.instagram || '',
+          website: parsedLinks?.website || '',
+        };
+      })(),
+    },
   });
+
+  // Remove debug information in production
+  const isDebugMode = process.env.NODE_ENV !== 'production';
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <h2 className="text-2xl font-bold">Basic Info</h2>
+        
+        {isDebugMode && (
+          <div>
+            <p>Errors: {JSON.stringify(form.formState.errors)}</p>
+            <p>Form Values: {JSON.stringify(form.getValues())}</p>
+            <p>Form Valid: {form.formState.isValid.toString()}</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -180,6 +216,96 @@ export const BasicInfoForm: React.FC<BasicInfoFormProps> = ({
                     type="number"
                     {...field}
                     onChange={(e) => field.onChange(Number(e.target.value))}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="socialLinks.linkedin"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>LinkedIn Profile</FormLabel>
+                <FormControl>
+                  <Input 
+                    {...field} 
+                    value={field.value || ''}
+                    placeholder="https://linkedin.com/in/username" 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="socialLinks.twitter"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Twitter Profile</FormLabel>
+                <FormControl>
+                  <Input 
+                    {...field} 
+                    value={field.value || ''}
+                    placeholder="https://twitter.com/username" 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="socialLinks.facebook"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Facebook Profile</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="url"
+                    {...field} 
+                    value={field.value || ''}
+                    placeholder="https://facebook.com/username" 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="socialLinks.instagram"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Instagram Profile</FormLabel>
+                <FormControl>
+                  <Input 
+                    {...field} 
+                    value={field.value || ''}
+                    placeholder="https://instagram.com/username" 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="socialLinks.website"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Personal Website</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="url"
+                    {...field} 
+                    value={field.value || ''}
+                    placeholder="https://yourwebsite.com" 
                   />
                 </FormControl>
                 <FormMessage />

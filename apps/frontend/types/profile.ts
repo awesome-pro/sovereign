@@ -44,11 +44,11 @@ export interface Language {
 }
 
 export interface SocialLinks {
-  linkedin?: string;
-  twitter?: string;
-  facebook?: string;
-  instagram?: string;
-  website?: string;
+  linkedin?: string | null;
+  twitter?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+  website?: string | null;
 }
 
 export interface UserProfile {
@@ -77,7 +77,7 @@ export interface UserProfile {
   languages: Language[];
   timeZone: string;
   currency: string;
-  socialLinks?: SocialLinks;
+  socialLinks?: SocialLinks | string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -86,18 +86,16 @@ export interface UpdateProfileInput {
   lastName?: string;
   displayName?: string;
   bio?: string;
-  dateOfBirth?: Date;
+  title?: string;
   gender?: Gender;
   nationality?: string;
   secondaryEmail?: string;
   secondaryPhone?: string;
   whatsapp?: string;
-  title?: string;
-  specializations?: string[];
   experience?: number;
   timeZone?: string;
   currency?: string;
-  socialLinks?: SocialLinks;
+  socialLinks?: SocialLinks | string | null;
 }
 
 export interface AddressInput {
@@ -127,4 +125,33 @@ export interface LanguageInput {
   code: string;
   name: string;
   proficiency: string;
+}
+
+export function parseSocialLinks(socialLinks?: SocialLinks | string | null): SocialLinks | undefined {
+  debugger;
+  
+  if (!socialLinks) return undefined;
+  
+  // If it's already an object, return it
+  if (typeof socialLinks !== 'string') return socialLinks;
+  
+  try {
+    // Try parsing the JSON string
+    const parsed = JSON.parse(socialLinks);
+    
+    // Validate the parsed object has the correct structure
+    if (typeof parsed === 'object' && parsed !== null) {
+      return {
+        linkedin: parsed.linkedin || null,
+        twitter: parsed.twitter || null,
+        facebook: parsed.facebook || null,
+        instagram: parsed.instagram || null,
+        website: parsed.website || null,
+      };
+    }
+  } catch (error) {
+    console.error('Failed to parse social links:', error);
+  }
+  
+  return undefined;
 }

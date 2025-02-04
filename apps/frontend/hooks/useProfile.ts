@@ -37,10 +37,27 @@ export const useProfile = () => {
     refetch: refetchProfile,
   } = useQuery(GET_USER_PROFILE, {
     fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first',
+    notifyOnNetworkStatusChange: true,
   });
 
   // Mutations
   const [updateProfile] = useMutation(UPDATE_PROFILE, {
+    update(cache, { data: { updateProfile: updatedProfile } }) {
+      cache.modify({
+        fields: {
+          getProfile(existingProfile) {
+            if (existingProfile) {
+              return {
+                ...existingProfile,
+                ...updatedProfile,
+              };
+            }
+            return updatedProfile;
+          }
+        }
+      });
+    },
     onCompleted: () => {
       toast.success('Profile updated successfully');
     },
@@ -50,9 +67,26 @@ export const useProfile = () => {
   });
 
   const [uploadAvatar] = useMutation(UPLOAD_AVATAR, {
+    update(cache, { data: { uploadAvatar: avatarUrl } }) {
+      cache.modify({
+        fields: {
+          getProfile(existingProfile) {
+            if (existingProfile) {
+              return {
+                ...existingProfile,
+                user: {
+                  ...existingProfile.user,
+                  avatar: avatarUrl,
+                },
+              };
+            }
+            return existingProfile;
+          }
+        }
+      });
+    },
     onCompleted: () => {
       toast.success('Avatar uploaded successfully');
-      refetchProfile();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -60,9 +94,23 @@ export const useProfile = () => {
   });
 
   const [uploadCoverImage] = useMutation(UPLOAD_COVER_IMAGE, {
+    update(cache, { data: { uploadCoverImage: coverImageUrl } }) {
+      cache.modify({
+        fields: {
+          getProfile(existingProfile) {
+            if (existingProfile) {
+              return {
+                ...existingProfile,
+                coverImage: coverImageUrl,
+              };
+            }
+            return existingProfile;
+          }
+        }
+      });
+    },
     onCompleted: () => {
       toast.success('Cover image uploaded successfully');
-      refetchProfile();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -214,11 +262,19 @@ export const useProfile = () => {
 
     try {
       setCoverImageUploading(true);
+      
+      // Use a FormData object to ensure proper file upload
+      const formData = new FormData();
+      formData.append('file', file, file.name);
+
       await uploadCoverImage({ 
-        variables: { file },
+        variables: { 
+          file: file // Pass the file directly
+        },
         context: {
           headers: {
             'apollo-require-preflight': 'true',
+            'Content-Type': 'multipart/form-data',
           }
         }
       });
