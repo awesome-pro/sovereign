@@ -81,16 +81,16 @@ export const BasicInfoForm: React.FC<BasicInfoFormProps> = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-7 mb-7">
         <h2 className="text-2xl font-bold">Basic Info</h2>
         
-        {isDebugMode && (
+        {/* {isDebugMode && (
           <div>
             <p>Errors: {JSON.stringify(form.formState.errors)}</p>
             <p>Form Values: {JSON.stringify(form.getValues())}</p>
             <p>Form Valid: {form.formState.isValid.toString()}</p>
           </div>
-        )}
+        )} */}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
