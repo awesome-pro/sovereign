@@ -72,6 +72,9 @@ export class TaskService {
     const {
       id,
       assignedToIds,
+      dealIds,
+      leadIds,
+      propertyIds,
       ...updateData
     } = input;
 
@@ -86,6 +89,15 @@ export class TaskService {
         ...updateData,
         assignedTo: assignedToIds ? {
           set: assignedToIds.map(id => ({ id })),
+        } : undefined,
+        deals: dealIds ? {
+          set: dealIds.map(id => ({ id })),
+        } : undefined,
+        leads: leadIds ? {
+          set: leadIds.map(id => ({ id })),
+        } : undefined,
+        properties: propertyIds ? {
+          set: propertyIds.map(id => ({ id })),
         } : undefined,
       },
       include: {

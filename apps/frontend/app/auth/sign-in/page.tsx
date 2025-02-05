@@ -35,8 +35,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const user = await signIn(formData);
-      toast.success(`${user.name} Signed in successfully`);
+      // const user = await signIn(formData);
+      toast.success(`Signed in successfully`);
       router.push(redirectTo);
     } catch (err) {
       console.error('Sign in error:', err);

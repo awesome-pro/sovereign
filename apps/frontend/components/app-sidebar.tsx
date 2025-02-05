@@ -18,6 +18,7 @@ import {
   Search,
   PersonStanding
 } from "lucide-react"
+import { usePathname } from "next/navigation"
 import { useAuthContext } from "@/providers/auth-provider"
 import { SecureComponent } from "@/components/secure/SecureComponent"
 import {
@@ -31,10 +32,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarFooter,
 } from "@/components/ui/sidebar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import Link from "next/link";
 import { RequiredPermission } from "@/utils/permissions";
+import { useSidebar } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 // Define menu items with their required permissions
 const menuGroups: { title: string; items: MenuItemProps[] }[] = [
@@ -179,15 +184,65 @@ interface MenuItemProps {
 
 const MenuItem = ({ item }: { item: MenuItemProps }) => {
   const Icon = item.icon
+  const { state } = useSidebar()
+  const pathname = usePathname()
+
+  // Check if the current pathname matches the item's URL or is a subpath
+  const isActive = pathname === item.url || 
+    (item.url !== '/dashboard' && pathname.startsWith(item.url))
 
   return (
     <SecureComponent
       component={() => (
         <SidebarMenuItem>
-          <SidebarMenuButton asChild>
-            <Link href={item.url}>
-              <Icon className="h-4 w-4" />
-              <span>{item.title}</span>
+          <SidebarMenuButton 
+            asChild 
+            tooltip={{
+              children: item.title,
+              side: 'right',
+              hidden: state !== 'collapsed'
+            }}
+            className={cn(
+              'group/menu-item',
+              isActive 
+                ? 'bg-primary/10 text-primary font-semibold' 
+                : 'hover:bg-secondary/50',
+              'transition-all duration-300 ease-in-out',
+              'relative overflow-hidden',
+              'before:absolute before:inset-0 before:origin-left before:scale-x-0',
+              isActive 
+                ? 'before:bg-primary/10 before:scale-x-100' 
+                : 'before:group-hover/menu-item:scale-x-100 before:bg-secondary/20',
+              'before:transition-transform before:duration-300 before:ease-out',
+              'focus:outline-none focus:ring-2 focus:ring-primary/30'
+            )}
+          >
+            <Link 
+              href={item.url} 
+              className="w-full flex items-center relative z-10 py-2 px-3"
+            >
+              <Icon 
+                className={cn(
+                  'h-4 w-4 mr-2',
+                  isActive 
+                    ? 'text-primary' 
+                    : 'text-muted-foreground group-hover/menu-item:text-foreground'
+                )} 
+              />
+              <span 
+                className={cn(
+                  'flex-1 truncate',
+                  isActive ? 'text-primary' : 'group-hover/menu-item:text-foreground'
+                )}
+              >
+                {item.title}
+              </span>
+              {isActive && (
+                <div 
+                  className="absolute right-0 top-1/2 -translate-y-1/2 h-2/3 w-1 bg-primary rounded-l-full 
+                  transition-all duration-300 ease-out"
+                />
+              )}
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -218,8 +273,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <Sidebar collapsible="icon" {...props}>
         <SidebarHeader>
           <div className="flex items-center space-x-2 px-4 py-2">
-            <Building2 className="h-6 w-6" />
-            <h1 className="text-xl font-bold">Estate CRM</h1>
+            <Building2 className="h-6 w-6 text-primary" />
+            <h1 className="text-xl font-bold text-primary-foreground">Estate CRM</h1>
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -244,17 +299,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <div className="flex items-center space-x-2 px-4 py-2">
-          <Building2 className="h-6 w-6" />
-          {/* <h1 className="text-xl font-bold">Estate CRM</h1> */}
+        <div className="flex items-center space-x-2 px-4 py-2 group">
+          <Building2 className="h-6 w-6 text-primary transition-transform group-hover:rotate-12" />
+          <h1 className="text-xl font-bold text-primary-foreground opacity-0 group-data-[state=expanded]:opacity-100 transition-opacity duration-300">
+            Estate CRM
+          </h1>
         </div>
         <div className="px-4 py-2">
-          <div className="flex items-center space-x-2">
-            <Search className="h-4 w-4 opacity-50" />
+          <div className="relative flex items-center space-x-2 group">
+            <Search className="h-4 w-4 text-muted-foreground absolute left-3 transition-colors group-focus-within:text-primary" />
             <input
               type="search"
               placeholder="Search..."
-              className="w-full bg-transparent outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-secondary/20 rounded-md outline-none focus:ring-2 focus:ring-primary/50 transition-all"
             />
           </div>
         </div>
@@ -270,7 +327,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarGroup>
               <SidebarGroupLabel
                 asChild
-                className="group/label text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                className="group/label text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer"
               >
                 <CollapsibleTrigger>
                   {group.title}
@@ -291,12 +348,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ))}
       </SidebarContent>
       
+      <SidebarFooter className="p-4 border-t">
+        <div className="flex items-center space-x-2 group">
+          <Avatar>
+            <AvatarImage src={user?.avatar} alt={user?.name} />
+            <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
+          </Avatar>
+          <div className="opacity-0 group-data-[state=expanded]:opacity-100 transition-opacity duration-300">
+            <p className="font-semibold text-sm">{user?.name}</p>
+            <p className="text-xs text-muted-foreground">{user?.email}</p>
+          </div>
+        </div>
+      </SidebarFooter>
+      
       <SidebarRail />
     </Sidebar>
   );
 }
-
-
 
 export function SidebarMenuSkeleton({ showIcon }: { showIcon: boolean }) {
   return (

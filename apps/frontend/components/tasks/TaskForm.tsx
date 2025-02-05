@@ -52,7 +52,7 @@ const taskSchema = z.object({
 
 interface TaskFormProps {
   task?: Task;
-  onSubmit: (data: CreateTaskInput | UpdateTaskInput) => void;
+  onSubmit: (data: CreateTaskInput | UpdateTaskInput) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -141,14 +141,14 @@ export const TaskForm: FC<TaskFormProps> = ({
     })) || [];
   };
 
-  const handleSubmit = (values: z.infer<typeof taskSchema>) => {
+  const handleSubmit = async (values: z.infer<typeof taskSchema>) => {
     const baseInput = {
       title: values.title,
-      description: values.description,
+      description: values.description || undefined,
       type: values.type,
       priority: values.priority,
-      dueDate: values.dueDate?.toISOString(),
-      startDate: values.startDate?.toISOString(),
+      dueDate: values.dueDate || undefined,
+      startDate: values.startDate || undefined,
       assignedToIds: values.assignedToIds,
       propertyIds: values.propertyIds,
       leadIds: values.leadIds,
@@ -156,18 +156,24 @@ export const TaskForm: FC<TaskFormProps> = ({
       isPrivate: values.isPrivate ?? false,
     };
 
-    if (task) {
-      const updateInput: UpdateTaskInput = {
-        ...baseInput,
-        id: task.id,
-        status: task.status,
-        completedAt: task.completedAt ? task.completedAt : undefined,
-        dueDate: task.dueDate ? task.dueDate : undefined,
-        startDate: task.startDate ? task.startDate : undefined
-      };
-      onSubmit(updateInput);
-    } else {
-      onSubmit(baseInput as CreateTaskInput);
+    try {
+      if (task) {
+        // For update, we need to include the id and maintain existing fields
+        const updateInput: UpdateTaskInput = {
+          id: task.id,
+          ...baseInput,
+          status: task.status,
+          completedAt: task.completedAt || undefined,
+        };
+        await onSubmit(updateInput);
+      } else {
+        // For create, we use the base input directly
+        const createInput: CreateTaskInput = baseInput;
+        await onSubmit(createInput);
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      // You might want to handle the error here, e.g., show a toast message
     }
   };
 

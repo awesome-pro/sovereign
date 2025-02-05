@@ -11,7 +11,7 @@ import {
   ADD_TASK_CHECKLIST_ITEM_MUTATION,
   ADD_TASK_COMMENT_MUTATION,
 } from '@/graphql/mutations/task.mutations';
-import { Task, TaskStatus, Priority, TaskType } from '@/types/task';
+import { Task, TaskStatus, Priority, TaskType, CreateTaskInput, UpdateTaskInput } from '@/types/task';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { TaskDetails } from '@/components/tasks/TaskDetails';
@@ -104,41 +104,75 @@ export default function TasksPage() {
 
   const [updateTask] = useMutation(UPDATE_TASK_MUTATION, {
     update(cache, { data: { updateTask } }) {
-      const existingTasks = cache.readQuery<{ tasks: Task[] }>({
+      const existingData = cache.readQuery<{ tasks: Task[] }>({
         query: TASKS_QUERY,
         variables: { filter: {} }
       });
 
-      if (existingTasks?.tasks) {
+      if (existingData) {
+        const updatedTasks = existingData.tasks.map(task => 
+          task.id === updateTask.id ? updateTask : task
+        );
+
         cache.writeQuery({
           query: TASKS_QUERY,
           variables: { filter: {} },
-          data: {
-            tasks: existingTasks.tasks.map((task: Task) =>
-              task.id === updateTask.id ? updateTask : task
-            )
-          }
+          data: { tasks: updatedTasks }
         });
       }
+
+      setSelectedTask(null);
+
+      toast({
+        title: 'Task updated',
+        description: 'The task has been updated successfully.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update task. Please try again.',
+        variant: 'destructive',
+      });
+      console.error('Update task error:', error);
     }
   });
 
   const [deleteTask] = useMutation(DELETE_TASK_MUTATION, {
     update(cache, { data: { deleteTask } }, { variables }) {
-      const existingTasks = cache.readQuery<{ tasks: Task[] }>({
+      if (!variables?.id) return;
+
+      const existingData = cache.readQuery<{ tasks: Task[] }>({
         query: TASKS_QUERY,
         variables: { filter: {} }
       });
 
-      if (existingTasks?.tasks && variables?.id) {
+      if (existingData) {
+        const updatedTasks = existingData.tasks.filter(task => 
+          task.id !== variables.id
+        );
+
         cache.writeQuery({
           query: TASKS_QUERY,
           variables: { filter: {} },
-          data: {
-            tasks: existingTasks.tasks.filter((task: Task) => task.id !== variables.id)
-          }
+          data: { tasks: updatedTasks }
         });
       }
+
+      setSelectedTask(null);
+
+      toast({
+        title: 'Task deleted',
+        description: 'The task has been deleted successfully.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete task. Please try again.',
+        variant: 'destructive',
+      });
+      console.error('Delete task error:', error);
     }
   });
 
@@ -162,32 +196,74 @@ export default function TasksPage() {
     }
   };
 
-  const handleUpdateTask = async (input: any) => {
+  const handleUpdateTask = async (input: CreateTaskInput | UpdateTaskInput) => {
     try {
-      await updateTask({ variables: { input } });
+      // Type guard to ensure we have an UpdateTaskInput
+      if (!('id' in input)) {
+        throw new Error('Update task requires an ID');
+      }
+
+      const result = await updateTask({
+        variables: { input },
+        optimisticResponse: {
+          updateTask: {
+            __typename: 'Task',
+            ...input,
+            // Preserve existing task fields that aren't in the update input
+            ...(selectedTask && {
+              createdAt: selectedTask.createdAt,
+              updatedAt: new Date().toISOString(),
+              createdBy: selectedTask.createdBy,
+              checklist: selectedTask.checklist,
+              comments: selectedTask.comments,
+              attachments: selectedTask.attachments,
+              assignedTo: selectedTask.assignedTo,
+              properties: selectedTask.properties,
+              leads: selectedTask.leads,
+              deals: selectedTask.deals,
+            })
+          }
+        }
+      });
+
+      if (result.errors) {
+        throw new Error(result.errors[0]?.message);
+      }
+
+      await refetch(); // Refresh tasks list
+      
       toast({
         title: 'Task updated',
         description: 'The task has been updated successfully.',
       });
-      refetch();
     } catch (error) {
+      console.error('Error updating task:', error);
       toast({
         title: 'Error',
         description: 'Failed to update task. Please try again.',
         variant: 'destructive',
       });
+      throw error;
     }
   };
 
   const handleDeleteTask = async (id: string) => {
     try {
-      await deleteTask({ variables: { id } });
+      await deleteTask({
+        variables: { id },
+        optimisticResponse: {
+          deleteTask: id
+        }
+      });
+
+      await refetch(); // Refresh tasks list
+      
       toast({
         title: 'Task deleted',
         description: 'The task has been deleted successfully.',
       });
-      refetch();
     } catch (error) {
+      console.error('Error deleting task:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete task. Please try again.',
@@ -429,6 +505,9 @@ export default function TasksPage() {
                   status,
                 })
               }
+              onUpdateTask={handleUpdateTask}
+              onDeleteTask={handleDeleteTask}
+              refetch={refetch} // Pass refetch to TaskDetails
             />
           )}
         </SheetContent>

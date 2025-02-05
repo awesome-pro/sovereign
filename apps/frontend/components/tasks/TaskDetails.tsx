@@ -1,6 +1,6 @@
 import { FC, useState } from 'react';
 import { format } from 'date-fns';
-import { Task, TaskStatus, Priority, TaskType } from '@/types/task';
+import { Task, TaskStatus, Priority, TaskType, CreateTaskInput, UpdateTaskInput } from '@/types/task';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,9 +32,15 @@ import {
   DollarSignIcon,
   AlertCircleIcon,
   FileIcon,
+  PencilIcon,
+  TrashIcon,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { TaskForm } from './TaskForm';
+import { toast } from 'sonner';
 
 interface TaskDetailsProps {
   task: Task;
@@ -43,6 +49,9 @@ interface TaskDetailsProps {
   onToggleChecklistItem: (itemId: string, completed: boolean) => void;
   onAddComment: (content: string) => void;
   onUploadAttachment?: (file: File) => void;
+  onUpdateTask: (input: CreateTaskInput | UpdateTaskInput) => Promise<void>;
+  onDeleteTask: (id: string) => void;
+  refetch?: () => Promise<any>;
 }
 
 const statusColors: Record<TaskStatus, string> = {
@@ -61,7 +70,6 @@ const priorityColors: Record<Priority, string> = {
   [Priority.LOW]: 'bg-gray-500',
   [Priority.MEDIUM]: 'bg-blue-500',
   [Priority.HIGH]: 'bg-orange-500',
-  [Priority.URGENT]: 'bg-red-500',
   [Priority.VIP]: 'bg-purple-500',
 };
 
@@ -72,6 +80,9 @@ export const TaskDetails: FC<TaskDetailsProps> = ({
   onToggleChecklistItem,
   onAddComment,
   onUploadAttachment,
+  onUpdateTask,
+  onDeleteTask,
+  refetch,
 }) => {
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [newComment, setNewComment] = useState('');
@@ -80,6 +91,7 @@ export const TaskDetails: FC<TaskDetailsProps> = ({
     if (newChecklistItem.trim()) {
       onAddChecklistItem(newChecklistItem.trim());
       setNewChecklistItem('');
+      refetch?.(); // Optional chaining to call refetch if provided
     }
   };
 
@@ -87,6 +99,7 @@ export const TaskDetails: FC<TaskDetailsProps> = ({
     if (newComment.trim()) {
       onAddComment(newComment.trim());
       setNewComment('');
+      refetch?.(); // Optional chaining to call refetch if provided
     }
   };
 
@@ -106,24 +119,75 @@ export const TaskDetails: FC<TaskDetailsProps> = ({
             </Badge>
           </div>
         </div>
-        <Select 
-          defaultValue={task.status} 
-          onValueChange={(value) => onUpdateStatus(value as TaskStatus)}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.values(TaskStatus).map((status) => (
-              <SelectItem key={status} value={status}>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
-                  {status.replace(/_/g, ' ')}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select 
+            defaultValue={task.status} 
+            onValueChange={(value) => onUpdateStatus(value as TaskStatus)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(TaskStatus).map((status) => (
+                <SelectItem key={status} value={status}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
+                    {status.replace(/_/g, ' ')}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="icon">
+                <PencilIcon className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="min-w-[850px] h-[80vh] overflow-y-scroll">
+              <DialogHeader>
+                <DialogTitle>Edit Task</DialogTitle>
+              </DialogHeader>
+              <TaskForm 
+                task={task} 
+                onSubmit={async (data) => {
+                  // Ensure we're passing an UpdateTaskInput by adding the id
+                  if ('id' in data) {
+                    await onUpdateTask(data);
+                  } else {
+                    // This case should never happen in TaskDetails
+                    toast.error('Attempted to create task in update context')
+                    console.error('Attempted to create task in update context');
+                  }
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="icon">
+                <TrashIcon className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this task? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={() => onDeleteTask(task.id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       <Separator />
