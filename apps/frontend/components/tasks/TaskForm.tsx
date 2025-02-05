@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -30,27 +30,11 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { 
-  CalendarIcon, 
-  MapPinIcon, 
-  ClockIcon, 
-  BellIcon, 
-  TagIcon,
-  DollarSignIcon,
-  BuildingIcon,
-  UserIcon,
-  BriefcaseIcon
-} from 'lucide-react';
+  CalendarIcon} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
 import { RelatedDeal, RelatedLead, RelatedProperty, RelatedUser } from '@/types';
-import { relatedPropertySchema, relatedLeadSchema, relatedDealSchema, relatedUserSchema } from '@/schemas';
-import {
-  SEARCH_USERS_QUERY,
-  SEARCH_LEADS_QUERY,
-  SEARCH_DEALS_QUERY,
-  SEARCH_PROPERTIES_QUERY,
-} from '@/graphql/tasks.mutations';
+import { SEARCH_DEALS_QUERY, SEARCH_LEADS_QUERY, SEARCH_PROPERTIES_QUERY, SEARCH_USERS_QUERY } from '@/graphql/queries';
 
 const taskSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -169,19 +153,22 @@ export const TaskForm: FC<TaskFormProps> = ({
       propertyIds: values.propertyIds,
       leadIds: values.leadIds,
       dealIds: values.dealIds,
-      isPrivate: values.isPrivate,
+      isPrivate: values.isPrivate ?? false,
     };
 
-    const input = task 
-      ? { 
-          ...baseInput, 
-          id: task.id,
-          status: task.status, 
-          completedAt: task.completedAt 
-        } 
-      : baseInput;
-
-    onSubmit(input as CreateTaskInput | UpdateTaskInput);
+    if (task) {
+      const updateInput: UpdateTaskInput = {
+        ...baseInput,
+        id: task.id,
+        status: task.status,
+        completedAt: task.completedAt ? task.completedAt : undefined,
+        dueDate: task.dueDate ? task.dueDate : undefined,
+        startDate: task.startDate ? task.startDate : undefined
+      };
+      onSubmit(updateInput);
+    } else {
+      onSubmit(baseInput as CreateTaskInput);
+    }
   };
 
   return (
