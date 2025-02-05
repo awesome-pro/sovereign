@@ -182,6 +182,10 @@ type Query {
   me: User!
   permission(id: ID!): Permission!
   permissions: [Permission!]!
+  searchDeals(limit: Int, query: String!): [RelatedDeal!]!
+  searchLeads(limit: Int, query: String!): [RelatedLead!]!
+  searchProperties(limit: Int, query: String!): [RelatedProperty!]!
+  searchUsers(limit: Int, query: String!): [RelatedUser!]!
   task(id: ID!): Task!
   tasks(filter: TaskFilterInput): [Task!]!
 }
@@ -214,6 +218,7 @@ type RelatedProperty {
 }
 
 type RelatedUser {
+  avatar: String
   email: String!
   id: ID!
   name: String!
@@ -272,6 +277,7 @@ type Task {
   description: String
   dueDate: Timestamp
   id: ID!
+  isPrivate: Boolean!
   leads: [RelatedLead!]!
   priority: Priority!
   properties: [RelatedProperty!]!

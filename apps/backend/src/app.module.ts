@@ -19,6 +19,7 @@ import { UploadScalar } from './common/scalars/upload.scalar.js';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import { Request, Response, NextFunction } from 'express';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
+import { SearchModule } from './search/search.module.js';
 
 @Module({
   imports: [
@@ -129,6 +130,7 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
     TaskModule,
     StorageModule,
     ProfileModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [

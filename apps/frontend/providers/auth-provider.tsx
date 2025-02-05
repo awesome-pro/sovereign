@@ -18,7 +18,7 @@ import {
   LOGOUT_MUTATION,
   REFRESH_TOKEN_MUTATION,
   SIGN_IN_MUTATION,
-} from "@/graphql/auth.mutations";
+} from "@/graphql/mutations/auth.mutations";
 import EstateLoading from "@/components/loading";
 import { getApolloClient, resetApolloClient } from "@/lib/apollo-client";
 import { hasPermission as checkPermission, RequiredPermission } from '@/utils/permissions';

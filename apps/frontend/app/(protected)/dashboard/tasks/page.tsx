@@ -10,7 +10,7 @@ import {
   DELETE_TASK_MUTATION,
   ADD_TASK_CHECKLIST_ITEM_MUTATION,
   ADD_TASK_COMMENT_MUTATION,
-} from '@/graphql/tasks.mutations';
+} from '@/graphql/mutations/task.mutations';
 import { Task, TaskStatus, Priority, TaskType } from '@/types/task';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { TaskForm } from '@/components/tasks/TaskForm';

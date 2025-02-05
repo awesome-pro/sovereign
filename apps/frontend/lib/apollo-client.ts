@@ -14,7 +14,7 @@ import { createClient } from 'graphql-ws';
 import { setContext } from '@apollo/client/link/context';
 import createUploadLink from 'apollo-upload-client/createUploadLink.mjs';
 import { toast } from 'sonner';
-import { GET_CURRENT_USER_QUERY } from '@/graphql/auth.mutations';
+import { GET_CURRENT_USER_QUERY } from '@/graphql/mutations/auth.mutations';
 import { KeyFieldsFunction } from '@apollo/client/cache/inmemory/policies';
 
 let apolloClient: ApolloClient<NormalizedCacheObject> | null = null;

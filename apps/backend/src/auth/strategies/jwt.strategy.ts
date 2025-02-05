@@ -70,11 +70,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   private createDeviceHash(req: Request): string {
     // Use client fingerprint if available
-    console.log('req.headers', req.headers);
-    const clientFingerprint = req.headers['X-Client-Fingerprint'];
-    if (clientFingerprint) {
-      return this.hashValue(clientFingerprint as string);
-    }
+    // console.log('req.headers', req.headers);
+    // const clientFingerprint = req.headers['X-Client-Fingerprint'];
+    // if (clientFingerprint) {
+    //   return this.hashValue(clientFingerprint as string);
+    // }
 
     // Fallback to traditional fingerprinting
     const fingerprint = [

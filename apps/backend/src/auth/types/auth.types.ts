@@ -16,6 +16,9 @@ export class RelatedUser {
 
   @Field()
   name!: string;
+
+  @Field(() => String, { nullable: true })
+  avatar?: string | null;
 }
 
 @ObjectType()

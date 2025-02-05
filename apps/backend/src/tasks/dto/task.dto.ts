@@ -82,6 +82,9 @@ export class Task {
   @Field(() => Date)
   updatedAt!: Date;
 
+  @Field(() => Boolean)
+  isPrivate!: boolean;
+
   @Field(() => [RelatedUser], { defaultValue: [] })
   assignedTo!: RelatedUser[];
 

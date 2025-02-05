@@ -1,4 +1,7 @@
 import { RelatedUser } from "./user";
+import { RelatedProperty } from "./property";
+import { RelatedLead } from "./lead";
+import { RelatedDeal } from "./deal";
 
 export enum TaskType {
   FOLLOW_UP = 'FOLLOW_UP',
@@ -52,8 +55,12 @@ export interface Task {
   completedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  isPrivate: boolean;
   createdBy: RelatedUser;
   assignedTo: RelatedUser[];
+  properties: RelatedProperty[];
+  leads: RelatedLead[];
+  deals: RelatedDeal[];
   checklist: TaskChecklist[];
   comments: TaskComment[];
 }
@@ -63,8 +70,13 @@ export interface CreateTaskInput {
   description?: string;
   type: TaskType;
   priority: Priority;
-  dueDate?: Date;
+  dueDate?: string;
+  startDate?: string;
   assignedToIds: string[];
+  propertyIds: string[];
+  leadIds: string[];
+  dealIds: string[];
+  isPrivate: boolean;
 }
 
 export interface UpdateTaskInput {
@@ -74,10 +86,14 @@ export interface UpdateTaskInput {
   type?: TaskType;
   status?: TaskStatus;
   priority?: Priority;
-  dueDate?: Date;
+  dueDate?: string;
+  startDate?: string;
+  completedAt?: string;
   assignedToIds?: string[];
-  startDate?: Date;
-  completedAt?: Date;
+  propertyIds?: string[];
+  leadIds?: string[];
+  dealIds?: string[];
+  isPrivate?: boolean;
 }
 
 export interface TaskFilterInput {
