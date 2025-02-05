@@ -38,9 +38,16 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { PlusIcon } from 'lucide-react';
+import { 
+  PlusIcon, 
+  SearchIcon, 
+  FilterIcon, 
+  RefreshCwIcon 
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/providers/auth-provider';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 
 export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -49,9 +56,10 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<Priority[]>([]);
   const [typeFilter, setTypeFilter] = useState<TaskType[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
   const { toast } = useToast();
-  const { user} = useAuthContext();
+  const { user } = useAuthContext();
 
   const { data, loading, refetch } = useQuery(TASKS_QUERY, {
     variables: {
@@ -63,8 +71,8 @@ export default function TasksPage() {
         dueDateTo: dateRange?.to?.toISOString(),
       },
     },
-    fetchPolicy: 'cache-first', // Use cache first, only fetch from network if not in cache
-    nextFetchPolicy: 'cache-only', // After first fetch, only use cache unless explicitly refetched
+    fetchPolicy: 'cache-first',
+    nextFetchPolicy: 'cache-only',
   });
 
   const [createTask] = useMutation(CREATE_TASK_MUTATION, {
@@ -227,14 +235,29 @@ export default function TasksPage() {
     task.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setStatusFilter([]);
+    setPriorityFilter([]);
+    setTypeFilter([]);
+    setDateRange(undefined);
+  };
+
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Tasks</h1>
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => refetch()}>
-            Refresh Tasks
-          </Button>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
+        <div className="flex items-center space-x-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={() => refetch()}>
+                  <RefreshCwIcon className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh Tasks</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Dialog>
             <DialogTrigger asChild>
               <Button>
@@ -252,57 +275,111 @@ export default function TasksPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Input
-          placeholder="Search tasks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full"
-        />
-        <Select
-          onValueChange={(value) =>
-            setStatusFilter(value ? [value as TaskStatus] : [])
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={TaskStatus.TODO}>All Statuses</SelectItem>
-            {Object.values(TaskStatus).map((status) => (
-              <SelectItem key={status} value={status}>
-                {status.replace('_', ' ')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          onValueChange={(value) =>
-            setPriorityFilter(value ? [value as Priority] : [])
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={Priority.MEDIUM}>All Priorities</SelectItem>
-            {Object.values(Priority).map((priority) => (
-              <SelectItem key={priority} value={priority}>
-                {priority}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <DateRangePicker
-          value={dateRange}
-          onChange={setDateRange}
-          className="w-full"
-        />
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <div className="relative flex-grow">
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+          >
+            <FilterIcon className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {isFilterExpanded && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-secondary/10 p-4 rounded-lg">
+            <Select
+              value={statusFilter[0] || ''}
+              onValueChange={(value) =>
+                setStatusFilter(value ? [value as TaskStatus] : [])
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={TaskStatus.TODO}>Select Status</SelectItem>
+                {Object.values(TaskStatus).map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status.replace('_', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={priorityFilter[0] || ''}
+              onValueChange={(value) =>
+                setPriorityFilter(value ? [value as Priority] : [])
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={Priority.MEDIUM}>Select Priority</SelectItem>
+                {Object.values(Priority).map((priority) => (
+                  <SelectItem key={priority} value={priority}>
+                    {priority}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={typeFilter[0] || ''}
+              onValueChange={(value) =>
+                setTypeFilter(value ? [value as TaskType] : [])
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={TaskType.FOLLOW_UP}>Select Type</SelectItem>
+                {Object.values(TaskType).map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type.replace('_', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              className="w-full"
+            />
+
+            <div className="col-span-full flex justify-end space-x-2">
+              <Button variant="ghost" onClick={clearAllFilters}>
+                Clear Filters
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <Separator />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {loading ? (
-          <div>Loading tasks...</div>
+          <div className="col-span-full text-center text-muted-foreground">
+            Loading tasks...
+          </div>
+        ) : filteredTasks?.length === 0 ? (
+          <div className="col-span-full text-center text-muted-foreground">
+            No tasks found. Try adjusting your filters.
+          </div>
         ) : (
           filteredTasks?.map((task: Task) => (
             <TaskCard
@@ -318,7 +395,7 @@ export default function TasksPage() {
         open={!!selectedTask}
         onOpenChange={(open) => !open && setSelectedTask(null)}
       >
-        <SheetContent className="sm:max-w-[600px]">
+        <SheetContent className="sm:max-w-[600px] w-full">
           <SheetHeader>
             <SheetTitle>Task Details</SheetTitle>
           </SheetHeader>
@@ -340,10 +417,9 @@ export default function TasksPage() {
                 handleAddComment(selectedTask.id, content)
               }
               onUploadAttachment={(file) =>
-                // handleUploadAttachment(selectedTask.id, file)
                 toast({
-                  title: "TODO ",
-                  description: "Please try again.",
+                  title: "TODO",
+                  description: "Attachment upload not implemented yet.",
                   variant: "destructive"
                 })
               }

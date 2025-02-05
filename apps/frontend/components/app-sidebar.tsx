@@ -141,6 +141,17 @@ const menuGroups: { title: string; items: MenuItemProps[] }[] = [
     ]
   },
   {
+    title: "Company",
+    items: [
+      {
+        title: "Management",
+        icon: Settings,
+        url: "/dashboard/company",
+        permissions: [] // Admin only
+      }
+    ]
+  },
+  {
     title: "Settings",
     items: [
       {
