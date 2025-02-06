@@ -491,7 +491,6 @@ model User {
   createdLeads Lead[] @relation("LeadCreator")
   listedProperties Property[]
   createdDocument Document[] @relation("DocumentCreator")
-  userDocuments UserDocument[] @relation("UserDocuments")
   documentApprovals DocumentApproval[]
   documentActivities DocumentActivity[]
   documentViews DocumentView[]
@@ -529,6 +528,9 @@ model User {
   transaction Transaction[]
   auditLogs AuditLog[]
   assignedTasks Task[] @relation("AssignedTasks")
+  files File[]
+  grantedDocumentAccess DocumentAccess[] @relation("AccessGrantor")
+  receivedDocumentAccess DocumentAccess[] @relation("AccessRecipient")
 }
 
 model Role {
@@ -930,8 +932,6 @@ model Team {
   // Collaboration
   // projects    Project[]
   tasks       Task[]  @relation("TaskTeam")
-
-  teamDocumentAccesses DocumentAccess[]
   // meetings    Meeting[]
   
   // Communication
@@ -947,6 +947,10 @@ model Team {
   // dealActivities       DealActivity[]      // Log actions on deals
   
   // System Fields
+  properties Property[]
+  deals Deal[]
+  notes Note[]
+  recipientDocumentAccess DocumentAccess[] @relation("AccessRecipient")
   
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -954,9 +958,6 @@ model Team {
 
   @@unique([companyId, name])
   @@map("teams")
-  Property Property[]
-  Deal Deal[]
-  Note Note[]
 }
 
 model TeamMember {
@@ -2403,7 +2404,7 @@ model Transaction {
   installmentNumber Int?              // If part of installment plan
 
   // Documents
-  documents         TransactionDocument[]
+  documents         Document[] @relation("DocumentToTransaction")
   invoice           Invoice?          // Generated invoice
   //contracts         Contract[]
   
@@ -2434,18 +2435,6 @@ model Transaction {
   deletedAt         DateTime?
 
   @@map("transactions")
-}
-
-model TransactionDocument {
-  id              String       @id @default(cuid())
-  transaction     Transaction  @relation(fields: [transactionId], references: [id])
-  transactionId   String
-  document        Document     @relation(fields: [documentId], references: [id])
-  documentId      String
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-
-  @@map("transaction_documents")
 }
 
 model TransactionNote {
@@ -2697,27 +2686,20 @@ model Document {
   version           String          @default("1.0")
   
   // File Details
-  fileName          String
-  fileSize          Int             // Size in bytes
-  fileType          DocumentFormat
-  mimeType          String
-  url               String          // Storage URL
-  checksum          String?         // For file integrity
+  dealParties DealParty[]
+  files File[]
   
   // Classification & Organization
-  tags              DocumentTag[]
   categories        String[]
   customAttributes  Json?           // Additional attributes
 
-  
   // Access Control
-  accessList        DocumentAccess[]
+  accesses  DocumentAccess[]  // Consolidated permissions
   shareLinks        DocumentShare[]
   
   // Workflow
   workflow          DocumentWorkflow?
   approvals         DocumentApproval[]
-  // rejections        DocumentRejection[]
   
   // Version Control
   parent            Document?       @relation("DocumentVersions", fields: [parentId], references: [id])
@@ -2740,9 +2722,8 @@ model Document {
 
   // relations
   licenses License[]
-  userDocuments UserDocument[]
   certification Certification[]
-  transactionDocuments TransactionDocument[]
+  transactions Transaction[] @relation("DocumentToTransaction")
   
   // System Fields
   createdBy         User            @relation("DocumentCreator", fields: [createdById], references: [id])
@@ -2754,20 +2735,51 @@ model Document {
   deletedAt         DateTime?       // Soft delete
   
   @@map("documents")
-  DealParty DealParty[]
 }
 
-model UserDocument {
-  id              String    @id @default(cuid())
-  user            User      @relation("UserDocuments", fields: [userId], references: [id])
-  userId          String   
+model File {
+  id          String          @id @default(cuid())
+  fileName    String
+  fileSize    Int             // Size in bytes
+  fileType    DocumentFormat  // PDF, JPG, etc.
+  mimeType    String
+  url         String          // Storage URL (consider signed URLs for Middle East security requirements)
+  checksum    String?         // File integrity check
+  version     String          // Track individual file versions
+  language    Language        @default(ENGLISH) // Critical for multilingual markets like Dubai/Singapore
   
-  document        Document  @relation(fields: [documentId], references: [id])
-  documentId      String
-  documentAccess  DocumentAccess? @relation(fields: [documentAccessId], references: [id])
-  documentAccessId String?
+  // Region-specific metadata
+  notarized   Boolean         @default(false) // Common requirement in Gulf states
+  attested    Boolean         @default(false) // Important for KSA/Kuwait legal docs
+  expiry      DateTime?       // For temporary documents
   
-  @@map("user_documents")
+  // File categorization
+  category    FileCategory    // e.g., CONTRACT, ID_SCAN, PROPERTY_IMAGE
+  
+  // Relations
+  document    Document        @relation(fields: [documentId], references: [id])
+  documentId  String
+  
+  // Audit trails
+  uploadedBy  User            @relation(fields: [uploadedById], references: [id])
+  uploadedById String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([documentId, category]) // Optimize for common queries
+}
+
+enum FileCategory {
+  CONTRACT
+  ADDENDUM
+  ID_VERIFICATION
+  TITLE_DEED
+  PROPERTY_IMAGE
+  INSPECTION_REPORT
+  PAYMENT_RECEIPT
+  LEGAL_OPINION
+  GOVERNMENT_FORM
+  OTHER
 }
 
 model DocumentAccess {
@@ -2775,7 +2787,9 @@ model DocumentAccess {
   document        Document  @relation(fields: [documentId], references: [id])
   documentId      String
   
-  team            Team?     @relation(fields: [teamId], references: [id])
+  user            User?     @relation("AccessRecipient", fields: [userId], references: [id])
+  userId          String?
+  team            Team?     @relation("AccessRecipient", fields: [teamId], references: [id])
   teamId          String?
   
   // Permissions
@@ -2789,14 +2803,14 @@ model DocumentAccess {
   validUntil      DateTime?
   
   // Audit
-  userDocument UserDocument[]
-  grantedBy       String    // User who granted access
+  grantedBy   User      @relation("AccessGrantor", fields: [grantedById], references: [id])
+  grantedById String
   grantedAt       DateTime  @default(now())
   revokedAt       DateTime?
   
+  @@unique([documentId, userId])
   @@unique([documentId, teamId])
   @@map("document_access")
-  
 }
 
 model DocumentWorkflow {
@@ -2827,6 +2841,13 @@ model DocumentWorkflow {
   @@map("document_workflows")
 }
 
+enum DocumentApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELED
+}
+
 model DocumentApproval {
   id              String    @id @default(cuid())
   document        Document  @relation(fields: [documentId], references: [id])
@@ -2835,7 +2856,7 @@ model DocumentApproval {
   // Approval Details
   approver        User      @relation(fields: [approverId], references: [id])
   approverId      String
-  status          String    // PENDING, APPROVED, REJECTED
+  status          DocumentApprovalStatus  // PENDING, APPROVED, REJECTED, CANCELED
   comments        String?
   
   // Approval Metadata
@@ -2855,10 +2876,6 @@ model DocumentShare {
   // Share Details
   shareType       String    // EMAIL, LINK, etc.
   shareWith       String?   // Email or identifier
-  accessCode      String?   // Optional access code
-  
-  // Security
-  isPasswordProtected Boolean @default(false)
   password        String?   // Hashed password if protected
   
   // Restrictions
@@ -3043,7 +3060,6 @@ model Tag {
   leadTags LeadTag[]
   dealTags DealTag[]
   clientTags ClientTag[]
-  documentTags DocumentTag[]
   transactionTags TransactionTag[]
   noteTags NoteTag[]
   
@@ -3106,19 +3122,6 @@ model ClientTag {
   
   @@unique([clientId, tagId])
   @@map("client_tags")
-}
-
-model DocumentTag {
-  id          String    @id @default(cuid())
-  document    Document  @relation(fields: [documentId], references: [id])
-  documentId  String
-  tag         Tag       @relation(fields: [tagId], references: [id])
-  tagId       String
-  addedBy     String
-  addedAt     DateTime  @default(now())
-  
-  @@unique([documentId, tagId])
-  @@map("document_tags")
 }
 
 model TransactionTag {

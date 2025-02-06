@@ -1,3 +1,7 @@
+import { Readable } from 'stream';
+
+export type UploadableFile = Buffer | Readable | NodeJS.ReadableStream;
+
 export interface FileUploadOptions {
   acl?: 'private' | 'public-read' | 'public-read-write';
   contentType?: string;

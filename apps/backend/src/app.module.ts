@@ -20,6 +20,7 @@ import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 import { Request, Response, NextFunction } from 'express';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { SearchModule } from './search/search.module.js';
+import { DocumentsModule } from './documents/documents.module.js';
 
 @Module({
   imports: [
@@ -131,6 +132,7 @@ import { SearchModule } from './search/search.module.js';
     StorageModule,
     ProfileModule,
     SearchModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [

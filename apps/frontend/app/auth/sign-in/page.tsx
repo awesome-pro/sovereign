@@ -35,7 +35,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // const user = await signIn(formData);
+      const user = await signIn(formData);
       toast.success(`Signed in successfully`);
       router.push(redirectTo);
     } catch (err) {
@@ -54,7 +54,7 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
           <Image
-            src="/logo.svg"
+            src="/lotus.svg"
             alt="Image"
             width={100}
             height={100}

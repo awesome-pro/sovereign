@@ -4,6 +4,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, List
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { S3_CLIENT } from './s3-client.provider.js';
 import { createHash } from 'crypto';
+import { Readable } from 'stream';
 import {
   FileUploadOptions,
   FileDownloadOptions,
@@ -13,6 +14,7 @@ import {
   FileOperationResult,
   FileListResponse,
   FileInfo,
+  UploadableFile,
 } from './interfaces/storage.interface.js';
 
 @Injectable()
@@ -50,7 +52,7 @@ export class StorageService {
    * Upload a file to S3
    */
   async uploadFile(
-    file: Buffer | ReadableStream,
+    file: UploadableFile,
     fileName: string,
     options: FileUploadOptions = {},
   ): Promise<FileUploadResult> {
@@ -65,18 +67,27 @@ export class StorageService {
         throw new Error('File name is required');
       }
 
+      // Convert input to buffer based on type
+      let fileBuffer: Buffer;
+      if (Buffer.isBuffer(file)) {
+        fileBuffer = file;
+      } else if (this.isReadableStream(file)) {
+        fileBuffer = await this.streamToBuffer(file);
+      } else {
+        throw new Error('Invalid file input type');
+      }
+
       // Set up the command without ACL
       const command = new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
-        Body: file,
+        Body: fileBuffer,
         ContentType: options.contentType || 'application/octet-stream',
         Metadata: {
           ...options.metadata,
           originalname: fileName,
           uploadedAt: new Date().toISOString(),
         },
-        // Remove ACL as it's not supported with Object Ownership enabled
         Tagging: options.tags 
           ? Object.entries(options.tags)
               .map(([key, value]) => `${key}=${value}`)
@@ -108,7 +119,6 @@ export class StorageService {
         options,
       });
 
-      // Throw a more specific error
       if (error instanceof Error) {
         if (error.message.includes('AccessControlListNotSupported')) {
           throw new Error('S3 bucket does not support ACL. Please configure bucket for public access if needed.');
@@ -123,6 +133,48 @@ export class StorageService {
       
       throw error;
     }
+  }
+
+  /**
+   * Check if input is a readable stream
+   */
+  private isReadableStream(input: any): input is Readable | NodeJS.ReadableStream {
+    return input !== null &&
+      typeof input === 'object' &&
+      (input instanceof Readable ||
+        (typeof input.pipe === 'function' && typeof input.on === 'function'));
+  }
+
+  /**
+   * Convert a readable stream to a buffer
+   */
+  private streamToBuffer(stream: Readable | NodeJS.ReadableStream): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const chunks: any[] = [];
+      let totalSize = 0;
+      
+      stream.on('data', (chunk) => {
+        chunks.push(chunk);
+        totalSize += chunk.length;
+        
+        // Optional: Implement maximum size check
+        const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+        if (totalSize > MAX_SIZE) {
+          stream.emit('error', new Error('File size exceeds maximum allowed size'));
+          if ('destroy' in stream) {
+            (stream as Readable).destroy();
+          }
+        }
+      });
+      
+      stream.on('error', (error) => {
+        reject(new Error(`Stream error: ${error.message}`));
+      });
+      
+      stream.on('end', () => {
+        resolve(Buffer.concat(chunks));
+      });
+    });
   }
 
   /**

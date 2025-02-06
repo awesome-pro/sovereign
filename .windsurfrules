@@ -1,0 +1,9 @@
+I am building a very comprehensive highly advanced AI-driven Real Estate CRM application that will make the life of agents and companies very easy, by solving their pain points through advanced machine learning and natural language processing.
+
+1. I am building my whole project in Turbo Repo with pnpm workspaces.
+2. I am using Next.js for the frontend & Nest.js for the backend.
+3. I am using Prisma & PostgreSQL for the database in @packages/database.
+4. I am using Apollo GraphQL for the API.
+5. Always use pnpm to manage dependencies.
+6. Follow the latest standard best recommended practices for all implementations in the project.
+7. For the UI related components ensure to design a highly modern professional rich UIUX, sleek and intuitive design, which creates a very premium, superior sense in the mind of future and motivate them to keep on using the app.

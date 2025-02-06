@@ -6,3 +6,4 @@ export * from './permissions';
 export * from './property';
 export * from './lead';
 export * from './deal';
+export * from './document';

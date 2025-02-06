@@ -129,7 +129,7 @@ const menuGroups: { title: string; items: MenuItemProps[] }[] = [
     ]
   },
   {
-    title: "Reports & Analytics",
+    title: "Reports & Documents",
     items: [
       {
         title: "Performance",
@@ -226,7 +226,7 @@ const MenuItem = ({ item }: { item: MenuItemProps }) => {
                   'h-4 w-4 mr-2',
                   isActive 
                     ? 'text-primary' 
-                    : 'text-muted-foreground group-hover/menu-item:text-foreground'
+                    : 'text-foreground group-hover/menu-item:text-foreground'
                 )} 
               />
               <span 
@@ -299,10 +299,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <div className="flex items-center space-x-2 px-4 py-2 group">
-          <Building2 className="h-6 w-6 text-primary transition-transform group-hover:rotate-12" />
-          <h1 className="text-xl font-bold text-primary-foreground opacity-0 group-data-[state=expanded]:opacity-100 transition-opacity duration-300">
-            Estate CRM
+        <div className="flex items-center justify-center px-4 py-4">
+          <h1 className={cn(
+            "text-3xl font-cursive transition-all duration-300",
+            "dark:bg-gradient-to-r dark:from-[#FFD700] dark:via-[#FDB931] dark:to-[#D4AF37]",
+            "dark:bg-clip-text dark:text-transparent",
+            "bg-gradient-to-r from-[#000080] via-[#0000CD] to-[#4169E1]",
+            "bg-clip-text text-transparent",
+            "opacity-0 group-data-[state=expanded]:opacity-100"
+          )}>
+            Aurum
           </h1>
         </div>
         <div className="px-4 py-2">

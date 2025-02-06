@@ -1,6 +1,5 @@
 import { ObjectType, Field, ID, InputType, registerEnumType } from '@nestjs/graphql';
 import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
-import { GraphQLJSON } from 'graphql-type-json';
 
 export enum Gender {
   MALE = 'MALE',

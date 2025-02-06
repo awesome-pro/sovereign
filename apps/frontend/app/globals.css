@@ -73,3 +73,9 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .font-cursive {
+    font-family: 'Pinyon Script', 'cursive';
+  }
+}
