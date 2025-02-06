@@ -1,6 +1,6 @@
-import { Field, InputType } from '@nestjs/graphql';
-import { DocumentSecurity, DocumentType, Language } from '@sovereign/database';
+import { Field, InputType, Int } from '@nestjs/graphql';
 import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { DocumentSecurity, Language, DocumentType } from '../../common/enums/graphql-enums.js';
 
 @InputType()
 export class CreateDocumentInput {
@@ -22,7 +22,7 @@ export class CreateDocumentInput {
   @IsString()
   @IsOptional()
   @MaxLength(1000)
-  description?: string;
+  description?: string | null;
 
   @Field(() => Language)
   @IsEnum(Language)
@@ -31,30 +31,30 @@ export class CreateDocumentInput {
   @Field(() => [String], { nullable: true })
   @IsArray()
   @IsOptional()
-  categories?: string[];
+  categories?: string[] | null;
 
   @Field(() => [String], { nullable: true })
   @IsArray()
   @IsOptional()
-  tags?: string[];
+  tags?: string[] | null;
 
   @Field(() => Boolean, { nullable: true })
   @IsOptional()
-  isTemplate?: boolean;
+  isTemplate?: boolean | null;
 
-  @Field(() => JSON, { nullable: true })
-  @IsOptional()
-  templateFields?: any;
+  // @Field(() => JSON, { nullable: true })
+  // @IsOptional()
+  // templateFields?: any | null;
 
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   @IsOptional()
-  validFrom?: Date;
+  validFrom?: Date | null;
 
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   @IsOptional()
-  expiresAt?: Date;
+  expiresAt?: Date | null;
 
-  @Field({ nullable: true })
+  @Field(() => Int, { nullable: true })
   @IsOptional()
-  retentionPeriod?: number;
+  retentionPeriod?: number | null;
 }

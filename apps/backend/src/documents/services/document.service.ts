@@ -8,7 +8,7 @@ import { CreateDocumentCommentInput } from '../dto/create-document-comment.input
 import { UploadFileInput } from '../dto/upload-file.input.js';
 import { CreateDocumentShareInput } from '../dto/create-document-share.input.js';
 import { CreateDocumentApprovalInput } from '../dto/create-document-approval.input.js';
-import { DocumentStatus, DocumentApprovalStatus, DocumentFormat } from '@sovereign/database';
+import { DocumentStatus, DocumentApprovalStatus, DocumentFormat, DocumentType } from '@sovereign/database';
 import { UltraSecureJwtPayload } from '../../auth/services/auth.interfaces.js';
 import { Document } from '../models/document.model.js';
 import { File } from '../models/file.model.js';
@@ -33,6 +33,8 @@ export class DocumentService {
     return this.prisma.document.create({
       data: {
         ...input,
+        categories: input.categories || [],
+        isTemplate: input.isTemplate || false,
         referenceNumber,
         createdById: user.sb,
         companyId: user.b,

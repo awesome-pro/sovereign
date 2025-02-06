@@ -1,5 +1,5 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
-import { RelatedDocument } from './related-types.js';
+import { Field, ID, ObjectType, Int } from '@nestjs/graphql';
+import { RelatedDocument, RelatedDocumentComment } from './related-types.js';
 import { RelatedUser } from '../../auth/types/auth.types.js';
 
 @ObjectType()
@@ -10,56 +10,42 @@ export class DocumentComment {
   @Field(() => RelatedDocument)
   document!: RelatedDocument;
 
-  @Field()
+  @Field(() => ID)
   documentId!: string;
 
-  @Field()
+  @Field(() => String)
   content!: string;
 
-  @Field(() => Number, { nullable: true })
-  page?: number;
-
-  @Field(() => JSON, { nullable: true })
-  position?: any;
+  @Field(() => Int, { nullable: true })
+  page?: number | null;
 
   @Field(() => RelatedUser)
   user!: RelatedUser;
 
-  @Field()
+  @Field(() => ID)
   userId!: string;
 
-  @Field(() => RelatedDocumentComment, { nullable: true })
-  parent?: RelatedDocumentComment;
+  @Field(() => DocumentComment, { nullable: true })
+  parent?: DocumentComment | null;
 
-  @Field({ nullable: true })
-  parentId?: string;
+  @Field(() => ID, { nullable: true })
+  parentId?: string | null;
 
-  @Field(() => [RelatedDocumentComment])
-  replies!: RelatedDocumentComment[];
+  @Field(() => [DocumentComment])
+  replies!: DocumentComment[];
 
-  @Field()
+  @Field(() => Boolean, { defaultValue: false })
   resolved!: boolean;
 
-  @Field(() => String, { nullable: true })
-  resolvedBy?: string;
+  @Field(() => ID, { nullable: true })
+  resolvedBy?: string | null;
 
   @Field(() => Date, { nullable: true })
-  resolvedAt?: Date;
+  resolvedAt?: Date | null;
 
   @Field(() => Date)
   createdAt!: Date;
 
   @Field(() => Date)
   updatedAt!: Date;
-}
-
-export class RelatedDocumentComment {
-  @Field(() => ID)
-  id!: string;
-
-  @Field(() => String)
-  content!: string;
-
-  @Field(() => ID)
-  userId!: string;
 }

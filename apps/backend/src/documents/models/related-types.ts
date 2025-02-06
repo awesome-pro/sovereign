@@ -30,7 +30,7 @@ export class RelatedFile {
   fileType!: string;
 }
 
-
+@ObjectType()
 export class RelatedDocumentComment {
   @Field(() => ID)
   id!: string;
@@ -40,4 +40,10 @@ export class RelatedDocumentComment {
 
   @Field(() => ID)
   userId!: string;
+
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Boolean, { defaultValue: false })
+  resolved!: boolean;
 }

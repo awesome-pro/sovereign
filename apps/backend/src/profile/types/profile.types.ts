@@ -82,20 +82,20 @@ export class UserCertification {
   isVerified!: boolean;
 }
 
-@ObjectType()
-export class Language {
-  @Field(() => ID)
-  id!: string;
+// @ObjectType()
+// export class Language {
+//   @Field(() => ID)
+//   id!: string;
 
-  @Field()
-  code!: string;
+//   @Field()
+//   code!: string;
 
-  @Field()
-  name!: string;
+//   @Field()
+//   name!: string;
 
-  @Field()
-  proficiency!: string;
-}
+//   @Field()
+//   proficiency!: string;
+// }
 
 @ObjectType()
 export class SocialLinks {
@@ -180,8 +180,8 @@ export class CompleteUserProfile {
   @Field(() => Number)
   reviewCount!: number;
 
-  @Field(() => [Language])
-  languages!: Language[];
+  // @Field(() => [Language])
+  // languages!: Language[];
 
   @Field()
   timeZone!: string;

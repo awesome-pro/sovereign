@@ -1,5 +1,14 @@
-import { Field, ID, InputType } from '@nestjs/graphql';
-import { IsBoolean, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Field, ID, InputType, Int, registerEnumType } from '@nestjs/graphql';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
+
+export enum DocumentCommentType {
+  GENERAL = 'GENERAL',
+  ANNOTATION = 'ANNOTATION',
+  REVIEW = 'REVIEW',
+  REPLY = 'REPLY'
+}
+
+registerEnumType(DocumentCommentType, { name: 'DocumentCommentType' });
 
 @InputType()
 export class CreateDocumentCommentInput {
@@ -9,26 +18,27 @@ export class CreateDocumentCommentInput {
 
   @Field(() => ID, { nullable: true })
   @IsUUID()
-  parentId!: string | null;
+  @IsOptional()
+  parentId?: string | null;
 
-  @Field()
+  @Field(() => String)
   @IsString()
   content!: string;
 
-  @Field()
-  @IsString()
-  type!: string;
+  @Field(() => DocumentCommentType)
+  @IsEnum(DocumentCommentType)
+  type!: DocumentCommentType;
 
-  @Field({ nullable: true })
+  @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()
-  page?: number;
+  page?: number | null;
 
-  @Field(() => JSON, { nullable: true })
-  @IsOptional()
-  position?: any;
+  // @Field(() => JSON, { nullable: true })
+  // @IsOptional()
+  // position?: any | null;
 
-  @Field({ defaultValue: false })
+  @Field(() => Boolean, { defaultValue: false })
   @IsBoolean()
   resolved: boolean = false;
 }

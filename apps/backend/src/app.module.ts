@@ -21,6 +21,7 @@ import { Request, Response, NextFunction } from 'express';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 import { SearchModule } from './search/search.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
+import { ReferenceNumberService } from './utils/reference-number.service.js';
 
 @Module({
   imports: [
@@ -138,6 +139,7 @@ import { DocumentsModule } from './documents/documents.module.js';
   providers: [
     AppService,
     PrismaService,
+    ReferenceNumberService,
     {
       provide: 'Upload',
       useValue: GraphQLUpload,

@@ -1,5 +1,5 @@
 import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
-import { DocumentStatus, DocumentSecurity, DocumentType, Language } from '@prisma/client';
+import {DocumentStatus, DocumentSecurity, DocumentType, Language, DocumentFormat, FileCategory} from '../../common/enums/graphql-enums.js'
 import { RelatedUser } from '../../auth/types/auth.types.js';
 import { RelatedFile, RelatedDocument } from './related-types.js';
 import { RelatedDocumentAccess } from './document-access.model.js';
@@ -10,11 +10,6 @@ import { DocumentApproval } from './document-approval.model.js';
 import { RelatedTransaction } from '../../transactions/dto/transaction.dto.js';
 import { RelatedDocumentActivity } from './document-activity.model.js';
 
-
-registerEnumType(DocumentStatus, { name: 'DocumentStatus' });
-registerEnumType(DocumentSecurity, { name: 'DocumentSecurity' });
-registerEnumType(DocumentType, { name: 'DocumentType' });
-registerEnumType(Language, { name: 'Language' });
 
 @ObjectType()
 export class Document {
@@ -85,8 +80,8 @@ export class Document {
   @Field(() => [RelatedDocumentActivity])
   activities!: RelatedDocumentActivity[];
 
-  @Field(() => [RelatedDocumentComment])
-  comments!: RelatedDocumentComment[];
+  // @Field(() => [RelatedDocumentComment])
+  // comments!: RelatedDocumentComment[];
 
   @Field(() => Date, { nullable: true })
   validFrom?: Date | null;

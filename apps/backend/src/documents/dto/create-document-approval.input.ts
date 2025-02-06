@@ -1,4 +1,4 @@
-import { Field, ID, InputType } from '@nestjs/graphql';
+import { Field, ID, InputType, Int } from '@nestjs/graphql';
 import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { DocumentApprovalStatus } from '@sovereign/database';
 
@@ -16,18 +16,18 @@ export class CreateDocumentApprovalInput {
   @IsEnum(DocumentApprovalStatus)
   status!: DocumentApprovalStatus;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   comments?: string;
 
-  @Field({ nullable: true })
+  @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()
   @Min(1)
   step?: number;
 
-  @Field({ nullable: true })
+  @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()
   @Min(1)

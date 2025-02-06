@@ -18,24 +18,24 @@ export class DocumentShare {
   @Field(() => String, { nullable: true })
   shareWith?: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   password?: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => Number, { nullable: true })
   viewLimit?: number;
 
-  @Field()
+  @Field(() => Number)
   viewCount!: number;
 
-  @Field({ nullable: true })
-  expiresAt?: Date;
+  @Field(() => Date, { nullable: true })
+  expiresAt?: Date | null;
 
-  @Field()
+  @Field(() => ID)
   createdBy!: string;
 
   @Field(() => Date)
   createdAt!: Date;
 
-  @Field({ nullable: true })
-  lastAccessedAt?: Date;
+  @Field(() => Date, { nullable: true })
+  lastAccessedAt?: Date | null;
 }

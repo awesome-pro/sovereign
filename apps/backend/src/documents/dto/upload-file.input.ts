@@ -1,12 +1,12 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { FileCategory, Language } from '@sovereign/database';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
-import { FileUpload } from 'graphql-upload/processRequest.mjs';
+import type { FileUpload } from 'graphql-upload/processRequest.mjs';
+import { FileCategory, Language } from '../../common/enums/graphql-enums.js';
+import { UploadScalar } from '../../common/scalars/upload.scalar.js';
 
 @InputType()
 export class UploadFileInput {
-  @Field(() => GraphQLUpload)
+  @Field(() => UploadScalar)
   file!: Promise<FileUpload>;
 
   @Field(() => String)

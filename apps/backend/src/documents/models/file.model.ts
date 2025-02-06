@@ -1,7 +1,7 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
-import { DocumentFormat, Language, FileCategory } from '@sovereign/database';
 import { RelatedUser, User } from '../../auth/types/auth.types.js';
 import { RelatedDocument } from './related-types.js';
+import { DocumentFormat, Language, FileCategory } from '../../common/enums/graphql-enums.js';
 
 @ObjectType()
 export class File {

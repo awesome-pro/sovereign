@@ -32,7 +32,6 @@ type CompleteUserProfile {
   experience: Int
   gender: Gender
   id: ID!
-  languages: [Language!]!
   lastName: String!
   licenses: [UserLicense!]!
   nationality: String
@@ -47,6 +46,60 @@ type CompleteUserProfile {
   updatedAt: Timestamp!
   userId: String!
   whatsapp: String
+}
+
+input CreateDocumentAccessInput {
+  canDelete: Boolean! = false
+  canEdit: Boolean! = false
+  canShare: Boolean! = false
+  canView: Boolean! = true
+  documentId: ID!
+  grantedAt: Timestamp
+  teamId: String
+  userId: ID!
+  validFrom: Timestamp
+  validUntil: Timestamp
+}
+
+input CreateDocumentApprovalInput {
+  approverId: ID!
+  comments: String
+  documentId: ID!
+  sequence: Int
+  status: DocumentApprovalStatus!
+  step: Int
+}
+
+input CreateDocumentCommentInput {
+  content: String!
+  documentId: ID!
+  page: Int
+  parentId: ID
+  resolved: Boolean! = false
+  type: DocumentCommentType!
+}
+
+input CreateDocumentInput {
+  categories: [String!]
+  description: String
+  expiresAt: Timestamp
+  isTemplate: Boolean
+  language: Language!
+  retentionPeriod: Int
+  security: DocumentSecurity!
+  tags: [String!]
+  title: String!
+  type: DocumentType!
+  validFrom: Timestamp
+}
+
+input CreateDocumentShareInput {
+  documentId: ID!
+  expiresAt: Timestamp
+  password: String
+  shareType: String!
+  shareWith: String
+  viewLimit: Int
 }
 
 input CreatePermissionInput {
@@ -71,6 +124,185 @@ input CreateTaskInput {
   type: TaskType!
 }
 
+type Document {
+  accesses: [RelatedDocumentAccess!]!
+  activities: [RelatedDocumentActivity!]!
+  categories: [String!]
+  companyId: ID!
+  createdAt: Timestamp!
+  createdBy: RelatedUser!
+  createdById: ID!
+  deletedAt: Timestamp
+  description: String
+  expiresAt: Timestamp
+  files: [RelatedFile!]!
+  id: ID!
+  isTemplate: Boolean!
+  language: Language!
+  parent: RelatedDocument
+  parentId: ID
+  referenceNumber: String!
+  retentionPeriod: Int
+  security: DocumentSecurity!
+  status: DocumentStatus!
+  title: String!
+  transactions: [RelatedTransaction!]!
+  type: DocumentType!
+  updatedAt: Timestamp!
+  validFrom: Timestamp
+  version: String!
+  versions: [RelatedDocument!]!
+}
+
+type DocumentAccess {
+  canDelete: Boolean!
+  canEdit: Boolean!
+  canShare: Boolean!
+  canView: Boolean!
+  document: RelatedDocument!
+  documentId: ID!
+  grantedAt: Timestamp!
+  grantedBy: String!
+  id: ID!
+  revokedAt: Timestamp
+  teamId: ID
+  user: RelatedUser
+  userId: ID
+  validFrom: Timestamp
+  validUntil: Timestamp
+}
+
+type DocumentApproval {
+  approvedAt: Timestamp
+  approver: User!
+  approverId: ID!
+  comments: String
+  document: RelatedDocument!
+  documentId: ID!
+  id: ID!
+  sequence: Int
+  status: DocumentApprovalStatus!
+  step: Int
+}
+
+enum DocumentApprovalStatus {
+  APPROVED
+  CANCELED
+  PENDING
+  REJECTED
+}
+
+type DocumentComment {
+  content: String!
+  createdAt: Timestamp!
+  document: RelatedDocument!
+  documentId: ID!
+  id: ID!
+  page: Int
+  parent: DocumentComment
+  parentId: ID
+  replies: [DocumentComment!]!
+  resolved: Boolean!
+  resolvedAt: Timestamp
+  resolvedBy: ID
+  updatedAt: Timestamp!
+  user: RelatedUser!
+  userId: ID!
+}
+
+enum DocumentCommentType {
+  ANNOTATION
+  GENERAL
+  REPLY
+  REVIEW
+}
+
+enum DocumentFormat {
+  CSV
+  EXCEL
+  GIF
+  JPEG
+  JPG
+  PDF
+  PNG
+  PPT
+  WORD
+}
+
+enum DocumentSecurity {
+  EXTERNAL
+  INTERNAL
+  PUBLIC
+}
+
+type DocumentShare {
+  createdAt: Timestamp!
+  createdBy: ID!
+  document: RelatedDocument!
+  documentId: ID!
+  expiresAt: Timestamp
+  id: ID!
+  lastAccessedAt: Timestamp
+  password: String
+  shareType: String!
+  shareWith: String
+  viewCount: Int!
+  viewLimit: Int
+}
+
+enum DocumentStatus {
+  ARCHIVED
+  DELETED
+  DRAFT
+  PUBLISHED
+}
+
+enum DocumentType {
+  CONTRACT
+  FORM
+  LETTER
+  MEMO
+  MEMORANDUM
+  OTHER
+  PROPOSAL
+  REPORT
+}
+
+type File {
+  attested: Boolean!
+  category: FileCategory!
+  checksum: String
+  createdAt: Timestamp!
+  document: RelatedDocument!
+  documentId: ID!
+  expiry: Timestamp
+  fileName: String!
+  fileSize: Int!
+  fileType: DocumentFormat!
+  id: ID!
+  language: Language!
+  mimeType: String!
+  notarized: Boolean!
+  updatedAt: Timestamp!
+  uploadedBy: RelatedUser!
+  uploadedById: ID
+  url: String!
+  version: String
+}
+
+enum FileCategory {
+  ADDENDUM
+  CONTRACT
+  GOVERNMENT_FORM
+  ID_VERIFICATION
+  INSPECTION_REPORT
+  LEGAL_OPINION
+  OTHER
+  PAYMENT_RECEIPT
+  PROPERTY_IMAGE
+  TITLE_DEED
+}
+
 """Gender options"""
 enum Gender {
   FEMALE
@@ -85,11 +317,22 @@ type JWTRole {
   roleHash: String!
 }
 
-type Language {
-  code: String!
-  id: ID!
-  name: String!
-  proficiency: String!
+enum Language {
+  ARABIC
+  CHINESE
+  ENGLISH
+  FRENCH
+  GERMAN
+  HINDI
+  ITALIAN
+  JAPANESE
+  KOREAN
+  PERSIAN
+  PORTUGUESE
+  RUSSIAN
+  SPANISH
+  SWAHILI
+  TURKISH
 }
 
 input LicenseInput {
@@ -126,10 +369,16 @@ type Mutation {
   addTaskComment(input: TaskCommentInput!): Task!
   assignPermissionsToRole(permissionIds: [ID!]!, roleId: ID!): Boolean!
   assignRole(input: AssignRoleInput!): Boolean!
+  createDocument(input: CreateDocumentInput!): Document!
+  createDocumentAccess(input: CreateDocumentAccessInput!): DocumentAccess!
+  createDocumentApproval(input: CreateDocumentApprovalInput!): DocumentApproval!
+  createDocumentComment(input: CreateDocumentCommentInput!): DocumentComment!
+  createDocumentShare(input: CreateDocumentShareInput!): DocumentShare!
   createPermission(input: CreatePermissionInput!): Permission!
   createRole(description: String, name: String!, roleHash: String!): Role!
   createTask(input: CreateTaskInput!): Task!
   deleteCertification(certId: ID!): CompleteUserProfile!
+  deleteDocument(id: String!): Document!
   deleteLicense(licenseId: ID!): CompleteUserProfile!
   deletePermission(id: ID!): Boolean!
   deleteRole(id: ID!): Boolean!
@@ -142,13 +391,17 @@ type Mutation {
   removeRole(roleId: String!, userId: String!): Boolean!
   requestPasswordReset(email: String!): VerificationResponse!
   resetPassword(input: ResetPasswordInput!): VerificationResponse!
+  resolveDocumentComment(id: String!): DocumentComment!
   setupTwoFactor: TwoFactorResponse!
+  updateDocumentApproval(comments: String, id: String!, status: String!): DocumentApproval!
+  updateDocumentStatus(id: String!, status: String!): Document!
   updatePermission(id: ID!, input: UpdatePermissionInput!): Permission!
   updateProfile(input: UpdateProfileInput!): CompleteUserProfile!
   updateRole(description: String, id: ID!, name: String): Role!
   updateTask(input: UpdateTaskInput!): Task!
   uploadAvatar(file: Upload!): String!
   uploadCoverImage(file: Upload!): String!
+  uploadFile(input: UploadFileInput!): File!
   verifyAndEnableTwoFactor(input: TwoFactorTokenInput!): Boolean!
   verifyEmail(token: String!): VerificationResponse!
 }
@@ -174,6 +427,10 @@ enum Priority {
 }
 
 type Query {
+  document(id: String!): Document!
+  documentApprovals(documentId: String!): [DocumentApproval!]!
+  documentShares(documentId: String!): [DocumentShare!]!
+  documents: [Document!]!
   getLoginHistory(input: LoginHistoryInput!): [LoginHistory!]!
   getProfile: CompleteUserProfile!
   getRolePermissions(roleId: ID!): [Permission!]!
@@ -205,6 +462,39 @@ type RelatedDeal {
   title: String!
 }
 
+type RelatedDocument {
+  id: ID!
+  referenceNumber: String!
+  title: String!
+}
+
+type RelatedDocumentAccess {
+  canDelete: Boolean!
+  canEdit: Boolean!
+  canShare: Boolean!
+  canView: Boolean!
+  documentId: ID!
+  id: ID!
+  teamId: ID
+  userId: ID
+  validFrom: Timestamp
+  validUntil: Timestamp
+}
+
+type RelatedDocumentActivity {
+  activityType: String!
+  id: ID!
+  userId: String!
+}
+
+type RelatedFile {
+  fileName: String!
+  fileSize: Int!
+  fileType: String!
+  id: ID!
+  url: String!
+}
+
 type RelatedLead {
   id: ID!
   referenceNumber: String!
@@ -215,6 +505,11 @@ type RelatedProperty {
   id: ID!
   referenceNumber: String!
   title: String!
+}
+
+type RelatedTransaction {
+  id: ID!
+  referenceNumber: String!
 }
 
 type RelatedUser {
@@ -414,6 +709,17 @@ input UpdateTaskInput {
 
 """File upload scalar type"""
 scalar Upload
+
+input UploadFileInput {
+  attested: Boolean
+  category: FileCategory!
+  documentId: String!
+  expiry: Timestamp
+  file: Upload!
+  language: Language! = ENGLISH
+  notarized: Boolean
+  version: String
+}
 
 type User {
   avatar: String

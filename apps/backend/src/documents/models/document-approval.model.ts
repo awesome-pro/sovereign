@@ -1,4 +1,4 @@
-import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { Field, ID, ObjectType, registerEnumType, Int } from '@nestjs/graphql';
 import { RelatedDocument } from './related-types.js';
 import { User } from '../../auth/types/auth.types.js';
 import { DocumentApprovalStatus } from '@sovereign/database';
@@ -25,15 +25,15 @@ export class DocumentApproval {
   @Field(() => DocumentApprovalStatus)
   status!: DocumentApprovalStatus;
 
-  @Field({ nullable: true })
-  comments?: string;
+  @Field(() => String, { nullable: true })
+  comments?: string | null;
 
-  @Field({ nullable: true })
-  step?: number;
+  @Field(() => Int, { nullable: true })
+  step?: number | null;
 
-  @Field({ nullable: true })
-  sequence?: number;
+  @Field(() => Int, { nullable: true })
+  sequence?: number | null;
 
-  @Field({ nullable: true })
-  approvedAt?: Date;
+  @Field(() => Date, { nullable: true })
+  approvedAt?: Date | null;
 }

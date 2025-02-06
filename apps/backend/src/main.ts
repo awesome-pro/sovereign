@@ -5,7 +5,6 @@ import cookieParser from 'cookie-parser';
 import { LoggerService } from './logging/logging.service.js';
 import { WinstonModule } from 'nest-winston';
 import { configureWinston } from './logging/winston.config.js';
-import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 async function bootstrap() {
   // Create Winston logger instance for initial bootstrap
@@ -44,11 +43,6 @@ async function bootstrap() {
 
   // Enable cookie parsing
   app.use(cookieParser());
-
-  // app.use(
-  //   '/graphql',
-  //   graphqlUploadExpress({ maxFileSize: 100000000, maxFiles: 10 }),
-  // );
 
   // Add request logging middleware
   app.use((req: any, res: any, next: () => void) => {
